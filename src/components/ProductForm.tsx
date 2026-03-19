@@ -59,9 +59,9 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         await addProduct(payload);
       }
       router.push("/admin");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      alert(err.message || "Failed to save product.");
+      alert(err instanceof Error ? err.message : "Failed to save product.");
       setLoading(false);
     }
   };

@@ -25,7 +25,7 @@ export async function getUsers() {
   const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID;
   return data.users.map(u => ({
     id: u.id,
-    email: u.email,
+    email: u.email || '',
     role: u.id === ADMIN_UID ? 'admin' : 'wholesale',
     created_at: u.created_at,
   })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -44,7 +44,7 @@ export async function createUser(email: string, password: string) {
 
 export async function updateUser(id: string, email?: string, password?: string) {
   const supabase = getAdminClient();
-  const updates: any = {};
+  const updates: { email?: string; password?: string } = {};
   if (email) updates.email = email;
   if (password) updates.password = password;
   

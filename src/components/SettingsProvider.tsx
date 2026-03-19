@@ -29,7 +29,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (stored) {
       try {
         setSettings(JSON.parse(stored));
-      } catch (e) {}
+      } catch {
+        // Syntax error mapping fallback
+      }
     }
     setIsMounted(true);
   }, []);

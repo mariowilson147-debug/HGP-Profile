@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { getUsers, createUser, updateUser, deleteUser } from "@/lib/auth-actions";
 import { Plus, Edit, Trash2, Shield, Users } from "lucide-react";
 
+type UserData = { id: string; email?: string; role: string; created_at: string };
+
 export default function UsersManagement() {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   
@@ -21,8 +23,8 @@ export default function UsersManagement() {
       const data = await getUsers();
       setUsers(data);
       setError("");
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "An error occurred fetching users.");
     }
     setLoading(false);
   };
@@ -31,10 +33,10 @@ export default function UsersManagement() {
     loadUsers();
   }, []);
 
-  const handleOpenModal = (user?: any) => {
+  const handleOpenModal = (user?: UserData) => {
     if (user) {
       setEditId(user.id);
-      setEmail(user.email);
+      setEmail(user.email || "");
       setPassword(""); // don't load password implicitly
     } else {
       setEditId(null);
@@ -55,8 +57,8 @@ export default function UsersManagement() {
       }
       setShowModal(false);
       loadUsers();
-    } catch (e: any) {
-      alert(e.message);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "An error occurred.");
     }
   };
 
@@ -65,8 +67,8 @@ export default function UsersManagement() {
       try {
         await deleteUser(id);
         loadUsers();
-      } catch (e: any) {
-        alert(e.message);
+      } catch (e) {
+        alert(e instanceof Error ? e.message : "An error occurred deleting the user.");
       }
     }
   };
