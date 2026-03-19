@@ -60,6 +60,7 @@ export default function AdminDashboard() {
                 <tr className="border-b border-[#222] bg-[#111]">
                   <th className="p-5 text-[10px] font-medium text-[#888] uppercase tracking-[0.2em]">Product</th>
                   <th className="p-5 text-[10px] font-medium text-[#888] uppercase tracking-[0.2em]">Category</th>
+                  <th className="p-5 text-[10px] font-medium text-[#888] uppercase tracking-[0.2em]">Buying</th>
                   <th className="p-5 text-[10px] font-medium text-[#888] uppercase tracking-[0.2em]">Wholesale</th>
                   <th className="p-5 text-[10px] font-medium text-[#888] uppercase tracking-[0.2em]">Retail</th>
                   <th className="p-5 text-[10px] font-medium text-[#888] uppercase tracking-[0.2em] text-right">Actions</th>
@@ -78,6 +79,7 @@ export default function AdminDashboard() {
                       </div>
                     </td>
                     <td className="p-5 text-xs text-[#888] uppercase tracking-widest">{product.category}</td>
+                    <td className="p-5 text-sm text-[#888]">KES {product.buying_price?.toLocaleString()}</td>
                     <td className="p-5 text-sm text-[#d4af37] font-medium">KES {product.wholesale_price?.toLocaleString()}</td>
                     <td className="p-5 text-sm text-[#888] line-through">KES {product.retail_price?.toLocaleString()}</td>
                     <td className="p-5 text-right">
@@ -94,7 +96,7 @@ export default function AdminDashboard() {
                 ))}
                 {products.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-12 text-center text-[#888] text-sm">No products found. Add your first premium product to get started.</td>
+                    <td colSpan={6} className="p-12 text-center text-[#888] text-sm">No products found. Add your first premium product to get started.</td>
                   </tr>
                 )}
               </tbody>

@@ -1,13 +1,15 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle2 } from "lucide-react";
+import { X } from "lucide-react";
+import { User } from "./AuthProvider";
 
 export type Product = {
   id: string;
   name: string;
   category: string;
   image_url: string;
+  buying_price?: number;
   wholesale_price?: number;
   retail_price?: number;
 };
@@ -16,10 +18,10 @@ interface ProductModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
-  isLoggedIn: boolean;
+  user: User | null;
 }
 
-export default function ProductModal({ product, isOpen, onClose, isLoggedIn }: ProductModalProps) {
+export default function ProductModal({ product, isOpen, onClose, user }: ProductModalProps) {
   if (!product) return null;
 
   return (
@@ -71,21 +73,31 @@ export default function ProductModal({ product, isOpen, onClose, isLoggedIn }: P
                 {product.name}
               </h2>
 
-              {isLoggedIn && (
+              {user && (
                 <div className="space-y-6 border-t border-[#222] pt-8 mt-auto">
-                  <div className="flex items-center gap-2 text-[#d4af37] bg-[#d4af37]/10 px-4 py-2.5 rounded-sm border border-[#d4af37]/20 w-max mb-6">
-                    <CheckCircle2 size={16} />
-                    <span className="text-[11px] font-medium uppercase tracking-widest">Wholesale Access Enabled</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-6 p-6 bg-[#111] border border-[#222] rounded-sm">
-                    <div>
-                      <div className="text-[10px] text-[#888] uppercase tracking-[0.2em] mb-2">Wholesale Price</div>
-                      <div className="text-3xl font-serif text-[#d4af37]">KES {product.wholesale_price?.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] text-[#888] uppercase tracking-[0.2em] mb-2">Retail Price</div>
-                      <div className="text-xl font-serif text-[#aaa] line-through mt-2">KES {product.retail_price?.toLocaleString()}</div>
+                  <div className="flex flex-col gap-6 p-6 bg-[#111] border border-[#222] rounded-sm">
+                    {user.role === 'admin' && (
+                      <div className="mb-4 pb-4 border-b border-[#222]">
+                        <div className="text-[10px] text-[#888] uppercase tracking-[0.2em] mb-2">Buying Price</div>
+                        <div className="text-xl font-serif text-[#aaa]">KES {product.buying_price?.toLocaleString()}</div>
+                      </div>
+                    )}
+                    
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <div className="text-[10px] text-[#888] uppercase tracking-[0.2em] mb-2">Wholesale Price</div>
+                        <div className="text-3xl font-serif text-[#d4af37]">KES {product.wholesale_price?.toLocaleString()}</div>
+                        {product.buying_price && product.wholesale_price && (
+                          <div className="text-xs text-[#888] mt-2 font-medium">Margin: {Math.round(((product.wholesale_price - product.buying_price) / product.buying_price) * 100)}%</div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-[#888] uppercase tracking-[0.2em] mb-2">Retail Price</div>
+                        <div className="text-xl font-serif text-[#aaa]">KES {product.retail_price?.toLocaleString()}</div>
+                        {product.buying_price && product.retail_price && (
+                          <div className="text-xs text-[#888] mt-2 font-medium">Margin: {Math.round(((product.retail_price - product.buying_price) / product.buying_price) * 100)}%</div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

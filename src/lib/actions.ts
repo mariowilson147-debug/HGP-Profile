@@ -8,6 +8,7 @@ export type Product = {
   name: string;
   category: string;
   image_url: string;
+  buying_price: number;
   wholesale_price: number;
   retail_price: number;
   created_at?: string;

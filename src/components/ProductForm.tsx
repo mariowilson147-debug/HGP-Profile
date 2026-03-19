@@ -15,6 +15,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
     name: initialData?.name || "",
     category: initialData?.category || "Lighting",
     image_url: initialData?.image_url || "",
+    buying_price: initialData?.buying_price || "",
     wholesale_price: initialData?.wholesale_price || "",
     retail_price: initialData?.retail_price || "",
   });
@@ -49,6 +50,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         name: formData.name,
         category: formData.category,
         image_url: finalImageUrl,
+        buying_price: Number(formData.buying_price),
         wholesale_price: Number(formData.wholesale_price),
         retail_price: Number(formData.retail_price),
       };
@@ -109,7 +111,23 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         </div>
 
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-[10px] uppercase tracking-[0.2em] text-[#888] mb-3 font-medium">Buying Price (KES)</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#555] text-xs font-medium">KES</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  required
+                  value={formData.buying_price}
+                  onChange={(e) => setFormData({...formData, buying_price: e.target.value})}
+                  className="w-full bg-[#111] border border-[#333] text-[#e0e0e0] pl-14 pr-4 py-3.5 rounded-sm focus:outline-none focus:border-[#d4af37] font-light transition-colors"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-[10px] uppercase tracking-[0.2em] text-[#888] mb-3 font-medium">Wholesale Price (KES)</label>
               <div className="relative">
@@ -142,6 +160,19 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
               </div>
             </div>
           </div>
+
+          {formData.buying_price && formData.wholesale_price && formData.retail_price && (
+            <div className="mt-6 p-6 bg-[#111] border border-[#333] rounded-sm grid grid-cols-2 gap-4 shadow-inner">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[#888] mb-2">Wholesale Margin</div>
+                <div className="text-2xl text-[#d4af37] font-serif">{Math.round(((Number(formData.wholesale_price) - Number(formData.buying_price)) / Number(formData.buying_price)) * 100)}%</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[#888] mb-2">Retail Margin</div>
+                <div className="text-2xl text-[#d4af37] font-serif">{Math.round(((Number(formData.retail_price) - Number(formData.buying_price)) / Number(formData.buying_price)) * 100)}%</div>
+              </div>
+            </div>
+          )}
 
           {(imageFile || formData.image_url) && (
             <div className="mt-8">

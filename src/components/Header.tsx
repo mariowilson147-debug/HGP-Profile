@@ -12,24 +12,12 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#222] bg-[#0f0f0f]/80 backdrop-blur-md">
       <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group">
-          {isMounted && settings.companyLogoUrl ? (
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.3)] group-hover:shadow-[0_0_25px_rgba(212,175,55,0.6)] transition-all duration-300 bg-[#111] overflow-hidden border border-[#333]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={settings.companyLogoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
-            </div>
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#d4af37] to-[#8c7320] flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.3)] group-hover:shadow-[0_0_25px_rgba(212,175,55,0.6)] transition-all duration-300">
-              <span className="text-[#0f0f0f] font-serif font-bold text-xl leading-none pt-1">
-                {isMounted && settings.companyName ? settings.companyName.charAt(0) : 'P'}
-              </span>
-            </div>
-          )}
-          <span className="font-serif text-2xl text-[#e0e0e0] font-medium tracking-wide">
-            {isMounted && settings.companyName ? settings.companyName : "Premium."}
+        <Link href="/" className="flex items-center group">
+          <span className="font-sans text-3xl font-bold tracking-[0.1em] text-[#d4af37] drop-shadow-[0_0_10px_rgba(212,175,55,0.6)] transition-all duration-300 group-hover:drop-shadow-[0_0_20px_rgba(212,175,55,0.9)]">
+            HGP
           </span>
         </Link>
-        
+
         <nav className="hidden md:flex items-center gap-8">
           <Link href="/" className="text-[#888] hover:text-[#d4af37] text-xs font-semibold tracking-widest uppercase transition-colors">Home</Link>
           <Link href="/catalog" className="text-[#888] hover:text-[#d4af37] text-xs font-semibold tracking-widest uppercase transition-colors">Catalog</Link>
@@ -50,7 +38,7 @@ export default function Header() {
               </>
             ) : (
               <Link href="/login" className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#d4af37] hover:text-[#ebd483] transition-colors">
-                <LogIn size={16} /> <span className="hidden sm:inline">Wholesale Login</span>
+                <LogIn size={16} /> <span className="hidden sm:inline">Login</span>
               </Link>
             )}
           </div>

@@ -7,7 +7,6 @@ import { useAuth } from "./AuthProvider";
 export default function ProductGrid({ products }: { products: Product[] }) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { user } = useAuth();
-  const isLoggedIn = !!user;
 
   if (products.length === 0) {
     return (
@@ -52,7 +51,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
         product={selectedProduct} 
         isOpen={!!selectedProduct} 
         onClose={() => setSelectedProduct(null)} 
-        isLoggedIn={isLoggedIn}
+        user={user}
       />
     </>
   );

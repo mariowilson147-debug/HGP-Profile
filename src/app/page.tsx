@@ -19,7 +19,7 @@ export default function Home() {
         
         <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-4xl mx-auto mt-16">
           <div className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#d4af37]/30 bg-[#1a1a1a]/60 text-xs font-medium text-[#d4af37] uppercase tracking-widest backdrop-blur-md shadow-[0_0_15px_rgba(212,175,55,0.1)]">
-            <span>Wholesale Digital Showroom</span>
+            <span>HGP EXCLUSIVES</span>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-serif text-[#fefefe] mb-6 leading-[1.1] drop-shadow-2xl">
@@ -27,7 +27,7 @@ export default function Home() {
           </h1>
           
           <p className="text-lg md:text-xl text-[#888] mb-12 max-w-2xl font-light leading-relaxed">
-            Supplying the finest quality lighting, electronics, bathroom ware, and interior décor for high-end wholesale buyers and designers.
+            Supplying the finest quality lighting, electronics, bathroom ware, and interior décor for premium buyers and designers.
           </p>
           
           <Link href="/catalog" className="group relative inline-flex items-center gap-3 px-8 py-4 bg-[#0a0a0a] border border-[#d4af37]/50 text-[#d4af37] overflow-hidden rounded-sm transition-all duration-500 hover:border-[#d4af37] hover:shadow-[0_0_30px_rgba(212,175,55,0.3)]">
