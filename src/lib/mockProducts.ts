@@ -1,0 +1,50 @@
+export const mockProducts = [
+  {
+    id: "1",
+    name: "Aurelia Chandelier",
+    category: "Lighting",
+    image_url: "https://images.unsplash.com/photo-1543198126-a8ad8e47fb22?q=80&w=600&auto=format&fit=crop",
+    wholesale_price: 450.00,
+    retail_price: 1200.00,
+  },
+  {
+    id: "2",
+    name: "Nova Smart Display",
+    category: "Electronics",
+    image_url: "https://images.unsplash.com/photo-1593305841991-05c297ba4575?q=80&w=600&auto=format&fit=crop",
+    wholesale_price: 850.00,
+    retail_price: 1550.00,
+  },
+  {
+    id: "3",
+    name: "Onyx Freestanding Tub",
+    category: "Bathroom",
+    image_url: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=600&auto=format&fit=crop",
+    wholesale_price: 1200.00,
+    retail_price: 2800.00,
+  },
+  {
+    id: "4",
+    name: "Velvet Lounge Chair",
+    category: "Interior",
+    image_url: "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?q=80&w=600&auto=format&fit=crop",
+    wholesale_price: 320.00,
+    retail_price: 890.00,
+  },
+  {
+    id: "5",
+    name: "Brass Pendant Light",
+    category: "Lighting",
+    image_url: "https://images.unsplash.com/photo-1513506003901-1e6a229e9d15?q=80&w=600&auto=format&fit=crop",
+    wholesale_price: 180.00,
+    retail_price: 450.00,
+  },
+  {
+    id: "6",
+    name: "Matte Black Basin Mixer",
+    category: "Bathroom",
+    image_url: "https://images.unsplash.com/photo-1585058177573-0402b1156df2?q=80&w=600&auto=format&fit=crop",
+    wholesale_price: 110.00,
+    retail_price: 350.00,
+  }
+];

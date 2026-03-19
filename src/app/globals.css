@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-black: #0f0f0f;
+  --color-brand-gold: #d4af37;
+  --color-brand-gold-glow: rgba(212, 175, 55, 0.4);
+  --color-brand-dark: #161616;
+  --color-brand-light: #fefefe;
+  --color-brand-text: #e0e0e0;
+  --color-brand-muted: #888888;
+  
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-playfair);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  body {
+    background-color: var(--color-brand-black);
+    color: var(--color-brand-text);
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    color: var(--color-brand-light);
+  }
+}
+
+@layer utilities {
+  .glow-hover {
+    transition: all 0.3s ease;
+  }
+  .glow-hover:hover {
+    box-shadow: 0 0 20px var(--color-brand-gold-glow);
+    border-color: var(--color-brand-gold);
+  }
+  
+  .text-glow {
+    text-shadow: 0 0 10px var(--color-brand-gold-glow);
+  }
+}
