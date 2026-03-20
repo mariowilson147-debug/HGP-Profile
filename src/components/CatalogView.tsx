@@ -9,7 +9,7 @@ export default function CatalogView({ products }: { products: Product[] }) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { user } = useAuth();
 
-  const categories = Array.from(new Set(products.map(p => p.category))).sort((a, b) => a.localeCompare(b));
+  const categories = Array.from(new Set(products.map(p => p.category))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
   return (
     <>
@@ -17,7 +17,7 @@ export default function CatalogView({ products }: { products: Product[] }) {
         {categories.map(category => {
           const categoryProducts = products
             .filter(p => p.category === category)
-            .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+            .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
 
           return (
             <div key={category} className="w-full">

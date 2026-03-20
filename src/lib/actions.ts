@@ -34,7 +34,7 @@ export async function getProducts() {
   
   const products = data || [];
   return products.sort((a, b) => 
-    a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
   );
 }
 
