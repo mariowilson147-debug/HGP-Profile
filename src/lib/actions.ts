@@ -26,12 +26,16 @@ async function requireAdmin() {
 
 export async function getProducts() {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('products').select('*');
   if (error) {
     console.error("Error fetching products:", error);
     return [];
   }
-  return data || [];
+  
+  const products = data || [];
+  return products.sort((a, b) => 
+    a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+  );
 }
 
 export async function addProduct(product: Omit<Product, "id" | "created_at">) {
@@ -39,31 +43,31 @@ export async function addProduct(product: Omit<Product, "id" | "created_at">) {
   const { data, error } = await supabase.from('products').insert([product]).select().single();
   if (error) {
     console.error("Insert error", error);
-    throw new Error(error.message);
+    return { error: error.message };
   }
   revalidatePath("/");
   revalidatePath("/catalog");
   revalidatePath("/admin");
-  return data;
+  return { success: true, count: 1, data };
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>) {
   const supabase = await requireAdmin();
   const { data, error } = await supabase.from('products').update(updates).eq('id', id).select().single();
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
   revalidatePath("/");
   revalidatePath("/catalog");
   revalidatePath("/admin");
-  return data;
+  return { success: true, count: 1, data };
 }
 
 export async function deleteProduct(id: string) {
   const supabase = await requireAdmin();
   const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) {
-    throw new Error(error.message);
+    return { error: error.message };
   }
   revalidatePath("/");
   revalidatePath("/catalog");

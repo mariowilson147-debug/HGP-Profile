@@ -55,11 +55,17 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         retail_price: Number(formData.retail_price),
       };
 
+      let result;
       if (initialData) {
-        await updateProduct(initialData.id, payload);
+        result = await updateProduct(initialData.id, payload);
       } else {
-        await addProduct(payload);
+        result = await addProduct(payload);
       }
+
+      if (result && result.error) {
+        throw new Error(result.error);
+      }
+      
       router.push("/admin");
     } catch (err) {
       console.error(err);

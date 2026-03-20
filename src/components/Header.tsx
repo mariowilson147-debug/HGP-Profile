@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { User, LogIn, LogOut } from "lucide-react";
 import { useAuth } from "./AuthProvider";
-import { useSettings } from "./SettingsProvider";
 
 export default function Header() {
   const { user, logout, isLoading } = useAuth();
-  const { settings, isMounted } = useSettings();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#222] bg-[#0f0f0f]/80 backdrop-blur-md">
