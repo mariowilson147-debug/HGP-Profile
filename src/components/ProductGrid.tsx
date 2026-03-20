@@ -10,7 +10,10 @@ export default function ProductGrid({ products }: { products: Product[] }) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const { user } = useAuth();
+  
+  const categories = ["All", ...Array.from(new Set(products.map(p => p.category))).sort((a, b) => a.localeCompare(b))];
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -20,6 +23,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
   }, [searchQuery]);
 
   const filteredProducts = products
+    .filter(p => selectedCategory === "All" || p.category === selectedCategory)
     .filter(p => p.name.toLowerCase().includes(debouncedQuery.toLowerCase()))
     .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 
@@ -43,6 +47,25 @@ export default function ProductGrid({ products }: { products: Product[] }) {
               <X className="h-5 w-5" />
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Category Tabs */}
+      <div className="w-full max-w-4xl mx-auto mb-12 px-4 sm:px-0">
+        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-6 py-2.5 rounded-full text-[11px] font-medium uppercase tracking-[0.15em] whitespace-nowrap transition-all duration-300 snap-start ${
+                selectedCategory === cat 
+                  ? 'bg-[#d4af37] text-[#0f0f0f] shadow-[0_0_15px_rgba(212,175,55,0.4)] border border-[#d4af37]' 
+                  : 'bg-[#111] text-[#888] hover:text-[#e0e0e0] border border-[#333] hover:border-[#d4af37]/40 hover:bg-[#1a1a1a]'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
       </div>
 

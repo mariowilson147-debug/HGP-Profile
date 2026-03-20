@@ -1,4 +1,4 @@
-import ProductGrid from "@/components/ProductGrid";
+import CatalogView from "@/components/CatalogView";
 import { getProducts } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export default async function CatalogPage() {
           <div className="w-16 h-1 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent mx-auto mt-8 rounded-full"></div>
         </div>
         
-        <ProductGrid products={products} />
+        <CatalogView products={products} />
       </div>
     </div>
   );
