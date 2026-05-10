@@ -46,7 +46,7 @@ export default function ChatDrawer() {
       const { getMessagesBySession } = await import("@/lib/actions");
       const data = await getMessagesBySession(sessionId);
       if (data && data.length > 0) {
-        const history: Message[] = data.map((msg: any) => ({
+        const history: Message[] = data.map((msg: { id: string, is_admin_reply: boolean, content: string, created_at: string }) => ({
           id: msg.id,
           sender: msg.is_admin_reply ? 'support' : 'user',
           text: msg.content,

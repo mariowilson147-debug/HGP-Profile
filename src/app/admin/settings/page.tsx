@@ -152,7 +152,7 @@ export default function SettingsDashboard() {
                   <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Theme Preference</label>
                   <select
                     value={theme}
-                    onChange={(e) => setTheme(e.target.value as any)}
+                    onChange={(e) => setTheme(e.target.value as "light" | "dark" | "system")}
                     className="w-full bg-slate-50 border border-slate-200 text-slate-800 px-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 text-sm font-medium transition-colors"
                   >
                     <option value="light">Light Theme</option>
