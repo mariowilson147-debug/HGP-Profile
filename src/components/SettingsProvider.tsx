@@ -14,7 +14,7 @@ interface SettingsContextType {
 }
 
 const defaultSettings: Settings = {
-  companyName: "Premium.",
+  companyName: "Prutam Enterprise Limited",
   companyLogoUrl: "",
 };
 

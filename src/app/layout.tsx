@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { AuthProvider } from "@/components/AuthProvider";
 import { SettingsProvider } from "@/components/SettingsProvider";
+import PublicLayoutWrapper from "@/components/PublicLayoutWrapper";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
 });
 
@@ -27,17 +26,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="light">
       <body
-        className={`${inter.variable} ${playfair.variable} antialiased min-h-screen flex flex-col`}
+        className={`${inter.variable} ${outfit.variable} antialiased min-h-screen flex flex-col bg-[#f8fafc] text-slate-700 selection:bg-blue-100 selection:text-blue-900`}
       >
         <SettingsProvider>
           <AuthProvider>
-            <Header />
-            <main className="flex-grow flex flex-col">
+            <PublicLayoutWrapper>
               {children}
-            </main>
-            <Footer />
+            </PublicLayoutWrapper>
           </AuthProvider>
         </SettingsProvider>
       </body>

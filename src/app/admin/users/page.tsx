@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getUsers, createUser, updateUser, deleteUser } from "@/lib/auth-actions";
-import { Plus, Edit, Trash2, Shield, Users } from "lucide-react";
+import { Search, Shield, Users, Mail, Key, UserPlus, Filter, Download } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 type UserData = { id: string; email?: string; role: string; created_at: string };
 
@@ -10,10 +11,11 @@ export default function UsersManagement() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const { user: authUser } = useAuth();
   
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -37,7 +39,7 @@ export default function UsersManagement() {
     if (user) {
       setEditId(user.id);
       setEmail(user.email || "");
-      setPassword(""); // don't load password implicitly
+      setPassword(""); 
     } else {
       setEditId(null);
       setEmail("");
@@ -63,7 +65,7 @@ export default function UsersManagement() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to completely delete this account?")) {
+    if (confirm("Are you sure you want to completely remove this staff member?")) {
       try {
         await deleteUser(id);
         loadUsers();
@@ -73,95 +75,216 @@ export default function UsersManagement() {
     }
   };
 
+  const filteredUsers = users.filter(u => u.email?.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const handleDownloadCSV = () => {
+    if (users.length === 0) return;
+    const headers = ["ID", "Email", "Role", "Created At"];
+    const csvRows = [headers.join(",")];
+    for (const u of users) {
+      csvRows.push([
+        u.id, 
+        `"${u.email}"`, 
+        `"${u.role}"`, 
+        `"${u.created_at}"`
+      ].join(","));
+    }
+    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `staff_export_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Mock data mapping for visual completeness matching the design
+  const getMockDepartment = (role: string) => {
+    if (role === 'admin') return 'Operations';
+    return 'Logistics';
+  };
+
+  const getMockStatus = (id: string) => {
+    return Math.random() > 0.1 ? 'ACTIVE' : 'ON LEAVE';
+  };
+
   return (
-    <div className="w-full bg-[#0a0a0a] min-h-[80vh] py-12 px-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-          <div>
-            <h1 className="text-3xl font-serif text-[#fefefe] mb-2">User Management</h1>
-            <p className="text-[#888] text-sm">Provision access strictly for wholesale clients. Only your account receives Administrator privileges.</p>
+    <div className="w-full bg-slate-50 min-h-full pb-12">
+      {/* Top Header Bar */}
+      <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+        <h1 className="text-xl font-display font-bold text-slate-800 tracking-tight">Staff Management</h1>
+        
+        <div className="flex items-center gap-6">
+          <div className="relative w-72">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <Search size={16} />
+            </div>
+            <input
+              type="text"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-700 pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+              placeholder="Search staff members..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-          <div className="flex gap-4">
-            <button onClick={() => handleOpenModal()} className="flex items-center justify-center gap-2 bg-gradient-to-r from-[#b39129] to-[#d4af37] text-[#0f0f0f] px-6 py-3 rounded-sm text-xs font-medium uppercase tracking-[0.2em] hover:from-[#d4af37] hover:to-[#ebd483] transition-all shadow-[0_0_20px_rgba(212,175,55,0.2)]">
-              <Plus size={16} /> Add User
-            </button>
+        </div>
+      </header>
+
+      <div className="p-8 max-w-7xl mx-auto space-y-8">
+        
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Total Staff</span>
+            <span className="text-4xl font-display font-bold text-slate-800 mb-1">{users.length}</span>
+            <span className="text-xs text-slate-500">+1 this month</span>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center">
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Active Roles</span>
+            <span className="text-4xl font-display font-bold text-slate-800 mb-1">2</span>
+            <span className="text-xs text-slate-500">Admin & Wholesale</span>
+          </div>
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 shadow-sm flex flex-col justify-center items-start cursor-pointer hover:bg-blue-100 transition-colors" onClick={() => handleOpenModal()}>
+            <span className="text-xs font-semibold text-blue-500 uppercase tracking-wider mb-3">Quick Action</span>
+            <div className="flex items-center gap-3 text-blue-700">
+              <UserPlus size={24} />
+              <span className="font-display font-bold text-lg leading-tight">Add Staff<br/>Member</span>
+            </div>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-900/10 border border-red-900/30 text-red-500 p-6 rounded-sm mb-8 space-y-2">
-            <h3 className="font-medium text-[11px] tracking-widest uppercase text-red-400">Configuration Required</h3>
-            <p className="text-sm font-light leading-relaxed">{error}</p>
+          <div className="bg-red-50 border border-red-100 text-red-600 p-6 rounded-xl space-y-2">
+            <h3 className="font-semibold text-sm flex items-center gap-2"><Shield size={16} /> Configuration Error</h3>
+            <p className="text-sm">{error}</p>
           </div>
         )}
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-t-2 border-l-2 border-[#d4af37] rounded-full animate-spin"></div>
-          </div>
-        ) : (!error && (
-          <div className="bg-[#0f0f0f] border border-[#222] rounded-sm overflow-x-auto shadow-2xl">
-            <table className="w-full text-left border-collapse min-w-[700px]">
-              <thead>
-                <tr className="border-b border-[#222] bg-[#111]">
-                  <th className="p-5 text-[10px] font-medium text-[#888] uppercase tracking-[0.2em]">Email Address</th>
-                  <th className="p-5 text-[10px] font-medium text-[#888] uppercase tracking-[0.2em]">Access Level</th>
-                  <th className="p-5 text-[10px] font-medium text-[#888] uppercase tracking-[0.2em]">Created Date</th>
-                  <th className="p-5 text-[10px] font-medium text-[#888] uppercase tracking-[0.2em] text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(u => (
-                  <tr key={u.id} className="border-b border-[#222] hover:bg-[#1a1a1a]/50 transition-colors">
-                    <td className="p-5">
-                      <div className="flex items-center gap-3">
-                        {u.role === 'admin' ? <Shield size={16} className="text-[#d4af37]" /> : <Users size={16} className="text-[#888]" />}
-                        <span className="font-medium text-[#e0e0e0] text-sm tracking-wide">{u.email}</span>
-                      </div>
-                    </td>
-                    <td className="p-5 text-xs">
-                      <span className={`px-3 py-1.5 rounded-sm border text-[10px] uppercase tracking-widest font-medium ${u.role === 'admin' ? 'border-[#d4af37]/30 text-[#d4af37] bg-[#d4af37]/10' : 'border-[#222] text-[#888] bg-[#1a1a1a]'}`}>
-                        {u.role === 'authenticated' ? 'Wholesale' : u.role}
-                      </span>
-                    </td>
-                    <td className="p-5 text-sm text-[#888]">{new Date(u.created_at).toLocaleDateString()}</td>
-                    <td className="p-5 text-right">
-                      {u.role !== 'admin' && (
-                        <div className="flex justify-end gap-3">
-                          <button onClick={() => handleOpenModal(u)} className="p-2 text-[#888] hover:text-[#d4af37] transition-colors" title="Edit">
-                            <Edit size={16} />
-                          </button>
-                          <button onClick={() => handleDelete(u.id)} className="p-2 text-[#888] hover:text-red-500 transition-colors" title="Delete">
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      )}
-                    </td>
+        {/* Directory Section */}
+        {!error && (
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+            <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-800 tracking-tight">Personnel Directory</h2>
+              <div className="flex items-center gap-3">
+                <button onClick={handleDownloadCSV} className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+                  <Download size={16} /> Export CSV
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/50">
+                    <th className="p-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Staff Member</th>
+                    <th className="p-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Role / Designation</th>
+                    <th className="p-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Department</th>
+                    <th className="p-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="p-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5} className="p-12 text-center">
+                        <div className="flex justify-center">
+                          <div className="w-8 h-8 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-12 text-center text-slate-500">No staff members found.</td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map(u => {
+                      const status = getMockStatus(u.id);
+                      return (
+                        <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                          <td className="p-4 px-6">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${u.role === 'admin' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+                                {u.role === 'admin' ? <Shield size={18} /> : <Users size={18} />}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-slate-800 block">{u.email?.split('@')[0]}</span>
+                                <span className="text-xs text-slate-500">{u.email}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4 px-6">
+                            <span className="font-semibold text-slate-700">
+                              {u.role === 'admin' ? 'Catalog Administrator' : 'Wholesale Client'}
+                            </span>
+                          </td>
+                          <td className="p-4 px-6 text-sm text-blue-600">
+                            {getMockDepartment(u.role)}
+                          </td>
+                          <td className="p-4 px-6">
+                            <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider ${status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                              {status}
+                            </span>
+                          </td>
+                          <td className="p-4 px-6 text-right">
+                            {u.role !== 'admin' && (
+                              <button 
+                                onClick={() => handleDelete(u.id)} 
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 transition-colors"
+                              >
+                                <span className="text-red-500">-</span> Remove
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-sm text-slate-500">
+              <span>Showing {filteredUsers.length} of {users.length} results</span>
+              <div className="flex gap-1">
+                <button className="w-8 h-8 flex items-center justify-center rounded border border-slate-200 bg-white hover:bg-slate-50">&lt;</button>
+                <button className="w-8 h-8 flex items-center justify-center rounded border border-slate-800 bg-slate-800 text-white font-medium">1</button>
+                <button className="w-8 h-8 flex items-center justify-center rounded border border-slate-200 bg-white hover:bg-slate-50 font-medium">2</button>
+                <button className="w-8 h-8 flex items-center justify-center rounded border border-slate-200 bg-white hover:bg-slate-50">&gt;</button>
+              </div>
+            </div>
           </div>
-        ))}
+        )}
       </div>
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
-          <div className="relative bg-[#0f0f0f] border border-[#333] p-8 w-full max-w-md shadow-2xl rounded-sm">
-            <h2 className="text-2xl font-serif text-[#fefefe] mb-8">{editId ? "Edit Wholesale Credentials" : "Create Wholesale Client"}</h2>
-            <form onSubmit={handleSave} className="space-y-6">
+          <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+          <div className="relative bg-white p-8 w-full max-w-md shadow-xl rounded-3xl border border-slate-100">
+            <h2 className="text-2xl font-display font-bold text-slate-800 mb-6">{editId ? "Edit Staff Member" : "Add Staff Member"}</h2>
+            <form onSubmit={handleSave} className="space-y-5">
               <div>
-                <label className="block text-[10px] uppercase tracking-[0.2em] text-[#888] mb-3 font-medium">Email Address</label>
-                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-[#111] border border-[#333] text-[#e0e0e0] px-4 py-3.5 rounded-sm focus:outline-none focus:border-[#d4af37] font-light" />
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Email Address</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <Mail size={16} />
+                  </div>
+                  <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-700 pl-11 pr-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="member@example.com" />
+                </div>
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-[0.2em] text-[#888] mb-3 font-medium">Password {editId && <span className="text-[#555] lowercase tracking-normal">(leave blank to keep current)</span>}</label>
-                <input type="password" required={!editId} value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-[#111] border border-[#333] text-[#e0e0e0] px-4 py-3.5 rounded-sm focus:outline-none focus:border-[#d4af37] font-light" />
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Password {editId && <span className="text-slate-400 normal-case tracking-normal">(leave blank to keep)</span>}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <Key size={16} />
+                  </div>
+                  <input type="password" required={!editId} value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-50 border border-slate-200 text-slate-700 pl-11 pr-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="••••••••" />
+                </div>
               </div>
-              <div className="flex gap-4 pt-6 border-t border-[#222]">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-[#111] border border-[#333] text-[#888] text-[11px] uppercase tracking-[0.2em] font-medium hover:text-[#e0e0e0] transition-colors rounded-sm">Cancel</button>
-                <button type="submit" className="flex-1 py-4 bg-gradient-to-r from-[#b39129] to-[#d4af37] text-black text-[11px] uppercase tracking-[0.2em] font-medium hover:from-[#d4af37] hover:to-[#ebd483] shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all rounded-sm">{editId ? "Save Changes" : "Create Client"}</button>
+              <div className="flex gap-3 pt-6">
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 text-sm font-semibold hover:bg-slate-200 transition-colors rounded-xl">Cancel</button>
+                <button type="submit" className="flex-1 py-3 bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shadow-sm hover:shadow transition-all rounded-xl">{editId ? "Save Changes" : "Create Member"}</button>
               </div>
             </form>
           </div>

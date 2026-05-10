@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSettings } from "@/components/SettingsProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { Building2, Image as ImageIcon } from "lucide-react";
 
 export default function SettingsDashboard() {
   const { settings, updateSettings } = useSettings();
@@ -41,55 +42,75 @@ export default function SettingsDashboard() {
   };
 
   return (
-    <div className="w-full bg-[#0a0a0a] min-h-[80vh] py-12 px-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-serif text-[#fefefe] mb-2">Company Settings</h1>
-        <p className="text-[#888] text-sm mb-10">Customize your digital showroom branding.</p>
+    <div className="w-full bg-slate-50 min-h-full pb-12">
+      {/* Top Header Bar */}
+      <header className="bg-white border-b border-slate-200 px-8 py-6 flex items-center justify-between sticky top-0 z-10">
+        <div>
+          <h1 className="text-xl font-display font-bold text-slate-800 tracking-tight">Company Settings</h1>
+          <p className="text-slate-500 text-sm mt-1">Customize your digital showroom branding and appearance.</p>
+        </div>
+      </header>
 
-        <form onSubmit={handleSave} className="space-y-8 bg-[#0f0f0f] border border-[#222] p-8 md:p-12 rounded-sm shadow-2xl">
-          <div className="space-y-6">
+      <div className="p-8 max-w-3xl mx-auto space-y-6">
+        <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div className="p-8 md:p-10 space-y-8 flex-1">
             <div>
-              <label className="block text-[10px] uppercase tracking-[0.2em] text-[#888] mb-3 font-medium">Company Name</label>
-              <input
-                type="text"
-                required
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                className="w-full bg-[#111] border border-[#333] text-[#e0e0e0] px-4 py-3.5 rounded-sm focus:outline-none focus:border-[#d4af37] font-light transition-colors"
-              />
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Company Name</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                  <Building2 size={16} />
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-700 pl-11 pr-4 py-3 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                  placeholder="Enter company name"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-[10px] uppercase tracking-[0.2em] text-[#888] mb-3 font-medium">Company Logo</label>
-              <div className="flex items-center gap-6">
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Company Logo</label>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                 {(logoFile || settings.companyLogoUrl) && (
-                  <div className="w-16 h-16 bg-[#111] border border-[#333] rounded-sm overflow-hidden flex items-center justify-center shrink-0">
+                  <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden flex items-center justify-center shrink-0 p-2 shadow-sm">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src={logoFile ? URL.createObjectURL(logoFile) : settings.companyLogoUrl} 
                       alt="Logo preview" 
-                      className="w-full h-full object-contain" 
+                      className="w-full h-full object-contain mix-blend-multiply" 
                     />
                   </div>
                 )}
                 
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-                  className="w-full bg-[#111] border border-[#333] text-[#888] px-4 py-3 rounded-sm file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-xs file:font-semibold file:bg-[#1a1a1a] file:text-[#d4af37] hover:file:bg-[#222] transition-colors"
-                />
+                <div className="flex-1 w-full">
+                  <label className="cursor-pointer group flex items-center justify-center w-full bg-slate-50 border-2 border-dashed border-slate-200 hover:border-blue-500/50 hover:bg-blue-50/50 rounded-xl px-4 py-6 transition-all">
+                    <div className="flex flex-col items-center gap-2 text-slate-500 group-hover:text-blue-600 transition-colors">
+                      <ImageIcon size={24} />
+                      <span className="text-sm font-medium">Click to upload or drag and drop</span>
+                      <span className="text-xs text-slate-400 font-light">PNG, JPG, SVG up to 5MB</span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="pt-8 border-t border-[#222]">
+          <div className="px-8 md:px-10 py-5 bg-slate-50 border-t border-slate-200 flex justify-end">
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-[#b39129] to-[#d4af37] text-[#0f0f0f] font-medium uppercase tracking-[0.2em] text-xs rounded-sm hover:from-[#d4af37] hover:to-[#ebd483] transition-all disabled:opacity-50"
+              className="px-8 py-2.5 bg-slate-800 text-white font-medium text-sm rounded-xl hover:bg-slate-900 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Saving..." : "Save Settings"}
+              {loading ? "Saving Changes..." : "Save Settings"}
             </button>
           </div>
         </form>

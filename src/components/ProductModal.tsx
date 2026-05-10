@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Heart, ShieldCheck, Award, Zap } from "lucide-react";
 import { User } from "./AuthProvider";
 
 export type Product = {
@@ -27,81 +27,76 @@ export default function ProductModal({ product, isOpen, onClose, user }: Product
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-[#000000]/90 backdrop-blur-md"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
           />
           
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-5xl bg-[#0f0f0f] border border-[#333] shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-sm overflow-hidden flex flex-col md:flex-row md:border-t-[#d4af37]/30"
+            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            transition={{ type: "spring", damping: 30, stiffness: 400 }}
+            className="relative w-full max-w-lg bg-[#EAEAEA] shadow-2xl rounded-3xl overflow-hidden my-auto"
           >
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-[#1a1a1a]/80 backdrop-blur-sm flex items-center justify-center text-[#888] hover:text-[#fefefe] hover:bg-[#333] transition-colors border border-[#333]"
-            >
-              <X size={20} />
-            </button>
+            {/* Top Image Section */}
+            <div className="w-full relative bg-[#EAEAEA] flex items-start justify-center pt-16 pb-12 px-12 h-[350px] overflow-y-auto">
+              <button
+                onClick={onClose}
+                className="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center text-slate-800 hover:text-slate-500 transition-colors"
+              >
+                <X size={24} />
+              </button>
 
-            {/* Image Section */}
-            <div className="w-full md:w-[55%] aspect-square md:aspect-auto md:min-h-[550px] relative bg-[#0a0a0a] border-r border-[#222]">
-              <div className="absolute inset-0 flex items-center justify-center p-8 md:p-12">
-                <div className="relative w-full h-full flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={product.image_url} alt={product.name} className="max-w-full max-h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" />
-                  <div className="absolute inset-0 bg-gradient-to-tr from-[#d4af37]/5 to-transparent mix-blend-overlay pointer-events-none"></div>
-                </div>
-              </div>
+              <button className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center text-slate-800 hover:text-red-500 transition-colors">
+                <Heart size={22} />
+              </button>
+
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={product.image_url} alt={product.name} className="w-full h-auto mix-blend-multiply drop-shadow-md max-w-[280px] my-auto" />
             </div>
 
-            {/* Details Section */}
-            <div className="w-full md:w-[45%] p-8 md:p-12 flex flex-col justify-center relative bg-gradient-to-b from-[#0f0f0f] to-[#0a0a0a]">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-[#d4af37]/5 blur-[100px] rounded-full pointer-events-none"></div>
-              
-              <div className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-sm bg-[#1a1a1a] border border-[#222] text-[10px] font-medium text-[#888] uppercase tracking-[0.2em] w-max">
-                {product.category}
-              </div>
-              
-              <h2 className="text-3xl md:text-4xl font-serif text-[#fefefe] mb-8 leading-tight">
+            {/* Bottom Details Section */}
+            <div className="w-full bg-[#F3F3F3] px-8 py-8 flex flex-col">
+              <h2 className="text-2xl font-display text-slate-900 mb-8 font-normal">
                 {product.name}
               </h2>
 
-              {user && (
-                <div className="space-y-6 border-t border-[#222] pt-8 mt-auto">
-                  <div className="flex flex-col gap-6 p-6 bg-[#111] border border-[#222] rounded-sm">
+              {/* Pricing & Actions */}
+              <div className="mt-auto flex items-end justify-between gap-4">
+                {user ? (
+                  <div className="flex flex-col gap-1">
                     {user.role === 'admin' && (
-                      <div className="mb-4 pb-4 border-b border-[#222]">
-                        <div className="text-[10px] text-[#888] uppercase tracking-[0.2em] mb-2">Buying Price</div>
-                        <div className="text-xl font-serif text-[#aaa]">KES {product.buying_price?.toLocaleString()}</div>
+                      <div className="text-[10px] text-slate-500 font-medium mb-1">
+                        Cost: KES {product.buying_price?.toLocaleString()}
                       </div>
                     )}
-                    
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <div className="text-[10px] text-[#888] uppercase tracking-[0.2em] mb-2">Wholesale Price</div>
-                        <div className="text-3xl font-serif text-[#d4af37]">KES {product.wholesale_price?.toLocaleString()}</div>
-                        {product.buying_price && product.wholesale_price && (
-                          <div className="text-xs text-[#888] mt-2 font-medium">Margin: {Math.round(((product.wholesale_price - product.buying_price) / product.buying_price) * 100)}%</div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-[#888] uppercase tracking-[0.2em] mb-2">Retail Price</div>
-                        <div className="text-xl font-serif text-[#aaa]">KES {product.retail_price?.toLocaleString()}</div>
-                        {product.buying_price && product.retail_price && (
-                          <div className="text-xs text-[#888] mt-2 font-medium">Margin: {Math.round(((product.retail_price - product.buying_price) / product.buying_price) * 100)}%</div>
-                        )}
-                      </div>
+                    <div className="text-sm font-medium text-slate-500">Retail: KES {product.retail_price?.toLocaleString()}</div>
+                    <div className="text-3xl font-display font-medium text-slate-900 tracking-tight">
+                      KES {product.wholesale_price?.toLocaleString()} <span className="text-sm font-normal text-slate-500">ws</span>
                     </div>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div>
+                    <h3 className="text-xl font-medium text-slate-900">Request Quote</h3>
+                  </div>
+                )}
+
+                {!user && (
+                  <a 
+                    href={`https://wa.me/254794577748?text=${encodeURIComponent(`Hi, I'm interested in the product: ${product.name}`)}`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="px-6 py-3 bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors rounded-xl shadow-md flex items-center justify-center"
+                  >
+                    Contact Sales
+                  </a>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>
@@ -109,3 +104,4 @@ export default function ProductModal({ product, isOpen, onClose, user }: Product
     </AnimatePresence>
   );
 }
+

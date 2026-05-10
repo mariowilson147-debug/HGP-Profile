@@ -1,151 +1,136 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import ProductModal, { Product } from "./ProductModal";
 import { useAuth } from "./AuthProvider";
-import { X, ChevronLeft, Folder } from "lucide-react";
+import { Search, LayoutGrid, Lightbulb, Monitor, Watch, Bath, Sofa, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 
-export default function ProductGrid({ products }: { products: Product[] }) {
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case "All Collections":
+      return <LayoutGrid size={20} className="mb-2" />;
+    case "Lighting":
+      return <Lightbulb size={20} className="mb-2" />;
+    case "Electronics":
+      return <Monitor size={20} className="mb-2" />;
+    case "Watches":
+      return <Watch size={20} className="mb-2" />;
+    case "Bathroom Ware":
+    case "Bathroom":
+      return <Bath size={20} className="mb-2" />;
+    case "Interior Décor":
+    case "Interior":
+      return <Sofa size={20} className="mb-2" />;
+    default:
+      return <Package size={20} className="mb-2" />;
+  }
+};
+
+function ProductGridContent({ products }: { products: Product[] }) {
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q") || "";
+  const categoryQuery = searchParams.get("category");
+  
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(categoryQuery || "All Collections");
   const { user } = useAuth();
   
-  const categories = ["All", ...Array.from(new Set(products.map(p => p.category))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))];
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  // Create mock categories for the UI if they don't match the design nicely
+  // We'll use the actual categories from products but map 'All' to 'All Collections'
+  const rawCategories = Array.from(new Set(products.map(p => p.category))).sort();
+  const categories = ["All Collections", ...rawCategories];
 
   const filteredProducts = products
-    .filter(p => selectedCategory === "All" || p.category === selectedCategory)
-    .filter(p => p.name.toLowerCase().includes(debouncedQuery.toLowerCase()))
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+    .filter(p => selectedCategory === "All Collections" || p.category === selectedCategory)
+    .filter(p => p.name.toLowerCase().includes(urlQuery.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <>
-      <AnimatePresence mode="wait">
-        {selectedCategory === "All" ? (
-          <motion.div 
-            key="folders"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.3 }}
-            className="w-full max-w-6xl mx-auto px-4 sm:px-0"
+    <div className="w-full max-w-7xl mx-auto px-6 pt-16">
+      
+      {/* Category Navigation */}
+      {!categoryQuery && (
+        <div className="sticky top-16 z-40 bg-[#fafafa] pt-4 pb-4 mb-10 border-b border-slate-200 flex flex-wrap items-center justify-start sm:justify-center gap-6 md:gap-10 overflow-x-auto no-scrollbar w-full -mx-2 px-2 sm:mx-0 sm:px-0">
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`flex flex-col items-center justify-center whitespace-nowrap pb-4 -mb-4 text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all min-w-[70px] ${
+              selectedCategory === cat 
+                ? "text-slate-900 border-b-2 border-slate-900" 
+                : "text-slate-500 hover:text-slate-800"
+            }`}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {categories.filter(c => c !== "All").map(cat => {
-                const count = products.filter(p => p.category === cat).length;
-                return (
-                  <div
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className="group cursor-pointer bg-[#111] border border-[#333] hover:border-[#d4af37]/50 rounded-lg p-8 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-[0_0_20px_rgba(212,175,55,0.15)] hover:-translate-y-1 relative overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#d4af37]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div className="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-6 text-[#888] group-hover:text-[#d4af37] transition-colors border border-[#222]">
-                      <Folder size={28} strokeWidth={1.5} />
-                    </div>
-                    <h3 className="font-serif text-2xl text-[#fefefe] mb-2">{cat}</h3>
-                    <span className="text-[#888] text-sm uppercase tracking-widest font-medium">{count} Items</span>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div 
-            key="products"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
-            className="w-full"
-          >
-            {/* Breadcrumb Navigation */}
-            <div className="w-full max-w-6xl mx-auto mb-8 px-4 sm:px-0">
-              <button 
-                onClick={() => { setSelectedCategory("All"); setSearchQuery(""); }}
-                className="inline-flex items-center gap-2 text-[#888] hover:text-[#d4af37] transition-colors text-xs font-medium uppercase tracking-[0.2em] px-5 py-2.5 border border-[#333] hover:border-[#d4af37]/50 rounded-full bg-[#111] shadow-sm hover:shadow-[0_0_15px_rgba(212,175,55,0.1)]"
-              >
-                <ChevronLeft size={16} />
-                Home <span className="text-[#333] mx-1">/</span> <span className="text-[#fefefe]">{selectedCategory}</span>
-              </button>
-            </div>
+            {getCategoryIcon(cat)}
+            <span>{cat}</span>
+          </button>
+        ))}
+        </div>
+      )}
 
-            {/* Search Bar */}
-            <div className="w-full max-w-2xl mx-auto mb-16 sticky top-28 z-40 bg-[#0f0f0f] py-2 px-4 sm:px-0">
-              <div className="relative group">
-                <input
-                  type="text"
-                  className="w-full bg-[#111] border border-[#333] text-[#e0e0e0] pl-8 pr-14 py-5 rounded-full focus:outline-none focus:border-[#d4af37]/70 focus:shadow-[0_0_20px_rgba(212,175,55,0.15)] transition-all font-light"
-                  placeholder={`🔎 Search in ${selectedCategory}...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute inset-y-0 right-0 pr-6 flex items-center text-[#888] hover:text-[#d4af37] transition-colors"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                )}
-              </div>
-            </div>
+      {urlQuery && (
+        <div className="mb-8">
+          <p className="text-slate-600">Showing results for: <span className="font-semibold text-slate-900">&quot;{urlQuery}&quot;</span></p>
+        </div>
+      )}
 
-            {filteredProducts.length === 0 ? (
-              <div className="w-full py-20 flex flex-col items-center justify-center text-[#888]">
-                <h3 className="text-xl font-serif text-[#888] mb-2">No products found.</h3>
-              </div>
-            ) : (
+      {/* Product Grid */}
+      {filteredProducts.length === 0 ? (
+        <div className="w-full py-20 flex flex-col items-center justify-center">
+          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
+            <Search size={24} />
+          </div>
+          <h3 className="text-lg font-medium text-slate-600">No products found.</h3>
+          <p className="text-slate-400 text-sm mt-1">Try adjusting your search query or category.</p>
+        </div>
+      ) : (
+        <motion.div 
+          layout
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12"
+        >
+          <AnimatePresence>
+            {filteredProducts.map((product) => (
               <motion.div 
                 layout
-                className="w-full max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-16 px-4 sm:px-0"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.4 }}
+                key={product.id}
+                onClick={() => setSelectedProduct(product)}
+                className="group cursor-pointer flex flex-col"
               >
-                <AnimatePresence>
-                  {filteredProducts.map((product) => (
-                    <motion.div 
-                      layout
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.3 }}
-                      key={product.id}
-                      onClick={() => setSelectedProduct(product)}
-                      className="group cursor-pointer flex flex-col"
-                    >
-                      <div className="relative aspect-square mb-6 overflow-hidden bg-[#0a0a0a] border border-[#222] rounded-md group-hover:border-[#d4af37]/50 transition-colors duration-500 shadow-lg">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
-                          src={product.image_url} 
-                          alt={product.name} 
-                          className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#000]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-6">
-                          <span className="text-[#d4af37] text-xs font-medium uppercase tracking-[0.2em] border border-[#d4af37]/50 px-4 py-2 bg-[#000]/50 backdrop-blur-sm w-full text-center rounded-sm">
-                            View Details
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col text-center px-4">
-                        <span className="text-[#888] text-[10px] uppercase tracking-[0.2em] mb-3">{product.category}</span>
-                        <h3 className="font-serif text-xl text-[#e0e0e0] group-hover:text-[#d4af37] transition-colors">{product.name}</h3>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                <div className="relative aspect-square w-full overflow-hidden bg-[#f4f4f4] mb-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src={product.image_url} 
+                    alt={product.name} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <h3 className="font-display font-medium text-lg text-slate-900 leading-tight mb-1">{product.name}</h3>
+                  <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{product.category}</span>
+                </div>
               </motion.div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+      )}
+
+      {/* Pagination Mockup from Design */}
+      {filteredProducts.length > 0 && (
+        <div className="flex items-center justify-center gap-2 mt-20 mb-10">
+          <button className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-400 hover:text-slate-600 transition-colors">&lt;</button>
+          <button className="w-10 h-10 flex items-center justify-center bg-slate-900 text-white font-medium">1</button>
+          <button className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">2</button>
+          <button className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">3</button>
+          <span className="px-2 text-slate-400">...</span>
+          <button className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">&gt;</button>
+        </div>
+      )}
 
       <ProductModal 
         product={selectedProduct} 
@@ -153,6 +138,14 @@ export default function ProductGrid({ products }: { products: Product[] }) {
         onClose={() => setSelectedProduct(null)} 
         user={user}
       />
-    </>
+    </div>
+  );
+}
+
+export default function ProductGrid({ products }: { products: Product[] }) {
+  return (
+    <Suspense fallback={<div className="w-full py-20 text-center text-slate-500">Loading catalog...</div>}>
+      <ProductGridContent products={products} />
+    </Suspense>
   );
 }
