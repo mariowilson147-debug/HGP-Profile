@@ -2,6 +2,15 @@
 
 import { createSupabaseServerClient } from "./supabase/server";
 import { revalidatePath } from "next/cache";
+import { createClient } from "@supabase/supabase-js";
+
+// Admin client bypasses RLS for system operations like chat messages
+function getAdminSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export type Product = {
   id: string;
@@ -76,7 +85,7 @@ export async function deleteProduct(id: string) {
 }
 
 export async function sendMessage(message: { session_id?: string; name: string; email: string; content: string; is_admin_reply?: boolean }) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = getAdminSupabase();
   const { error } = await supabase.from('messages').insert([
     { 
       session_id: message.session_id || 'anonymous',
@@ -96,7 +105,7 @@ export async function sendMessage(message: { session_id?: string; name: string; 
 }
 
 export async function getMessagesBySession(session_id: string) {
-  const supabase = await createSupabaseServerClient();
+  const supabase = getAdminSupabase();
   const { data, error } = await supabase.from('messages')
     .select('*')
     .eq('session_id', session_id)
@@ -107,7 +116,8 @@ export async function getMessagesBySession(session_id: string) {
 }
 
 export async function getChatThreads() {
-  const supabase = await requireAdmin();
+  await requireAdmin(); // Ensure the caller is an admin
+  const supabase = getAdminSupabase();
   const { data, error } = await supabase.from('messages')
     .select('*')
     .order('created_at', { ascending: false });
