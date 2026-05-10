@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function ProtectedRoute({ children, reqRole }: { children: React.ReactNode, reqRole?: "admin" | "authenticated" | "wholesale" }) {
   const { user, isLoading } = useAuth();

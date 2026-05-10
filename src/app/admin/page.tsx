@@ -1,27 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getProducts, deleteProduct } from "@/lib/actions";
-import { Product } from "@/components/ProductModal";
 import { getUsers } from "@/lib/auth-actions";
 import Link from "next/link";
-import { Trash2, Search, Package, CheckCircle2, TrendingUp, Download, Filter } from "lucide-react";
+import { Package, Plus, MessageSquare, Users, Download, Settings, Bookmark } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function AdminDashboard() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [totalStaff, setTotalStaff] = useState(0);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { user } = useAuth();
-
-  const loadProducts = async () => {
-    setLoading(true);
-    const data = await getProducts();
-    setProducts(data);
-    setLoading(false);
-  };
 
   const loadStaffCount = async () => {
     try {
@@ -33,186 +20,124 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    loadProducts();
     loadStaffCount();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (deletingId === id) {
-      await deleteProduct(id);
-      setDeletingId(null);
-      loadProducts();
-    } else {
-      setDeletingId(id);
-      setTimeout(() => setDeletingId(null), 3000); // Reset after 3 seconds
-    }
-  };
-
-  const handleDownloadCSV = () => {
-    if (products.length === 0) return;
-    const headers = ["ID", "Name", "Category", "Cost Price", "Wholesale Price", "Retail Price"];
-    const csvRows = [headers.join(",")];
-    for (const p of products) {
-      csvRows.push([
-        p.id, 
-        `"${p.name.replace(/"/g, '""')}"`, 
-        `"${p.category}"`, 
-        p.buying_price || 0, 
-        p.wholesale_price || 0, 
-        p.retail_price || 0
-      ].join(","));
-    }
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `catalog_export_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
-
   return (
     <div className="w-full bg-slate-50 min-h-full">
-      {/* Top Header Bar */}
-      <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-        <h1 className="text-xl font-display font-bold text-slate-800 tracking-tight">Admin Dashboard</h1>
-        
-        <div className="flex items-center gap-6">
-          <div className="relative w-72">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Search size={16} />
-            </div>
-            <input
-              type="text"
-              className="w-full bg-slate-50 border border-slate-200 text-slate-700 pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-      </header>
 
       <div className="p-8 max-w-7xl mx-auto space-y-8">
         
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Total Products</span>
-            <div className="flex items-end gap-3">
-              <span className="text-4xl font-display font-bold text-slate-800">{products.length.toLocaleString()}</span>
-              <span className="text-sm font-medium text-emerald-500 flex items-center gap-1 mb-1">
-                <TrendingUp size={14} /> +12%
-              </span>
-            </div>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Staff Online</span>
-            <div className="flex items-end gap-3">
-              <span className="text-4xl font-display font-bold text-slate-800">{totalStaff}</span>
-            </div>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-center">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">System Health</span>
-            <div className="flex items-center gap-2 mt-1">
-              <CheckCircle2 size={24} className="text-emerald-500" />
-              <span className="text-xl font-display font-bold text-emerald-600">Stable</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Product Inventory Section */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
-            <div className="flex items-center gap-2">
-              <Package size={20} className="text-slate-500" />
-              <h2 className="text-lg font-semibold text-slate-800 tracking-tight">Product Inventory</h2>
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={handleDownloadCSV} className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
-                <Download size={16} /> Download CSV
-              </button>
-            </div>
-          </div>
-
-          <div className="p-6 overflow-x-auto">
-            {loading ? (
-              <div className="flex justify-center py-20">
-                <div className="w-8 h-8 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                <Package size={48} className="mb-4 text-slate-300" strokeWidth={1} />
-                <p className="text-slate-500 font-medium">No products found matching your criteria.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map(product => {
-                  const sku = product.id.substring(0, 8).toUpperCase();
-                  const isLowStock = Math.random() > 0.8; // Mock low stock state
-                  return (
-                    <div key={product.id} className="border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow flex flex-col group relative">
-                      {/* Delete button */}
-                      <button 
-                        onClick={(e) => { e.preventDefault(); handleDelete(product.id); }}
-                        className={`absolute top-2 right-2 z-10 px-3 py-1.5 backdrop-blur rounded-lg flex items-center justify-center transition-all ${deletingId === product.id ? 'bg-red-500 text-white opacity-100' : 'bg-white/90 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50'}`}
-                        title="Delete Product"
-                      >
-                        {deletingId === product.id ? (
-                          <span className="text-xs font-bold uppercase tracking-wider">Confirm</span>
-                        ) : (
-                          <Trash2 size={16} />
-                        )}
-                      </button>
-
-                      {/* Image Area */}
-                      <Link href={`/admin/product/${product.id}`} className="block relative aspect-square bg-slate-100 overflow-hidden border-b border-slate-200 p-4">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={product.image_url} alt="" className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
-                      </Link>
-
-                      {/* Details Area */}
-                      <Link href={`/admin/product/${product.id}`} className="flex flex-col p-5 bg-white flex-grow">
-                        <h3 className="font-display font-semibold text-slate-800 text-base leading-tight mb-1 truncate">{product.name}</h3>
-                        <p className="text-xs text-slate-500 font-mono mb-4">SKU: {product.category.substring(0,3).toUpperCase()}-{sku}</p>
-                        
-                        <div className="mt-auto space-y-2 text-sm">
-                          <div className="flex justify-between items-center text-slate-500">
-                            <span>Cost</span>
-                            <span className="font-mono text-slate-700">${product.buying_price?.toFixed(2) || '0.00'}</span>
-                          </div>
-                          <div className="flex justify-between items-center font-medium">
-                            <span className="text-slate-700">Wholesale</span>
-                            <span className="font-mono text-slate-900">${product.wholesale_price?.toFixed(2) || '0.00'}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-slate-400 text-xs">
-                            <span>Retail</span>
-                            <span className="font-mono">${product.retail_price?.toFixed(2) || '0.00'}</span>
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+        {/* Huge Launchpad Grid (Primary View) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-12 mt-6">
           
-          <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-sm text-slate-500">
-            <span>Showing 1-{filteredProducts.length} of {products.length} products</span>
-            <div className="flex gap-1">
-              {/* Pagination Mock */}
-              <button className="w-8 h-8 flex items-center justify-center rounded border border-slate-200 bg-white hover:bg-slate-50">&lt;</button>
-              <button className="w-8 h-8 flex items-center justify-center rounded border border-slate-800 bg-slate-800 text-white font-medium">1</button>
-              <button className="w-8 h-8 flex items-center justify-center rounded border border-slate-200 bg-white hover:bg-slate-50 font-medium">2</button>
-              <button className="w-8 h-8 flex items-center justify-center rounded border border-slate-200 bg-white hover:bg-slate-50 font-medium">3</button>
-              <button className="w-8 h-8 flex items-center justify-center rounded border border-slate-200 bg-white hover:bg-slate-50">&gt;</button>
+          {/* Products Card */}
+          <Link href="/admin/products" className="bg-white border border-slate-100 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 flex flex-col group block">
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-12 h-12 bg-slate-50 text-slate-800 rounded-full flex items-center justify-center">
+                <Package size={24} strokeWidth={2} />
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider font-semibold rounded-md">
+                <Bookmark size={12} /> Active
+              </div>
             </div>
-          </div>
+            <p className="text-xs font-semibold text-slate-400 mb-1 tracking-wide">CATALOG</p>
+            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Product Inventory</h3>
+            <div className="flex gap-2 mb-8 flex-wrap">
+              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Manage</span>
+              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Pricing</span>
+            </div>
+            <div className="flex items-center justify-between mt-auto pt-2">
+              <div className="flex flex-col">
+                <span className="text-[15px] font-bold text-slate-900">Manage Catalog</span>
+                <span className="text-[11px] text-slate-400 font-medium">In Database</span>
+              </div>
+              <div className="px-5 py-2.5 bg-[#0f172a] text-white text-xs font-bold rounded-xl group-hover:bg-slate-700 transition-colors">
+                Open now
+              </div>
+            </div>
+          </Link>
+
+          {/* New Product Card */}
+          <Link href="/admin/product/new" className="bg-white border border-slate-100 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 flex flex-col group block">
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
+                <Plus size={24} strokeWidth={2} />
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider font-semibold rounded-md">
+                <Bookmark size={12} /> Setup
+              </div>
+            </div>
+            <p className="text-xs font-semibold text-slate-400 mb-1 tracking-wide">ADDITIONS</p>
+            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">New Product</h3>
+            <div className="flex gap-2 mb-8 flex-wrap">
+              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Create</span>
+              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Upload</span>
+            </div>
+            <div className="flex items-center justify-between mt-auto pt-2">
+              <div className="flex flex-col">
+                <span className="text-[15px] font-bold text-slate-900">Add Entry</span>
+                <span className="text-[11px] text-slate-400 font-medium">To Catalog</span>
+              </div>
+              <div className="px-5 py-2.5 bg-[#0f172a] text-white text-xs font-bold rounded-xl group-hover:bg-slate-700 transition-colors">
+                Create
+              </div>
+            </div>
+          </Link>
+
+          {/* Staff Card */}
+          <Link href="/admin/users" className="bg-white border border-slate-100 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 flex flex-col group block">
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center">
+                <Users size={24} strokeWidth={2} />
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider font-semibold rounded-md">
+                <Bookmark size={12} /> HR
+              </div>
+            </div>
+            <p className="text-xs font-semibold text-slate-400 mb-1 tracking-wide">TEAM</p>
+            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Staff Management</h3>
+            <div className="flex gap-2 mb-8 flex-wrap">
+              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Roles</span>
+              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Access</span>
+            </div>
+            <div className="flex items-center justify-between mt-auto pt-2">
+              <div className="flex flex-col">
+                <span className="text-[15px] font-bold text-slate-900">{totalStaff} Users</span>
+                <span className="text-[11px] text-slate-400 font-medium">Registered staff</span>
+              </div>
+              <div className="px-5 py-2.5 bg-[#0f172a] text-white text-xs font-bold rounded-xl group-hover:bg-slate-700 transition-colors">
+                Manage
+              </div>
+            </div>
+          </Link>
+
+          {/* Exports Card */}
+          <Link href="/admin/exports" className="bg-white border border-slate-100 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 flex flex-col group block">
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center">
+                <Download size={24} strokeWidth={2} />
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider font-semibold rounded-md">
+                <Bookmark size={12} /> Share
+              </div>
+            </div>
+            <p className="text-xs font-semibold text-slate-400 mb-1 tracking-wide">DOCUMENTS</p>
+            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Data Exports</h3>
+            <div className="flex gap-2 mb-8 flex-wrap">
+              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">PDF</span>
+              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Excel</span>
+            </div>
+            <div className="flex items-center justify-between mt-auto pt-2">
+              <div className="flex flex-col">
+                <span className="text-[15px] font-bold text-slate-900">Download</span>
+                <span className="text-[11px] text-slate-400 font-medium">Generate reports</span>
+              </div>
+              <div className="px-5 py-2.5 bg-[#0f172a] text-white text-xs font-bold rounded-xl group-hover:bg-slate-700 transition-colors">
+                Export
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
     </div>

@@ -15,6 +15,7 @@
   
   --font-sans: var(--font-inter);
   --font-display: var(--font-outfit);
+  --font-signature: var(--font-dancing);
 }
 
 @layer base {

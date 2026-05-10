@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Product } from "./ProductModal";
 import { addProduct, updateProduct } from "@/lib/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { UploadCloud, Save, ImageIcon } from "lucide-react";
+import { useSettings } from "./SettingsProvider";
 
 export default function ProductForm({ initialData }: { initialData?: Product }) {
   const router = useRouter();
+  const { settings } = useSettings();
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   
@@ -16,7 +18,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
 
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
-    category: initialData?.category || "Lighting",
+    category: initialData?.category || (settings.categories[0]?.name || "Lighting"),
     image_url: initialData?.image_url || "",
     buying_price: initialData?.buying_price || "",
     wholesale_price: initialData?.wholesale_price || "",
@@ -26,6 +28,16 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
     description: "",
     stock: "42"
   });
+
+  // Auto-update SKU prefix when category changes for new products
+  useEffect(() => {
+    if (!initialData) {
+      const selectedCat = settings.categories.find(c => c.name === formData.category);
+      if (selectedCat) {
+        setFormData(prev => ({ ...prev, sku: `${selectedCat.skuPrefix}-0001` }));
+      }
+    }
+  }, [formData.category, settings.categories, initialData]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -130,11 +142,13 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
               onChange={(e) => setFormData({...formData, category: e.target.value})}
               className="w-full bg-white border border-slate-300 text-slate-800 px-3 py-2 rounded focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors text-sm"
             >
-              <option value="Lighting">Lighting</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Watches">Watches</option>
-              <option value="Bathroom">Bathroom Ware</option>
-              <option value="Interior">Interior Décor</option>
+              {settings.categories.map(cat => (
+                <option key={cat.id} value={cat.name}>{cat.name}</option>
+              ))}
+              {/* Fallback for old categories not in settings */}
+              {!settings.categories.find(c => c.name === formData.category) && (
+                <option value={formData.category}>{formData.category}</option>
+              )}
             </select>
           </div>
         </div>
@@ -162,12 +176,12 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">Cost Price</label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">KES</span>
             <input
               type="number" step="0.01" required
               value={formData.buying_price}
               onChange={(e) => setFormData({...formData, buying_price: e.target.value})}
-              className="w-full bg-white border border-slate-300 text-slate-800 pl-7 pr-3 py-2 rounded focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors text-sm font-mono"
+              className="w-full bg-white border border-slate-300 text-slate-800 pl-10 pr-3 py-2 rounded focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors text-sm font-mono"
               placeholder="0.00"
             />
           </div>
@@ -175,12 +189,12 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">Wholesale Price</label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">KES</span>
             <input
               type="number" step="0.01" required
               value={formData.wholesale_price}
               onChange={(e) => setFormData({...formData, wholesale_price: e.target.value})}
-              className="w-full bg-white border border-slate-300 text-slate-800 pl-7 pr-3 py-2 rounded focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors text-sm font-mono"
+              className="w-full bg-white border border-slate-300 text-slate-800 pl-10 pr-3 py-2 rounded focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors text-sm font-mono"
               placeholder="0.00"
             />
           </div>
@@ -188,12 +202,12 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">Retail Price</label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[10px] font-bold">KES</span>
             <input
               type="number" step="0.01" required
               value={formData.retail_price}
               onChange={(e) => setFormData({...formData, retail_price: e.target.value})}
-              className="w-full bg-white border border-slate-300 text-slate-800 pl-7 pr-3 py-2 rounded focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors text-sm font-mono"
+              className="w-full bg-white border border-slate-300 text-slate-800 pl-10 pr-3 py-2 rounded focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors text-sm font-mono"
               placeholder="0.00"
             />
           </div>

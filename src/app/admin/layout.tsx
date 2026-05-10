@@ -3,9 +3,10 @@
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Download, Plus, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Download, Plus, Settings, LogOut, MessageSquare } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useSettings } from "@/components/SettingsProvider";
+import AdminChatSidebar from "@/components/AdminChatSidebar";
 
 export default function AdminLayout({
   children,
@@ -16,56 +17,24 @@ export default function AdminLayout({
   const { user, logout } = useAuth();
   const { settings } = useSettings();
 
-  const navItems = [
-    { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { label: "Staff Management", href: "/admin/users", icon: Users },
-    { label: "Exports", href: "/admin/exports", icon: Download },
-  ];
+
 
   return (
     <ProtectedRoute reqRole="admin">
       <div className="flex flex-col h-screen w-full bg-slate-50 overflow-hidden">
-        {/* Top Navigation */}
-        <header className="h-16 bg-white text-slate-600 flex items-center justify-between px-6 shrink-0 border-b border-slate-200 z-50">
-          <div className="flex items-center gap-8">
+        {/* Top Floating Navigation Elements */}
+        <header className="absolute top-0 left-0 right-0 h-20 flex items-center justify-between px-8 z-50 pointer-events-none">
+          <div className="flex items-center gap-8 pointer-events-auto">
             <div className="flex items-center gap-2">
-              {settings.companyLogoUrl ? (
-                <img src={settings.companyLogoUrl} alt={settings.companyName} className="h-16 object-contain mix-blend-multiply scale-150 origin-left" />
-              ) : (
-                <h2 className="text-xl font-display font-bold text-slate-800 tracking-tight">{settings.companyName}</h2>
-              )}
-            </div>
-            
-            <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-                      isActive 
-                        ? "bg-blue-50 text-blue-600 font-medium" 
-                        : "hover:bg-slate-50 hover:text-slate-900"
-                    }`}
-                  >
-                    <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-                    <span className="text-sm">{item.label}</span>
-                  </Link>
-                );
-              })}
-              
-              <Link 
-                href="/admin/product/new"
-                className="flex items-center gap-2 px-3 py-2 ml-2 bg-blue-100 hover:bg-white text-blue-900 rounded-lg transition-colors font-medium text-sm"
-              >
-                <Plus size={16} /> New Product
+              <Link href="/admin">
+                <span className="font-signature text-3xl font-bold text-slate-800 tracking-tight mt-1 hover:text-blue-600 transition-colors">
+                  Prutam
+                </span>
               </Link>
-            </nav>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 pointer-events-auto bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-sm rounded-full px-4 py-2">
             <Link
               href="/admin/settings"
               className="p-2 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors text-slate-500"
@@ -74,7 +43,7 @@ export default function AdminLayout({
               <Settings size={18} />
             </Link>
             
-            <div className="h-6 w-px bg-slate-200"></div>
+            <div className="h-5 w-px bg-slate-300"></div>
 
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
@@ -97,9 +66,11 @@ export default function AdminLayout({
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pt-20">
           {children}
         </main>
+        
+        <AdminChatSidebar />
       </div>
     </ProtectedRoute>
   );

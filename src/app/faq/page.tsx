@@ -1,4 +1,9 @@
+"use client";
+
+import { useChat } from "@/components/ChatProvider";
+
 export default function FAQPage() {
+  const { openChat } = useChat();
   const faqs = [
     {
       q: "How do I request a quote for wholesale orders?",
@@ -39,9 +44,9 @@ export default function FAQPage() {
       <div className="mt-16 bg-slate-900 rounded-2xl p-8 text-center">
         <h3 className="text-xl font-bold text-white mb-3">Still have questions?</h3>
         <p className="text-slate-300 mb-6">Our support team is always ready to help you with any inquiries.</p>
-        <a href="https://wa.me/254794577748" target="_blank" rel="noopener noreferrer" className="inline-flex px-6 py-3 bg-white text-slate-900 font-medium rounded-lg hover:bg-slate-100 transition-colors">
+        <button onClick={() => openChat("Hi Support Team, I have a question regarding:")} className="inline-flex px-6 py-3 bg-white text-slate-900 font-medium rounded-lg hover:bg-slate-100 transition-colors">
           Contact Support
-        </a>
+        </button>
       </div>
     </div>
   );

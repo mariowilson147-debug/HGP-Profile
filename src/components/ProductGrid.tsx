@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import ProductModal, { Product } from "./ProductModal";
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "@/components/AuthProvider";
 import { Search, LayoutGrid, Lightbulb, Monitor, Watch, Bath, Sofa, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
@@ -37,6 +37,10 @@ function ProductGridContent({ products }: { products: Product[] }) {
   const [selectedCategory, setSelectedCategory] = useState(categoryQuery || "All Collections");
   const { user } = useAuth();
   
+  useEffect(() => {
+    setSelectedCategory(categoryQuery || "All Collections");
+  }, [categoryQuery]);
+  
   // Create mock categories for the UI if they don't match the design nicely
   // We'll use the actual categories from products but map 'All' to 'All Collections'
   const rawCategories = Array.from(new Set(products.map(p => p.category))).sort();
@@ -50,25 +54,6 @@ function ProductGridContent({ products }: { products: Product[] }) {
   return (
     <div className="w-full max-w-7xl mx-auto px-6 pt-16">
       
-      {/* Category Navigation */}
-      {!categoryQuery && (
-        <div className="sticky top-16 z-40 bg-[#fafafa] pt-4 pb-4 mb-10 border-b border-slate-200 flex flex-wrap items-center justify-start sm:justify-center gap-6 md:gap-10 overflow-x-auto no-scrollbar w-full -mx-2 px-2 sm:mx-0 sm:px-0">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`flex flex-col items-center justify-center whitespace-nowrap pb-4 -mb-4 text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all min-w-[70px] ${
-              selectedCategory === cat 
-                ? "text-slate-900 border-b-2 border-slate-900" 
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            {getCategoryIcon(cat)}
-            <span>{cat}</span>
-          </button>
-        ))}
-        </div>
-      )}
 
       {urlQuery && (
         <div className="mb-8">

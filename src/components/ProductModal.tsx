@@ -2,7 +2,8 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Heart, ShieldCheck, Award, Zap } from "lucide-react";
-import { User } from "./AuthProvider";
+import { User } from "@/components/AuthProvider";
+import { useChat } from "./ChatProvider";
 
 export type Product = {
   id: string;
@@ -22,6 +23,8 @@ interface ProductModalProps {
 }
 
 export default function ProductModal({ product, isOpen, onClose, user }: ProductModalProps) {
+  const { openChat } = useChat();
+
   if (!product) return null;
 
   return (
@@ -87,14 +90,15 @@ export default function ProductModal({ product, isOpen, onClose, user }: Product
                 )}
 
                 {!user && (
-                  <a 
-                    href={`https://wa.me/254794577748?text=${encodeURIComponent(`Hi, I'm interested in the product: ${product.name}`)}`}
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                  <button 
+                    onClick={() => {
+                      onClose();
+                      openChat(`Hi, I'm interested in the product: ${product.name}`);
+                    }}
                     className="px-6 py-3 bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors rounded-xl shadow-md flex items-center justify-center"
                   >
                     Contact Sales
-                  </a>
+                  </button>
                 )}
               </div>
             </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSettings } from "@/components/SettingsProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useChat } from "@/components/ChatProvider";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
   const { settings } = useSettings();
+  const { openChat } = useChat();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,15 +44,11 @@ export default function LoginPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#F2F4F8] px-4 font-sans">
       <div className="w-full max-w-md bg-white rounded-md shadow-[0_4px_24px_rgba(0,0,0,0.04)] p-10 mb-6">
         
-        {settings.companyLogoUrl ? (
-          <div className="flex justify-center mb-10">
-            <img src={settings.companyLogoUrl} alt={settings.companyName} className="h-24 object-contain mix-blend-multiply scale-150" />
-          </div>
-        ) : (
-          <h1 className="text-3xl font-display font-semibold text-center text-slate-900 mb-10">
-            {settings.companyName}
-          </h1>
-        )}
+        <div className="flex justify-center mb-10">
+          <span className="font-signature text-6xl font-bold text-slate-900">
+            Prutam
+          </span>
+        </div>
         
         {error && (
           <div className="mb-6 p-3 bg-red-50 text-red-600 text-sm border border-red-100 rounded text-center">
@@ -103,9 +101,9 @@ export default function LoginPage() {
         </form>
       </div>
 
-      <a href="https://wa.me/254794577748" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
+      <button onClick={() => openChat("Hi Support Team, I need help accessing my account:")} className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
         Contact Support
-      </a>
+      </button>
     </div>
   );
 }

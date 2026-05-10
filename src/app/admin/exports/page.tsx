@@ -55,7 +55,7 @@ export default function ExportsHub() {
   const handleShare = async () => {
     let url = window.location.origin;
     if (selectedCategories.length > 0) {
-      url += `/?category=${encodeURIComponent(selectedCategories.join(','))}`;
+      url += `/?category=${encodeURIComponent(selectedCategories.join(','))}&strict=true`;
     }
     try {
       await navigator.clipboard.writeText(url);
@@ -232,13 +232,7 @@ export default function ExportsHub() {
   };
 
   return (
-    <div className="w-full bg-slate-50 min-h-full pb-12">
-      <header className="bg-white border-b border-slate-200 px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-10">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-slate-800 tracking-tight">Exports Hub</h1>
-          <p className="text-slate-500 text-sm mt-1">Generate, manage, and automate your catalog data distributions.</p>
-        </div>
-      </header>
+    <div className="w-full bg-slate-50 min-h-full pb-12 pt-12">
 
       <div className="p-8 max-w-7xl mx-auto space-y-6">
         
