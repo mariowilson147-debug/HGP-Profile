@@ -69,7 +69,7 @@ export default function ExportsHub() {
     setExportingExcel(true);
     try {
       const allProducts = await fetchCatalogData();
-      let products = selectedCategories.length > 0 
+      const products = selectedCategories.length > 0 
         ? allProducts.filter(p => selectedCategories.includes(p.category))
         : [...allProducts];
 
@@ -113,11 +113,11 @@ export default function ExportsHub() {
             const res = await fetch(p.image_url);
             const buffer = await res.arrayBuffer();
             const extension = p.image_url.split('.').pop()?.toLowerCase();
-            const imageType = extension === 'png' ? 'png' : 'jpeg';
+            const imageType: 'png' | 'jpeg' = extension === 'png' ? 'png' : 'jpeg';
             
             const imageId = workbook.addImage({
               buffer: buffer,
-              extension: imageType as any,
+              extension: imageType,
             });
             
             sheet.addImage(imageId, {
@@ -143,7 +143,7 @@ export default function ExportsHub() {
     setExportingPDF(true);
     try {
       const allProducts = await fetchCatalogData();
-      let products = selectedCategories.length > 0 
+      const products = selectedCategories.length > 0 
         ? allProducts.filter(p => selectedCategories.includes(p.category))
         : [...allProducts];
 
@@ -207,7 +207,7 @@ export default function ExportsHub() {
         },
         didDrawCell: (data) => {
           if (data.section === 'body' && data.column.index === 0) {
-            const raw = data.cell.raw as any;
+            const raw = data.cell.raw as { rowData?: { image?: string | null } };
             const rowData = raw?.rowData;
             if (rowData && rowData.image) {
               try {
