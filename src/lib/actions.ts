@@ -60,6 +60,19 @@ export async function addProduct(product: Omit<Product, "id" | "created_at">) {
   return { success: true, count: 1, data };
 }
 
+export async function addProducts(products: Omit<Product, "id" | "created_at">[]) {
+  const supabase = await requireAdmin();
+  const { data, error } = await supabase.from('products').insert(products).select();
+  if (error) {
+    console.error("Bulk insert error", error);
+    return { error: error.message };
+  }
+  revalidatePath("/");
+  revalidatePath("/catalog");
+  revalidatePath("/admin");
+  return { success: true, count: data?.length ?? products.length, data };
+}
+
 export async function updateProduct(id: string, updates: Partial<Product>) {
   const supabase = await requireAdmin();
   const { data, error } = await supabase.from('products').update(updates).eq('id', id).select().single();
