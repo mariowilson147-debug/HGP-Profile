@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+
 import { useSettings } from "@/components/SettingsProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useChat } from "@/components/ChatProvider";
@@ -136,7 +136,7 @@ export default function LoginPage() {
           <div className="mb-6">
             <h2 className="text-xl font-bold text-slate-900">Reset your password</h2>
             <p className="text-sm text-slate-500 mt-1">
-              Enter the email linked to your account and we'll send a reset link.
+              Enter the email linked to your account and we&apos;ll send a reset link.
             </p>
           </div>
 
@@ -192,7 +192,7 @@ export default function LoginPage() {
           </p>
           <p className="text-sm font-bold text-slate-800 mb-6">{resetEmail}</p>
           <p className="text-xs text-slate-400 mb-8">
-            The link expires in 60 minutes. Check your spam folder if you don't see it.
+            The link expires in 60 minutes. Check your spam folder if you don&apos;t see it.
           </p>
           <button
             onClick={() => { setError(""); setView("login"); }}

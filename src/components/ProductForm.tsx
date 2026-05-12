@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Product } from "./ProductModal";
 import { addProducts, updateProduct } from "@/lib/actions";
@@ -8,7 +8,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useSettings } from "./SettingsProvider";
 import {
   UploadCloud, Save, Plus, Trash2, CheckCircle2,
-  AlertCircle, X, ImageIcon, ArrowLeft, PackagePlus, Loader2
+  AlertCircle, ArrowLeft, PackagePlus, Loader2
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
