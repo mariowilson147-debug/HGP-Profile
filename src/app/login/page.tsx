@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useSettings } from "@/components/SettingsProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useChat } from "@/components/ChatProvider";
-import { sendOtpCode } from "@/lib/auth-actions";
 import {
   ArrowLeft,
   Mail,
@@ -114,16 +113,38 @@ export default function LoginPage() {
   };
 
   // ── Forgot: send OTP ───────────────────────────────────────────────────────
+  // Shared helper — sends the OTP email using the browser Supabase client directly.
+  const sendOtp = async (emailAddress: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email: emailAddress,
+      options: { shouldCreateUser: false },
+    });
+    if (error) throw new Error(error.message);
+  };
+
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await sendOtpCode(resetEmail);
+      await sendOtp(resetEmail);
       setOtpDigits(["", "", "", "", "", ""]);
       setView("verify-otp");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to send code.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send code.");
+    }
+    setLoading(false);
+  };
+
+  const handleResendOtp = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await sendOtp(resetEmail);
+      setOtpDigits(["", "", "", "", "", ""]);
+      otpRefs.current[0]?.focus();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to resend code.");
     }
     setLoading(false);
   };
@@ -503,10 +524,11 @@ export default function LoginPage() {
             <div className="flex flex-col items-center gap-2 text-sm">
               <button
                 type="button"
-                onClick={() => { setError(""); handleSendOtp({ preventDefault: () => {} } as React.FormEvent); }}
-                className="text-slate-500 hover:text-slate-800 font-medium transition-colors"
+                disabled={loading}
+                onClick={handleResendOtp}
+                className="text-slate-500 hover:text-slate-800 font-medium transition-colors disabled:opacity-40"
               >
-                Resend code
+                {loading ? "Sending…" : "Resend code"}
               </button>
               <button
                 type="button"
