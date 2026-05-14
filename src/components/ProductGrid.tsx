@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import ProductModal, { Product } from "./ProductModal";
 import { useAuth } from "@/components/AuthProvider";
 import { Search, LayoutGrid, Lightbulb, Monitor, Watch, Bath, Sofa, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
+
+const ITEMS_PER_PAGE = 50;
 
 const getCategoryIcon = (category: string) => {
   switch (category) {
@@ -35,65 +37,91 @@ function ProductGridContent({ products }: { products: Product[] }) {
   
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState(categoryQuery || "All Collections");
+  const [currentPage, setCurrentPage] = useState(1);
   const { user } = useAuth();
   
+  const filteredProducts = useMemo(() => {
+    return products
+      .filter(p => selectedCategory === "All Collections" || p.category === selectedCategory)
+      .filter(p => p.name.toLowerCase().includes(urlQuery.toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [products, selectedCategory, urlQuery]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   useEffect(() => {
     setSelectedCategory(categoryQuery || "All Collections");
-  }, [categoryQuery]);
-  
-  // Create mock categories for the UI if they don't match the design nicely
-  // We'll use the actual categories from products but map 'All' to 'All Collections'
-  const rawCategories = Array.from(new Set(products.map(p => p.category))).sort();
-  const categories = ["All Collections", ...rawCategories];
+    setCurrentPage(1);
+  }, [categoryQuery, urlQuery]);
 
-  const filteredProducts = products
-    .filter(p => selectedCategory === "All Collections" || p.category === selectedCategory)
-    .filter(p => p.name.toLowerCase().includes(urlQuery.toLowerCase()))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const renderPagination = () => {
+    const pages: React.ReactNode[] = [];
+    let ellipsisCount = 0;
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+        pages.push(
+          <button
+            key={i}
+            onClick={() => handlePageChange(i)}
+            aria-label={`Page ${i}`}
+            aria-current={currentPage === i ? "page" : undefined}
+            className={`w-10 h-10 flex items-center justify-center border text-sm font-medium transition-colors ${
+              currentPage === i
+                ? "bg-slate-900 text-white border-slate-900"
+                : "border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-400"
+            }`}
+          >
+            {i}
+          </button>
+        );
+      } else {
+        const lastItem = pages[pages.length - 1];
+        const lastKey = lastItem && (lastItem as React.ReactElement).key;
+        if (!String(lastKey).startsWith("ellipsis")) {
+          ellipsisCount++;
+          pages.push(
+            <span key={`ellipsis-${ellipsisCount}`} className="px-2 text-slate-400 select-none">…</span>
+          );
+        }
+      }
+    }
+    return pages;
+  };
 
   return (
     <div className="w-full max-w-7xl mx-auto px-6 pt-16">
-      
-
       {urlQuery && (
         <div className="mb-8">
           <p className="text-slate-600">Showing results for: <span className="font-semibold text-slate-900">&quot;{urlQuery}&quot;</span></p>
         </div>
       )}
 
-      {/* Product Grid */}
-      {filteredProducts.length === 0 ? (
+      {paginatedProducts.length === 0 ? (
         <div className="w-full py-20 flex flex-col items-center justify-center">
           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
             <Search size={24} />
           </div>
           <h3 className="text-lg font-medium text-slate-600">No products found.</h3>
-          <p className="text-slate-400 text-sm mt-1">Try adjusting your search query or category.</p>
         </div>
       ) : (
-        <motion.div 
-          layout
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12"
-        >
+        <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
           <AnimatePresence>
-            {filteredProducts.map((product) => (
+            {paginatedProducts.map((product) => (
               <motion.div 
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.4 }}
-                key={product.id}
-                onClick={() => setSelectedProduct(product)}
-                className="group cursor-pointer flex flex-col"
+                layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.4 }}
+                key={product.id} onClick={() => setSelectedProduct(product)} className="group cursor-pointer flex flex-col"
               >
                 <div className="relative aspect-square w-full overflow-hidden bg-[#f4f4f4] mb-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={product.image_url} 
-                    alt={product.name} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
+                  <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
                 </div>
                 <div className="flex flex-col">
                   <h3 className="font-display font-medium text-lg text-slate-900 leading-tight mb-1">{product.name}</h3>
@@ -105,24 +133,15 @@ function ProductGridContent({ products }: { products: Product[] }) {
         </motion.div>
       )}
 
-      {/* Pagination Mockup from Design */}
-      {filteredProducts.length > 0 && (
+      {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-20 mb-10">
-          <button className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-400 hover:text-slate-600 transition-colors">&lt;</button>
-          <button className="w-10 h-10 flex items-center justify-center bg-slate-900 text-white font-medium">1</button>
-          <button className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">2</button>
-          <button className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">3</button>
-          <span className="px-2 text-slate-400">...</span>
-          <button className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">&gt;</button>
+          <button disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)} className="w-10 h-10 flex items-center justify-center border border-slate-200 disabled:opacity-50">&lt;</button>
+          {renderPagination()}
+          <button disabled={currentPage === totalPages} onClick={() => handlePageChange(currentPage + 1)} className="w-10 h-10 flex items-center justify-center border border-slate-200 disabled:opacity-50">&gt;</button>
         </div>
       )}
 
-      <ProductModal 
-        product={selectedProduct} 
-        isOpen={!!selectedProduct} 
-        onClose={() => setSelectedProduct(null)} 
-        user={user}
-      />
+      <ProductModal product={selectedProduct} isOpen={!!selectedProduct} onClose={() => setSelectedProduct(null)} user={user} />
     </div>
   );
 }
