@@ -100,9 +100,13 @@ export default function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClo
     e.preventDefault();
     setError(""); setLoading(true);
     try {
-      await requestPasswordReset(resetEmail);
-      setOtpDigits(["", "", "", "", "", ""]);
-      setView("verify-otp");
+      const res = await requestPasswordReset(resetEmail);
+      if (!res.success) {
+        setError(res.error || "Failed to send code.");
+      } else {
+        setOtpDigits(["", "", "", "", "", ""]);
+        setView("verify-otp");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send code.");
     }
@@ -112,9 +116,13 @@ export default function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const handleResendOtp = async () => {
     setError(""); setLoading(true);
     try {
-      await requestPasswordReset(resetEmail);
-      setOtpDigits(["", "", "", "", "", ""]);
-      setTimeout(() => otpRefs.current[0]?.focus(), 50);
+      const res = await requestPasswordReset(resetEmail);
+      if (!res.success) {
+        setError(res.error || "Failed to resend.");
+      } else {
+        setOtpDigits(["", "", "", "", "", ""]);
+        setTimeout(() => otpRefs.current[0]?.focus(), 50);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to resend.");
     }

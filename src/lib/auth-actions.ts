@@ -108,27 +108,31 @@ export async function toggleUserBan(id: string, ban: boolean) {
  *
  * Client verifies with: supabase.auth.verifyOtp({ email, token, type: 'recovery' })
  */
-export async function requestPasswordReset(email: string): Promise<{ success: boolean }> {
-  const supabase = getAdminClient();
+export async function requestPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = getAdminClient();
 
-  // Validate the account exists
-  const { data: listData, error: listError } = await supabase.auth.admin.listUsers();
-  if (listError) throw new Error("Unable to verify account. Please try again.");
+    // Validate the account exists
+    const { data: listData, error: listError } = await supabase.auth.admin.listUsers();
+    if (listError) return { success: false, error: "Unable to verify account. Please try again." };
 
-  const exists = listData.users.some(
-    (u) => u.email?.toLowerCase() === email.toLowerCase()
-  );
-  if (!exists) throw new Error("No account found with this email address.");
+    const exists = listData.users.some(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+    if (!exists) return { success: false, error: "No account found with this email address." };
 
-  // resetPasswordForEmail actually sends the email (unlike generateLink which doesn't).
-  // It uses Supabase's built-in SMTP and the "Reset Password" email template.
-  // Since the template now shows {{ .Token }}, the user receives the 6-digit code.
-  const publicClient = createClient(
-    supabaseUrl,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  const { error } = await publicClient.auth.resetPasswordForEmail(email);
-  if (error) throw new Error(error.message);
+    // resetPasswordForEmail actually sends the email (unlike generateLink which doesn't).
+    // It uses Supabase's built-in SMTP and the "Reset Password" email template.
+    // Since the template now shows {{ .Token }}, the user receives the 6-digit code.
+    const publicClient = createClient(
+      supabaseUrl,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { error } = await publicClient.auth.resetPasswordForEmail(email);
+    if (error) return { success: false, error: error.message };
 
-  return { success: true };
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : "An unexpected error occurred." };
+  }
 }
