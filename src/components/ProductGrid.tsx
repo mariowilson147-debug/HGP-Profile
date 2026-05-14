@@ -7,7 +7,7 @@ import { Search, LayoutGrid, Lightbulb, Monitor, Watch, Bath, Sofa, Package } fr
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 
-const ITEMS_PER_PAGE = 50;
+const ITEMS_PER_PAGE = 52;
 
 const getCategoryIcon = (category: string) => {
   switch (category) {

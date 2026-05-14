@@ -1,24 +1,21 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSettings } from "@/components/SettingsProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useChat } from "@/components/ChatProvider";
 import {
-  ArrowLeft,
-  Mail,
-  CheckCircle2,
   Loader2,
   Eye,
   EyeOff,
   AlertCircle,
   ShieldCheck,
-  KeyRound,
+  CheckCircle2,
 } from "lucide-react";
 
 // Views in the login flow
-type View = "login" | "forgot" | "verify-otp" | "new-password" | "set-password" | "sent-success";
+type View = "login" | "set-password";
 
 // Simple password strength helper
 function usePasswordStrength(password: string) {
@@ -39,13 +36,9 @@ export default function LoginPage() {
   // Login fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Forgot / OTP fields
-  const [resetEmail, setResetEmail] = useState("");
-  const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  // New password fields (used for both first-login and forgot-password)
+  // New password fields (first-login only)
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPw, setShowNewPw] = useState(false);
@@ -110,113 +103,6 @@ export default function LoginPage() {
     const { data: { user } } = await supabase.auth.getUser();
     const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID;
     router.push(user?.id === ADMIN_UID ? "/admin" : "/");
-  };
-
-  // ── Forgot: send OTP ───────────────────────────────────────────────────────
-  // Shared helper — sends the OTP email using the browser Supabase client directly.
-  const sendOtp = async (emailAddress: string) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email: emailAddress,
-      options: { shouldCreateUser: false },
-    });
-    if (error) throw new Error(error.message);
-  };
-
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      await sendOtp(resetEmail);
-      setOtpDigits(["", "", "", "", "", ""]);
-      setView("verify-otp");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send code.");
-    }
-    setLoading(false);
-  };
-
-  const handleResendOtp = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      await sendOtp(resetEmail);
-      setOtpDigits(["", "", "", "", "", ""]);
-      otpRefs.current[0]?.focus();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to resend code.");
-    }
-    setLoading(false);
-  };
-
-  // ── OTP: handle digit input ────────────────────────────────────────────────
-  const handleOtpInput = (index: number, value: string) => {
-    if (!/^\d?$/.test(value)) return;
-    const next = [...otpDigits];
-    next[index] = value;
-    setOtpDigits(next);
-    if (value && index < 5) otpRefs.current[index + 1]?.focus();
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleOtpPaste = (e: React.ClipboardEvent) => {
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (pasted.length === 6) {
-      setOtpDigits(pasted.split(""));
-      otpRefs.current[5]?.focus();
-    }
-    e.preventDefault();
-  };
-
-  // ── OTP: verify code ───────────────────────────────────────────────────────
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = otpDigits.join("");
-    if (token.length < 6) { setError("Please enter the full 6-digit code."); return; }
-    setError("");
-    setLoading(true);
-
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email: resetEmail,
-      token,
-      type: "email",
-    });
-    setLoading(false);
-
-    if (verifyError) {
-      setError("Invalid or expired code. Please try again.");
-      return;
-    }
-
-    // Code verified — session is now active, proceed to set new password
-    setNewPassword("");
-    setConfirmPassword("");
-    setView("new-password");
-  };
-
-  // ── New password (post-OTP) ────────────────────────────────────────────────
-  const handleSetNewPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (newPassword.length < 8) { setError("Password must be at least 8 characters."); return; }
-    if (newPassword !== confirmPassword) { setError("Passwords do not match."); return; }
-
-    setLoading(true);
-    const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
-    setLoading(false);
-
-    if (pwError) {
-      setError(pwError.message || "Failed to update password.");
-      return;
-    }
-
-    await supabase.auth.signOut();
-    setView("sent-success");
   };
 
   // ── Shared components ──────────────────────────────────────────────────────
@@ -370,16 +256,26 @@ export default function LoginPage() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-900 mb-2">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full bg-white border border-slate-300 text-slate-800 px-4 py-2.5 rounded focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full bg-white border border-slate-300 text-slate-800 px-4 py-2.5 pr-10 rounded focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
-            <div className="flex items-center justify-between pt-1 pb-1">
+            <div className="flex items-center pt-1 pb-1">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -387,17 +283,6 @@ export default function LoginPage() {
                 />
                 <span className="text-sm text-slate-600">Stay logged in</span>
               </label>
-              <button
-                type="button"
-                onClick={() => {
-                  setError("");
-                  setResetEmail(email);
-                  setView("forgot");
-                }}
-                className="text-sm font-semibold text-slate-900 hover:underline"
-              >
-                Forgot password?
-              </button>
             </div>
             <button
               type="submit"
@@ -416,7 +301,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md bg-white rounded-md shadow-[0_4px_24px_rgba(0,0,0,0.04)] p-10 mb-6">
           <Logo />
           <div className="mb-5 p-3 bg-amber-50 text-amber-700 text-sm border border-amber-100 rounded flex items-center gap-2">
-            <KeyRound size={15} className="shrink-0" />
+            <span className="text-lg">👋</span>
             Welcome! Please set a personal password before continuing.
           </div>
           <PasswordFields
@@ -429,153 +314,6 @@ export default function LoginPage() {
         </div>
       )}
 
-      {/* ── FORGOT: enter email ─────────────────────────────────────────────── */}
-      {view === "forgot" && (
-        <div className="w-full max-w-md bg-white rounded-md shadow-[0_4px_24px_rgba(0,0,0,0.04)] p-10 mb-6">
-          <Logo />
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-slate-900">Reset your password</h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Enter your account email — we&apos;ll send a 6-digit verification code.
-            </p>
-          </div>
-          <ErrorBanner />
-          <form onSubmit={handleSendOtp} className="space-y-5">
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">Email Address</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="email"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  required
-                  className="w-full bg-white border border-slate-300 text-slate-800 pl-10 pr-4 py-2.5 rounded focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition-colors"
-                  placeholder="name@company.com"
-                />
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 bg-[#111827] text-white font-medium rounded hover:bg-slate-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading && <Loader2 size={16} className="animate-spin" />}
-              {loading ? "Sending code…" : "Send Verification Code"}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setError(""); setView("login"); }}
-              className="w-full flex items-center justify-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              <ArrowLeft size={14} /> Back to Sign In
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* ── VERIFY OTP ─────────────────────────────────────────────────────── */}
-      {view === "verify-otp" && (
-        <div className="w-full max-w-md bg-white rounded-md shadow-[0_4px_24px_rgba(0,0,0,0.04)] p-10 mb-6">
-          <Logo />
-          <div className="mb-6 text-center">
-            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Mail size={22} className="text-slate-700" />
-            </div>
-            <h2 className="text-xl font-bold text-slate-900">Check your email</h2>
-            <p className="text-sm text-slate-500 mt-1">
-              We sent a 6-digit code to{" "}
-              <span className="font-semibold text-slate-800">{resetEmail}</span>
-            </p>
-          </div>
-          <ErrorBanner />
-          <form onSubmit={handleVerifyOtp} className="space-y-6">
-            {/* OTP boxes */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-3 text-center">
-                Enter Verification Code
-              </label>
-              <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
-                {otpDigits.map((d, i) => (
-                  <input
-                    key={i}
-                    ref={(el) => { otpRefs.current[i] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={d}
-                    onChange={(e) => handleOtpInput(i, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                    className="w-11 h-14 text-center text-xl font-bold border border-slate-300 rounded-lg focus:outline-none focus:border-slate-700 focus:ring-2 focus:ring-slate-700/20 transition-all bg-white text-slate-900"
-                  />
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || otpDigits.join("").length < 6}
-              className="w-full py-3.5 bg-[#111827] text-white font-medium rounded hover:bg-slate-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading && <Loader2 size={16} className="animate-spin" />}
-              {loading ? "Verifying…" : "Verify Code"}
-            </button>
-
-            <div className="flex flex-col items-center gap-2 text-sm">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={handleResendOtp}
-                className="text-slate-500 hover:text-slate-800 font-medium transition-colors disabled:opacity-40"
-              >
-                {loading ? "Sending…" : "Resend code"}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setError(""); setView("forgot"); }}
-                className="flex items-center gap-1 text-slate-400 hover:text-slate-700 transition-colors"
-              >
-                <ArrowLeft size={13} /> Change email
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* ── NEW PASSWORD (post-OTP) ─────────────────────────────────────────── */}
-      {view === "new-password" && (
-        <div className="w-full max-w-md bg-white rounded-md shadow-[0_4px_24px_rgba(0,0,0,0.04)] p-10 mb-6">
-          <Logo />
-          <PasswordFields
-            heading="Set New Password"
-            subheading="Choose a strong password for your account."
-            onSubmit={handleSetNewPassword}
-            submitLabel="Update Password"
-            submitLoadingLabel="Updating…"
-          />
-        </div>
-      )}
-
-      {/* ── SUCCESS ─────────────────────────────────────────────────────────── */}
-      {view === "sent-success" && (
-        <div className="w-full max-w-md bg-white rounded-md shadow-[0_4px_24px_rgba(0,0,0,0.04)] p-10 mb-6 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center">
-              <CheckCircle2 size={32} className="text-green-500" />
-            </div>
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Password Updated!</h2>
-          <p className="text-sm text-slate-500 mb-8">
-            Your password has been changed successfully. You can now sign in with your new password.
-          </p>
-          <button
-            onClick={() => { setView("login"); setPassword(""); setError(""); }}
-            className="w-full py-3 bg-[#111827] text-white font-medium rounded hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5"
-          >
-            <ArrowLeft size={14} /> Back to Sign In
-          </button>
-        </div>
-      )}
 
       <button
         onClick={() => openChat("Hi Support Team, I need help accessing my account:")}
