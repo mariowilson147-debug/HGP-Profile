@@ -98,24 +98,42 @@ export async function toggleUserBan(id: string, ban: boolean) {
   return data.user;
 }
 
-// ─── OTP-based password reset ─────────────────────────────────────────────────
+// ─── Password reset via admin generateLink ────────────────────────────────────
 
 /**
- * Sends a 6-digit OTP to the email address.
- * shouldCreateUser: false ensures we only send to existing accounts.
- * NOTE: This runs server-side but calls signInWithOtp which is a public API call.
- * We create a browser-style client with anon key for this operation.
+ * Validates the email belongs to an existing account, then triggers
+ * Supabase's built-in "Reset Password" email via admin.generateLink.
+ *
+ * The email Supabase sends contains {{ .Token }} — the 6-digit OTP code.
+ * To show ONLY the code (no magic link) in the email, update the
+ * "Reset Password" template in Supabase Dashboard → Auth → Email Templates:
+ *   Subject: Your password reset code
+ *   Body:    Your verification code is: {{ .Token }}
+ *            (Valid for 60 minutes. Do not share this code.)
+ *
+ * The client verifies with: supabase.auth.verifyOtp({ email, token, type: 'recovery' })
  */
-export async function sendOtpCode(email: string) {
-  // signInWithOtp is a public API — use anon key client
-  const supabase = createClient(
-    supabaseUrl,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+export async function requestPasswordReset(email: string): Promise<{ success: boolean }> {
+  const supabase = getAdminClient();
+
+  // Step 1: confirm the account exists
+  const { data: listData, error: listError } = await supabase.auth.admin.listUsers();
+  if (listError) throw new Error("Unable to verify account. Please try again.");
+
+  const exists = listData.users.some(
+    (u) => u.email?.toLowerCase() === email.toLowerCase()
   );
-  const { error } = await supabase.auth.signInWithOtp({
+  if (!exists) {
+    throw new Error("No account found with this email address.");
+  }
+
+  // Step 2: generate a recovery link — Supabase automatically sends the
+  // "Reset Password" email which includes {{ .Token }} (the 6-digit code).
+  const { error: linkError } = await supabase.auth.admin.generateLink({
+    type: "recovery",
     email,
-    options: { shouldCreateUser: false },
   });
-  if (error) throw new Error(error.message);
+
+  if (linkError) throw new Error(linkError.message);
   return { success: true };
 }

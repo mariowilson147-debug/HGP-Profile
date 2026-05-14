@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useSettings } from "./SettingsProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { requestPasswordReset } from "@/lib/auth-actions";
 
 type ModalView = "login" | "set-password" | "forgot" | "verify-otp" | "new-password" | "success";
 
@@ -94,19 +95,12 @@ export default function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClo
   };
 
   // ── Forgot: send OTP ───────────────────────────────────────────────────
-  const sendOtp = async (emailAddress: string) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email: emailAddress,
-      options: { shouldCreateUser: false },
-    });
-    if (error) throw new Error(error.message);
-  };
-
+  // Server action validates user exists first, then triggers recovery email
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
-      await sendOtp(resetEmail);
+      await requestPasswordReset(resetEmail);
       setOtpDigits(["", "", "", "", "", ""]);
       setView("verify-otp");
     } catch (err) {
@@ -118,7 +112,7 @@ export default function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const handleResendOtp = async () => {
     setError(""); setLoading(true);
     try {
-      await sendOtp(resetEmail);
+      await requestPasswordReset(resetEmail);
       setOtpDigits(["", "", "", "", "", ""]);
       setTimeout(() => otpRefs.current[0]?.focus(), 50);
     } catch (err) {
@@ -148,7 +142,8 @@ export default function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClo
     const token = otpDigits.join("");
     if (token.length < 6) { setError("Please enter the full 6-digit code."); return; }
     setError(""); setLoading(true);
-    const { error: verifyError } = await supabase.auth.verifyOtp({ email: resetEmail, token, type: "email" });
+    // type: 'recovery' matches the token sent by admin.generateLink({ type: 'recovery' })
+    const { error: verifyError } = await supabase.auth.verifyOtp({ email: resetEmail, token, type: "recovery" });
     setLoading(false);
     if (verifyError) { setError("Invalid or expired code. Please try again."); return; }
     setNewPassword(""); setConfirmPassword("");
