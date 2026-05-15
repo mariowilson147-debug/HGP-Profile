@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { User, Menu, LogOut, Search } from "lucide-react";
-import { useState, useEffect } from "react";
+import { User, Menu, LogOut, Search, Home } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -14,6 +14,9 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [isStrict, setIsStrict] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { user } = useAuth();
   const { settings } = useSettings();
@@ -38,12 +41,17 @@ export default function Header() {
       } catch(e) {}
     }
     
-    // Quick fix: define newSearchParams locally if window isn't ready
     function newSearchParams() {
       return typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
     }
     fetchCats();
   }, []);
+
+  useEffect(() => {
+    if (isSearching && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearching]);
 
   const handleLogout = async () => {
     const supabase = createSupabaseBrowserClient();
@@ -59,10 +67,17 @@ export default function Header() {
     }
   };
 
-  const handleSearchClick = () => {
+  const handleSearchCategoryClick = () => {
     const q = prompt("Search for a product:");
     if (q && q.trim()) {
       router.push(`/?q=${encodeURIComponent(q.trim())}`);
+    }
+  };
+
+  const submitMainSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -70,11 +85,79 @@ export default function Header() {
     <div className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 sm:px-6 pointer-events-none transition-all duration-300">
       <header className="w-full max-w-7xl bg-[#f1f0ec]/90 backdrop-blur-xl border border-[#e5e4e0] shadow-lg shadow-black/5 rounded-full pointer-events-auto h-16 px-6 md:px-8 flex items-center justify-between transition-all duration-300 relative">
         
-        {/* Left: Logo */}
+        {/* Left: Dynamic Logo / Search Pill */}
         <div className="flex-1 flex items-center">
-          <Link href="/" className="text-2xl font-black tracking-tight text-slate-900 lowercase font-outfit">
-            IFS
-          </Link>
+          <motion.form 
+            layout
+            initial={false}
+            animate={{ width: isSearching ? (typeof window !== 'undefined' && window.innerWidth < 640 ? 200 : 260) : 96 }}
+            onSubmit={submitMainSearch}
+            className={`flex items-center bg-[#eae9e4] rounded-full border border-white/40 p-1 h-10 relative shadow-sm ${!isSearching ? 'cursor-pointer hover:bg-[#e2e1db] transition-colors' : ''}`}
+            onClick={() => !isSearching && setIsSearching(true)}
+          >
+            <button 
+              type={isSearching ? "submit" : "button"}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isSearching) {
+                  submitMainSearch();
+                } else {
+                  router.push("/");
+                }
+              }}
+              className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0 z-10 hover:scale-105 transition-all shadow-sm"
+            >
+              <AnimatePresence mode="wait">
+                {isSearching ? (
+                  <motion.div key="search" initial={{ opacity: 0, scale: 0.5, rotate: -90 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, scale: 0.5, rotate: 90 }} transition={{ duration: 0.15 }}>
+                    <Search size={14} strokeWidth={2.5} />
+                  </motion.div>
+                ) : (
+                  <motion.div key="home" initial={{ opacity: 0, scale: 0.5, rotate: 90 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, scale: 0.5, rotate: -90 }} transition={{ duration: 0.15 }}>
+                    <Home size={14} strokeWidth={2.5} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
+
+            <div className="flex-1 relative h-full flex items-center overflow-hidden">
+              <AnimatePresence mode="wait">
+                {!isSearching ? (
+                  <motion.div 
+                    key="logo" 
+                    initial={{ opacity: 0, x: 10 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    exit={{ opacity: 0, x: -10 }} 
+                    transition={{ duration: 0.15 }}
+                    className="absolute inset-0 flex items-center pl-3"
+                  >
+                    <span className="text-[20px] font-black tracking-tight text-slate-900 lowercase font-outfit mt-[-2px] select-none">
+                      IFS
+                    </span>
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    key="search-input"
+                    initial={{ opacity: 0, x: 10 }} 
+                    animate={{ opacity: 1, x: 0 }} 
+                    exit={{ opacity: 0, x: -10 }} 
+                    transition={{ duration: 0.15 }}
+                    className="absolute inset-0 flex items-center px-3"
+                  >
+                    <input 
+                      ref={searchInputRef}
+                      type="text" 
+                      placeholder="Search..." 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onBlur={() => { if (!searchQuery) setIsSearching(false); }}
+                      className="w-full bg-transparent border-none focus:outline-none text-[13px] text-slate-700 placeholder:text-slate-500 font-medium h-full"
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.form>
         </div>
 
         <nav className="hidden md:flex flex-none items-center justify-center gap-8">
