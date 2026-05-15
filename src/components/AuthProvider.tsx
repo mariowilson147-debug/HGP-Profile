@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
     let expirationTimer: NodeJS.Timeout;
 
-    const checkExpiration = (session: any) => {
+    const checkExpiration = (session: { user?: { last_sign_in_at?: string } } | null) => {
       if (!session?.user?.last_sign_in_at) return false;
       const signInTime = new Date(session.user.last_sign_in_at).getTime();
       const tenMinutes = 10 * 60 * 1000;
