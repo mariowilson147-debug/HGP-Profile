@@ -12,8 +12,8 @@ export default function ProtectedRoute({ children, reqRole }: { children: React.
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
-        // Not logged in
-        router.push("/login");
+        // Not logged in -> send to client view
+        router.push("/");
       } else {
         // If a specific role is required (e.g., admin), check if user fits
         if (reqRole === "admin" && user.role !== "admin") {
