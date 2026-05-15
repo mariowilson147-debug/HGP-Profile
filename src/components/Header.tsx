@@ -72,7 +72,7 @@ export default function Header() {
 
         {/* Center: Categories */}
         <nav className="hidden md:flex flex-none items-center justify-center gap-8">
-          {categories.filter(c => c !== "All Collections").slice(0, 3).map((cat) => (
+          {categories.filter(c => c !== "All Collections").slice(0, 4).map((cat) => (
             <Link 
               key={cat} 
               href={`/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
@@ -81,9 +81,6 @@ export default function Header() {
               {cat}
             </Link>
           ))}
-          <Link href="/contact" className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors">
-            Contact
-          </Link>
         </nav>
 
         {/* Right: Icons */}
@@ -128,13 +125,6 @@ export default function Header() {
                     {cat}
                   </Link>
                 ))}
-                <Link 
-                  href="/contact"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-base font-medium text-slate-600 hover:text-slate-900"
-                >
-                  Contact
-                </Link>
               </div>
 
               <div className="h-px w-full bg-slate-200/60 my-2" />
