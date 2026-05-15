@@ -24,7 +24,7 @@ interface SettingsContextType {
 }
 
 const defaultSettings: Settings = {
-  companyName: "Prutam Enterprise Limited",
+  companyName: "Interior Finishes Supermarket",
   companyLogoUrl: "",
   theme: "light",
   accentColor: "#3b82f6",

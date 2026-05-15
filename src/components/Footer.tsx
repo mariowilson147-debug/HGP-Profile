@@ -49,7 +49,7 @@ export default function Footer() {
         <div className="md:w-1/3">
           <Link href="/">
             <span className="font-signature text-5xl font-bold text-white hover:text-slate-200 transition-colors">
-              Prutam
+              IFS
             </span>
           </Link>
         </div>

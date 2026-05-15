@@ -28,7 +28,7 @@ export default function AdminLayout({
             <div className="flex items-center gap-2">
               <Link href="/admin">
                 <span className="font-signature text-3xl font-bold text-slate-800 tracking-tight mt-1 hover:text-blue-600 transition-colors">
-                  Prutam
+                  IFS
                 </span>
               </Link>
             </div>

@@ -8,7 +8,7 @@ export default function TermsOfServicePage() {
         
         <div className="mb-12 border-b border-slate-200 pb-8">
           <h1 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
-            Terms of Service for Prutam Enterprise Ltd Catalogue
+            Terms of Service for Interior Finishes Supermarket Catalogue
           </h1>
           <div className="text-sm text-slate-500 flex flex-col gap-1">
             <span><strong>Effective Date:</strong> May 10, 2026</span>
@@ -19,7 +19,7 @@ export default function TermsOfServicePage() {
         <div className="space-y-10 leading-relaxed">
           <section>
             <p className="mb-4">
-              Welcome to the official catalogue platform operated by <strong>Prutam Enterprise Ltd</strong> and owned, managed, and controlled by <strong>MADEE HUB</strong> (“MADEE HUB,” “Prutam,” “we,” “our,” or “us”).
+              Welcome to the official catalogue platform operated by <strong>Interior Finishes Supermarket</strong> and owned, managed, and controlled by <strong>MADEE HUB</strong> (“MADEE HUB,” “IFS,” “we,” “our,” or “us”).
             </p>
             <p className="mb-4">
               These Terms of Service (“Terms”) govern your access to and use of our website, catalogue systems, digital platforms, services, APIs, communication channels, software, content, and all associated features (collectively, the “Platform”).
@@ -32,7 +32,7 @@ export default function TermsOfServicePage() {
           <section>
             <h2 className="text-2xl font-display font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">1. THE PLATFORM</h2>
             <p className="mb-4">
-              Prutam Enterprise Ltd operates a digital catalogue and commerce platform designed to display, organize, market, distribute, and manage products, services, inventory, and related business operations.
+              Interior Finishes Supermarket operates a digital catalogue and commerce platform designed to display, organize, market, distribute, and manage products, services, inventory, and related business operations.
             </p>
             <p className="mb-2">The Platform may include:</p>
             <ul className="list-disc pl-6 mb-4 space-y-1">
@@ -79,7 +79,7 @@ export default function TermsOfServicePage() {
             
             <h3 className="text-lg font-semibold text-slate-800 mt-6 mb-3">a. Ownership of Platform</h3>
             <p className="mb-4">
-              All rights, title, ownership, and intellectual property relating to the Platform remain the exclusive property of Prutam Enterprise Ltd and/or MADEE HUB, including but not limited to:
+              All rights, title, ownership, and intellectual property relating to the Platform remain the exclusive property of Interior Finishes Supermarket and/or MADEE HUB, including but not limited to:
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
               <ul className="list-disc pl-6 space-y-1">
@@ -117,7 +117,7 @@ export default function TermsOfServicePage() {
             <p>No ownership rights are transferred to Users under these Terms.</p>
 
             <h3 className="text-lg font-semibold text-slate-800 mt-8 mb-3">b. Restrictions</h3>
-            <p className="mb-2">Without prior written consent from Prutam Enterprise Ltd or MADEE HUB, you may NOT:</p>
+            <p className="mb-2">Without prior written consent from Interior Finishes Supermarket or MADEE HUB, you may NOT:</p>
             <ul className="list-disc pl-6 mb-4 space-y-1">
               <li>Copy the website;</li>
               <li>Clone the system;</li>
@@ -143,7 +143,7 @@ export default function TermsOfServicePage() {
 
             <h3 className="text-lg font-semibold text-slate-800 mt-8 mb-3">c. Copyright Notice</h3>
             <div className="bg-slate-100 p-4 rounded-lg font-mono text-sm text-slate-600 mb-4 border border-slate-200">
-              © 2026 Prutam Enterprise Ltd. All Rights Reserved.<br />
+              © 2026 Interior Finishes Supermarket. All Rights Reserved.<br />
               Owned, operated, and protected by MADEE HUB.
             </div>
             <p>All rights not expressly granted are reserved.</p>
@@ -161,7 +161,7 @@ export default function TermsOfServicePage() {
               <li>Media content</li>
             </ul>
             <p className="mb-2">
-              You retain ownership of content you lawfully submit. However, by submitting content to the Platform, you grant Prutam Enterprise Ltd and MADEE HUB a worldwide, non-exclusive, royalty-free, sublicensable license to:
+              You retain ownership of content you lawfully submit. However, by submitting content to the Platform, you grant Interior Finishes Supermarket and MADEE HUB a worldwide, non-exclusive, royalty-free, sublicensable license to:
             </p>
             <ul className="list-disc pl-6 mb-4 space-y-1">
               <li>Store</li>
@@ -190,7 +190,7 @@ export default function TermsOfServicePage() {
             <p className="mb-4">
               Businesses, vendors, distributors, agents, resellers, and commercial users may be subject to additional agreements, operational requirements, compliance standards, or merchant policies.
             </p>
-            <p className="mb-2">Prutam Enterprise Ltd reserves the right to:</p>
+            <p className="mb-2">Interior Finishes Supermarket reserves the right to:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Approve or reject commercial accounts;</li>
               <li>Suspend listings;</li>
@@ -266,7 +266,7 @@ export default function TermsOfServicePage() {
 
           <section>
             <h2 className="text-2xl font-display font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">10. LIMITATION OF LIABILITY</h2>
-            <p className="mb-4">To the fullest extent permitted under applicable law, Prutam Enterprise Ltd, MADEE HUB, affiliates, officers, employees, contractors, and partners shall not be liable for:</p>
+            <p className="mb-4">To the fullest extent permitted under applicable law, Interior Finishes Supermarket, MADEE HUB, affiliates, officers, employees, contractors, and partners shall not be liable for:</p>
             <ul className="list-disc pl-6 mb-4 space-y-1">
               <li>Indirect damages;</li>
               <li>Consequential damages;</li>
@@ -283,7 +283,7 @@ export default function TermsOfServicePage() {
 
           <section>
             <h2 className="text-2xl font-display font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">11. INDEMNIFICATION</h2>
-            <p className="mb-2">You agree to defend, indemnify, and hold harmless Prutam Enterprise Ltd and MADEE HUB against any claims, damages, liabilities, losses, legal fees, or expenses arising from:</p>
+            <p className="mb-2">You agree to defend, indemnify, and hold harmless Interior Finishes Supermarket and MADEE HUB against any claims, damages, liabilities, losses, legal fees, or expenses arising from:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Your use of the Platform;</li>
               <li>Violation of these Terms;</li>
@@ -328,14 +328,14 @@ export default function TermsOfServicePage() {
 
           <section>
             <h2 className="text-2xl font-display font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">15. ENTIRE AGREEMENT</h2>
-            <p className="mb-4">These Terms constitute the complete legal agreement between the User and Prutam Enterprise Ltd regarding Platform usage and supersede prior discussions or understandings.</p>
+            <p className="mb-4">These Terms constitute the complete legal agreement between the User and Interior Finishes Supermarket regarding Platform usage and supersede prior discussions or understandings.</p>
             <p>If any provision is deemed unenforceable, the remaining provisions remain fully effective.</p>
           </section>
 
           <section>
             <h2 className="text-2xl font-display font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">16. CONTACT INFORMATION</h2>
             <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-              <p className="font-semibold text-slate-900 mb-2">Prutam Enterprise Ltd</p>
+              <p className="font-semibold text-slate-900 mb-2">Interior Finishes Supermarket</p>
               <p className="mb-4">Owned & Operated by MADEE HUB</p>
               <div className="flex flex-col gap-2">
                 <p><strong>Email:</strong> <a href="mailto:madeeprojects@gmail.com" className="text-blue-600 hover:underline">madeeprojects@gmail.com</a></p>
@@ -355,7 +355,7 @@ export default function TermsOfServicePage() {
             
             <div className="bg-slate-900 text-white p-6 rounded-xl text-center shadow-lg">
               <span className="text-2xl mb-3 block">🔒</span>
-              <p className="font-medium">The catalogue may display products, but the real engine beneath it belongs to Prutam Enterprise Ltd and MADEE HUB. The shelves are public. The blueprint is not.</p>
+              <p className="font-medium">The catalogue may display products, but the real engine beneath it belongs to Interior Finishes Supermarket and MADEE HUB. The shelves are public. The blueprint is not.</p>
             </div>
           </section>
         </div>

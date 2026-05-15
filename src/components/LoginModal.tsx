@@ -178,7 +178,7 @@ export default function LoginModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const Logo = () => (
     <div className="flex justify-center mb-8 mt-2">
       <span className="font-signature text-5xl font-bold text-slate-900">
-        {settings.companyName || "Prutam"}
+        {settings.companyName || "IFS"}
       </span>
     </div>
   );

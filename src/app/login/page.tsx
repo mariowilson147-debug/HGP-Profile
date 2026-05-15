@@ -109,7 +109,7 @@ export default function LoginPage() {
   const Logo = () => (
     <div className="flex justify-center mb-10">
       <span className="font-signature text-6xl font-bold text-slate-900">
-        {settings.companyName || "Prutam"}
+        {settings.companyName || "IFS"}
       </span>
     </div>
   );

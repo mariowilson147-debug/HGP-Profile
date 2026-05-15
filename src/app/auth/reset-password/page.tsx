@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
 
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <span className="font-signature text-6xl font-bold text-slate-900">Prutam</span>
+          <span className="font-signature text-6xl font-bold text-slate-900">IFS</span>
         </div>
 
         {status === "success" ? (

@@ -8,7 +8,7 @@ export default function PrivacyPolicyPage() {
         
         <div className="mb-12 border-b border-slate-200 pb-8">
           <h1 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
-            Privacy Policy for Prutam Enterprise Ltd
+            Privacy Policy for Interior Finishes Supermarket
           </h1>
           <div className="text-sm text-slate-500 flex flex-col gap-1">
             <span><strong>Effective Date:</strong> May 10, 2026</span>
@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
         <div className="space-y-10 leading-relaxed">
           <section>
             <p className="mb-4">
-              This Privacy Policy explains how <strong>Prutam Enterprise Ltd</strong>, owned and operated by MADEE HUB (“Prutam,” “MADEE HUB,” “we,” “our,” or “us”), collects, processes, stores, protects, discloses, and uses information obtained through our catalogue website, digital platforms, communication systems, software, applications, and related services (collectively, the “Platform”).
+              This Privacy Policy explains how <strong>Interior Finishes Supermarket</strong>, owned and operated by MADEE HUB (“IFS,” “MADEE HUB,” “we,” “our,” or “us”), collects, processes, stores, protects, discloses, and uses information obtained through our catalogue website, digital platforms, communication systems, software, applications, and related services (collectively, the “Platform”).
             </p>
             <p>
               By accessing or using the Platform, you acknowledge that you have read, understood, and agreed to this Privacy Policy and consent to the practices described herein. If you do not agree with this Policy, you must immediately discontinue use of the Platform.
@@ -228,7 +228,7 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-2xl font-display font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">11. INTELLECTUAL PROPERTY & DATABASE PROTECTION</h2>
-            <p className="mb-4">All Platform systems, catalogue structures, databases, inventory logic, layouts, designs, business workflows, source code, and proprietary digital assets remain the exclusive intellectual property of Prutam Enterprise Ltd and/or MADEE HUB.</p>
+            <p className="mb-4">All Platform systems, catalogue structures, databases, inventory logic, layouts, designs, business workflows, source code, and proprietary digital assets remain the exclusive intellectual property of Interior Finishes Supermarket and/or MADEE HUB.</p>
             <p className="mb-2">Unauthorized:</p>
             <ul className="list-disc pl-6 mb-6 space-y-1">
               <li>Scraping,</li>
@@ -298,7 +298,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-2xl font-display font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">16. CONTACT INFORMATION</h2>
             <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-              <p className="font-semibold text-slate-900 mb-2">Prutam Enterprise Ltd</p>
+              <p className="font-semibold text-slate-900 mb-2">Interior Finishes Supermarket</p>
               <p className="mb-4">Owned & Operated by MADEE HUB</p>
               <div className="flex flex-col gap-2">
                 <p><strong>Email:</strong> <a href="mailto:madeeprojects@gmail.com" className="text-blue-600 hover:underline">madeeprojects@gmail.com</a></p>

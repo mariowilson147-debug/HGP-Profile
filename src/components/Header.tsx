@@ -77,15 +77,14 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Center: Categories */}
         <nav className="hidden md:flex flex-none items-center justify-center gap-8">
           {categories.filter(c => c !== "All Collections").slice(0, 4).map((cat) => {
             const isElectronics = cat.toLowerCase().includes('electronic') || cat.toLowerCase().includes('electrical');
             return (
-              <div key={cat} className="flex items-center gap-1.5 group cursor-pointer">
+              <div key={cat} className="flex items-center gap-2">
                 {isElectronics && (
-                  <button onClick={handleSearchClick} className="text-slate-400 hover:text-slate-900 transition-colors">
-                    <Search size={14} strokeWidth={2} />
+                  <button onClick={handleSearchClick} className="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 shadow-sm transition-all">
+                    <Search size={12} strokeWidth={2.5} />
                   </button>
                 )}
                 <Link 
@@ -130,14 +129,14 @@ export default function Header() {
               className="absolute top-[4.5rem] left-0 right-0 w-full bg-[#f1f0ec]/95 backdrop-blur-xl border border-[#e5e4e0] shadow-2xl rounded-3xl md:hidden flex flex-col p-6 gap-4 z-40"
             >
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Categories</h3>
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-5">
                 {categories.map((cat) => {
                   const isElectronics = cat.toLowerCase().includes('electronic') || cat.toLowerCase().includes('electrical');
                   return (
-                    <div key={cat} className="flex items-center gap-2">
+                    <div key={cat} className="flex items-center gap-3">
                       {isElectronics && (
-                        <button onClick={handleSearchClick} className="text-slate-400">
-                          <Search size={16} />
+                        <button onClick={handleSearchClick} className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 shadow-sm hover:border-slate-300">
+                          <Search size={14} strokeWidth={2} />
                         </button>
                       )}
                       <Link 
