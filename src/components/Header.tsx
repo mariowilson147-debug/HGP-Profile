@@ -73,7 +73,7 @@ export default function Header() {
         {/* Left: Logo */}
         <div className="flex-1 flex items-center">
           <Link href="/" className="text-2xl font-black tracking-tight text-slate-900 lowercase font-outfit">
-            {settings?.companyName ? settings.companyName.split(' ')[0] : 'luxf'}
+            IFS
           </Link>
         </div>
 

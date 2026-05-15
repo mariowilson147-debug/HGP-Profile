@@ -51,6 +51,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (!parsed.categories || parsed.categories.length === 0) {
           parsed.categories = defaultSettings.categories;
         }
+        if (parsed.companyName === "Prutam Enterprise Limited" || parsed.companyName === "Prutam Enterprise Ltd" || parsed.companyName === "Prutam") {
+          parsed.companyName = "Interior Finishes Supermarket";
+          localStorage.setItem("catalog_settings", JSON.stringify(parsed));
+        }
         setSettings(parsed);
       } catch {
         // Syntax error mapping fallback
