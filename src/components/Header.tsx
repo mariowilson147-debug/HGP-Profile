@@ -53,6 +53,18 @@ export default function Header() {
     }
   }, [isSearching]);
 
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    if (isSearching && !searchQuery.trim()) {
+      timeoutId = setTimeout(() => {
+        setIsSearching(false);
+      }, 3000);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isSearching, searchQuery]);
+
   const handleLogout = async () => {
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
