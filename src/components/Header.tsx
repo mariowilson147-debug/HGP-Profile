@@ -67,12 +67,6 @@ export default function Header() {
     }
   };
 
-  const handleSearchCategoryClick = () => {
-    const q = prompt("Search for a product:");
-    if (q && q.trim()) {
-      router.push(`/?q=${encodeURIComponent(q.trim())}`);
-    }
-  };
 
   const submitMainSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -161,24 +155,15 @@ export default function Header() {
         </div>
 
         <nav className="hidden md:flex flex-none items-center justify-center gap-8">
-          {categories.filter(c => c !== "All Collections").slice(0, 4).map((cat) => {
-            const isElectronics = cat.toLowerCase().includes('electronic') || cat.toLowerCase().includes('electrical');
-            return (
-              <div key={cat} className="flex items-center gap-2">
-                {isElectronics && (
-                  <button onClick={handleSearchClick} className="w-7 h-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-300 shadow-sm transition-all">
-                    <Search size={12} strokeWidth={2.5} />
-                  </button>
-                )}
-                <Link 
-                  href={`/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
-                  className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors"
-                >
-                  {cat}
-                </Link>
-              </div>
-            );
-          })}
+          {categories.filter(c => c !== "All Collections").slice(0, 4).map((cat) => (
+            <Link 
+              key={cat}
+              href={`/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
+              className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors"
+            >
+              {cat}
+            </Link>
+          ))}
         </nav>
 
         {/* Right: Icons */}
@@ -213,25 +198,16 @@ export default function Header() {
             >
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Categories</h3>
               <div className="flex flex-col gap-5">
-                {categories.map((cat) => {
-                  const isElectronics = cat.toLowerCase().includes('electronic') || cat.toLowerCase().includes('electrical');
-                  return (
-                    <div key={cat} className="flex items-center gap-3">
-                      {isElectronics && (
-                        <button onClick={handleSearchClick} className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 shadow-sm hover:border-slate-300">
-                          <Search size={14} strokeWidth={2} />
-                        </button>
-                      )}
-                      <Link 
-                        href={cat === "All Collections" ? "/" : `/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="text-base font-medium text-slate-600 hover:text-slate-900"
-                      >
-                        {cat}
-                      </Link>
-                    </div>
-                  );
-                })}
+                {categories.map((cat) => (
+                  <Link 
+                    key={cat}
+                    href={cat === "All Collections" ? "/" : `/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-base font-medium text-slate-600 hover:text-slate-900"
+                  >
+                    {cat}
+                  </Link>
+                ))}
               </div>
 
               <div className="h-px w-full bg-slate-200/60 my-2" />
