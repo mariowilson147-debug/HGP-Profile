@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, User, Menu, LogOut } from "lucide-react";
+import { User, Menu, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -60,8 +60,8 @@ export default function Header() {
   };
 
   return (
-    <>
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-[#f1f0ec] h-20 px-6 md:px-12 flex items-center justify-between transition-all duration-300 shadow-sm shadow-black/5">
+    <div className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 sm:px-6 pointer-events-none transition-all duration-300">
+      <header className="w-full max-w-7xl bg-[#f1f0ec]/90 backdrop-blur-xl border border-[#e5e4e0] shadow-lg shadow-black/5 rounded-full pointer-events-auto h-16 px-6 md:px-8 flex items-center justify-between transition-all duration-300 relative">
         
         {/* Left: Logo */}
         <div className="flex-1 flex items-center">
@@ -88,10 +88,6 @@ export default function Header() {
 
         {/* Right: Icons */}
         <div className="flex-1 flex items-center justify-end gap-3 md:gap-4">
-          <button className="w-10 h-10 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-200/50 transition-colors">
-            <Heart size={16} strokeWidth={1.5} />
-          </button>
-          
           <button onClick={handleLoginClick} className="w-10 h-10 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:bg-slate-200/50 transition-colors" title={user ? "Account" : "Log In"}>
             <User size={16} strokeWidth={1.5} />
           </button>
@@ -110,58 +106,58 @@ export default function Header() {
             <Menu size={16} strokeWidth={1.5} />
           </button>
         </div>
-      </header>
 
-      {/* Mobile Navigation */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="fixed top-20 left-0 right-0 w-full bg-[#f1f0ec] border-t border-black/5 shadow-xl md:hidden flex flex-col p-6 gap-4 z-40"
-          >
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Categories</h3>
-            <div className="flex flex-col gap-4">
-              {categories.map((cat) => (
+        {/* Mobile Navigation */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute top-[4.5rem] left-0 right-0 w-full bg-[#f1f0ec]/95 backdrop-blur-xl border border-[#e5e4e0] shadow-2xl rounded-3xl md:hidden flex flex-col p-6 gap-4 z-40"
+            >
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Categories</h3>
+              <div className="flex flex-col gap-4">
+                {categories.map((cat) => (
+                  <Link 
+                    key={cat} 
+                    href={cat === "All Collections" ? "/" : `/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-base font-medium text-slate-600 hover:text-slate-900"
+                  >
+                    {cat}
+                  </Link>
+                ))}
                 <Link 
-                  key={cat} 
-                  href={cat === "All Collections" ? "/" : `/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
+                  href="/contact"
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-base font-medium text-slate-600 hover:text-slate-900"
                 >
-                  {cat}
+                  Contact
                 </Link>
-              ))}
-              <Link 
-                href="/contact"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-base font-medium text-slate-600 hover:text-slate-900"
-              >
-                Contact
-              </Link>
-            </div>
-
-            <div className="h-px w-full bg-slate-200/60 my-2" />
-            
-            {user ? (
-              <div className="flex items-center justify-between mt-1">
-                <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setMobileMenuOpen(false); user.role === 'admin' && router.push('/admin'); }}>
-                  <div className="w-10 h-10 bg-white border border-slate-300 rounded-full flex items-center justify-center text-slate-700 font-bold text-sm shrink-0">
-                    {user.email?.[0].toUpperCase() || "U"}
-                  </div>
-                  <span className="text-sm font-medium text-slate-800">
-                    {user.email || "Account"}
-                  </span>
-                </div>
-                <button onClick={handleLogout} className="text-slate-500 hover:text-red-500 p-2 border border-transparent hover:border-red-100 rounded-full">
-                  <LogOut size={18} />
-                </button>
               </div>
-            ) : null}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+
+              <div className="h-px w-full bg-slate-200/60 my-2" />
+              
+              {user ? (
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setMobileMenuOpen(false); user.role === 'admin' && router.push('/admin'); }}>
+                    <div className="w-10 h-10 bg-white border border-slate-300 rounded-full flex items-center justify-center text-slate-700 font-bold text-sm shrink-0">
+                      {user.email?.[0].toUpperCase() || "U"}
+                    </div>
+                    <span className="text-sm font-medium text-slate-800">
+                      {user.email || "Account"}
+                    </span>
+                  </div>
+                  <button onClick={handleLogout} className="text-slate-500 hover:text-red-500 p-2 border border-transparent hover:border-red-100 rounded-full">
+                    <LogOut size={18} />
+                  </button>
+                </div>
+              ) : null}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+    </div>
   );
 }
