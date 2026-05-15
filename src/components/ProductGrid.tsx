@@ -44,7 +44,11 @@ function ProductGridContent({ products }: { products: Product[] }) {
     return products
       .filter(p => selectedCategory === "All Collections" || p.category === selectedCategory)
       .filter(p => p.name.toLowerCase().includes(urlQuery.toLowerCase()))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => {
+        const catCompare = a.category.localeCompare(b.category);
+        if (catCompare !== 0) return catCompare;
+        return a.name.localeCompare(b.name);
+      });
   }, [products, selectedCategory, urlQuery]);
 
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);

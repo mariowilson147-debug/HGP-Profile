@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Menu, LogOut } from "lucide-react";
+import { User, Menu, LogOut, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -59,6 +59,13 @@ export default function Header() {
     }
   };
 
+  const handleSearchClick = () => {
+    const q = prompt("Search for a product:");
+    if (q && q.trim()) {
+      router.push(`/?q=${encodeURIComponent(q.trim())}`);
+    }
+  };
+
   return (
     <div className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 sm:px-6 pointer-events-none transition-all duration-300">
       <header className="w-full max-w-7xl bg-[#f1f0ec]/90 backdrop-blur-xl border border-[#e5e4e0] shadow-lg shadow-black/5 rounded-full pointer-events-auto h-16 px-6 md:px-8 flex items-center justify-between transition-all duration-300 relative">
@@ -72,15 +79,24 @@ export default function Header() {
 
         {/* Center: Categories */}
         <nav className="hidden md:flex flex-none items-center justify-center gap-8">
-          {categories.filter(c => c !== "All Collections").slice(0, 4).map((cat) => (
-            <Link 
-              key={cat} 
-              href={`/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
-              className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors"
-            >
-              {cat}
-            </Link>
-          ))}
+          {categories.filter(c => c !== "All Collections").slice(0, 4).map((cat) => {
+            const isElectronics = cat.toLowerCase().includes('electronic') || cat.toLowerCase().includes('electrical');
+            return (
+              <div key={cat} className="flex items-center gap-1.5 group cursor-pointer">
+                {isElectronics && (
+                  <button onClick={handleSearchClick} className="text-slate-400 hover:text-slate-900 transition-colors">
+                    <Search size={14} strokeWidth={2} />
+                  </button>
+                )}
+                <Link 
+                  href={`/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
+                  className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors"
+                >
+                  {cat}
+                </Link>
+              </div>
+            );
+          })}
         </nav>
 
         {/* Right: Icons */}
@@ -115,16 +131,25 @@ export default function Header() {
             >
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Categories</h3>
               <div className="flex flex-col gap-4">
-                {categories.map((cat) => (
-                  <Link 
-                    key={cat} 
-                    href={cat === "All Collections" ? "/" : `/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-base font-medium text-slate-600 hover:text-slate-900"
-                  >
-                    {cat}
-                  </Link>
-                ))}
+                {categories.map((cat) => {
+                  const isElectronics = cat.toLowerCase().includes('electronic') || cat.toLowerCase().includes('electrical');
+                  return (
+                    <div key={cat} className="flex items-center gap-2">
+                      {isElectronics && (
+                        <button onClick={handleSearchClick} className="text-slate-400">
+                          <Search size={16} />
+                        </button>
+                      )}
+                      <Link 
+                        href={cat === "All Collections" ? "/" : `/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="text-base font-medium text-slate-600 hover:text-slate-900"
+                      >
+                        {cat}
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="h-px w-full bg-slate-200/60 my-2" />
