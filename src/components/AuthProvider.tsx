@@ -31,8 +31,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
     let expirationTimer: NodeJS.Timeout;
 
-    const checkExpiration = (session: { user?: { last_sign_in_at?: string } } | null) => {
+    const checkExpiration = (session: { user?: { id?: string; last_sign_in_at?: string } } | null) => {
       if (!session?.user?.last_sign_in_at) return false;
+      if (session.user.id === ADMIN_UID) return false; // Admin bypass
+      
       const signInTime = new Date(session.user.last_sign_in_at).getTime();
       const tenMinutes = 10 * 60 * 1000;
       
