@@ -85,6 +85,19 @@ export async function updateProduct(id: string, updates: Partial<Product>) {
   return { success: true, count: 1, data };
 }
 
+export async function updateProductCategoryName(oldName: string, newName: string) {
+  const supabase = await requireAdmin();
+  const { error } = await supabase.from('products').update({ category: newName }).eq('category', oldName);
+  if (error) {
+    console.error("Error updating category name:", error);
+    return { error: error.message };
+  }
+  revalidatePath("/");
+  revalidatePath("/catalog");
+  revalidatePath("/admin");
+  return { success: true };
+}
+
 export async function deleteProduct(id: string) {
   const supabase = await requireAdmin();
   const { error } = await supabase.from('products').delete().eq('id', id);

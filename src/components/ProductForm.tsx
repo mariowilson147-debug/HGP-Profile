@@ -328,7 +328,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
       const imageUrl = await uploadImage(editItem);
       const result = await updateProduct(initialData!.id, {
         name: editItem.name,
-        category: editItem.category,
+        category: editItem.category.trim(),
         image_url: imageUrl,
         buying_price: +editItem.prices.buying_price,
         wholesale_price: +editItem.prices.wholesale_price,
@@ -372,7 +372,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
     // Bulk insert
     const payload = queue.map(item => ({
       name: item.name,
-      category: item.category,
+      category: item.category.trim(),
       image_url: finalUrls[item.id],
       buying_price: +item.prices.buying_price,
       wholesale_price: +item.prices.wholesale_price,

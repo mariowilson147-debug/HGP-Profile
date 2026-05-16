@@ -37,13 +37,39 @@ export default function SettingsDashboard() {
     e.preventDefault();
     setLoading(true);
 
+    // Track renamed categories
+    const renamedCategories: { oldName: string; newName: string }[] = [];
+    if (settings.categories) {
+      for (const oldCat of settings.categories) {
+        const newCat = categories.find(c => c.id === oldCat.id);
+        const trimmedNewName = newCat?.name.trim();
+        if (newCat && trimmedNewName && trimmedNewName !== oldCat.name.trim()) {
+          renamedCategories.push({ oldName: oldCat.name, newName: trimmedNewName });
+        }
+      }
+    }
+
+    // Clean up category names before saving to remove leading/trailing whitespace
+    const cleanedCategories = categories.map(c => ({ ...c, name: c.name.trim() }));
+
     updateSettings({ 
       ...settings,
       companyName, 
       theme,
       accentColor,
-      categories 
+      categories: cleanedCategories 
     });
+
+    if (renamedCategories.length > 0) {
+      try {
+        const { updateProductCategoryName } = await import("@/lib/actions");
+        for (const { oldName, newName } of renamedCategories) {
+          await updateProductCategoryName(oldName, newName);
+        }
+      } catch (err) {
+        console.error("Failed to sync category names to products", err);
+      }
+    }
     
     setLoading(false);
     alert("Settings saved successfully!");
