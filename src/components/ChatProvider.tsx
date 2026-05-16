@@ -2,8 +2,10 @@
 
 import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import ChatDrawer from "./ChatDrawer";
+import dynamic from "next/dynamic";
 import { MessageSquare } from "lucide-react";
+
+const ChatDrawer = dynamic(() => import("./ChatDrawer"), { ssr: false });
 import { getMessagesBySession } from "@/lib/actions";
 
 interface ChatContextType {

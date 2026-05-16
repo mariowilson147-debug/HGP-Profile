@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, Suspense, useMemo } from "react";
-import ProductModal, { Product } from "./ProductModal";
+import { Product } from "./ProductModal";
+import dynamic from "next/dynamic";
+import Image from "next/image";
+
+const ProductModal = dynamic(() => import("./ProductModal"), { ssr: false });
 import { useAuth } from "@/components/AuthProvider";
 import { Search, LayoutGrid, Lightbulb, Monitor, Watch, Bath, Sofa, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -125,7 +129,7 @@ function ProductGridContent({ products }: { products: Product[] }) {
                 key={product.id} onClick={() => setSelectedProduct(product)} className="group cursor-pointer flex flex-col"
               >
                 <div className="relative aspect-square w-full overflow-hidden bg-[#f4f4f4] mb-4">
-                  <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+                  <Image src={product.image_url} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
                 </div>
                 <div className="flex flex-col">
                   <h3 className="font-display font-medium text-lg text-slate-900 leading-tight mb-1">{product.name}</h3>

@@ -10,6 +10,7 @@ import {
   UploadCloud, Save, Plus, Trash2, CheckCircle2,
   AlertCircle, ArrowLeft, PackagePlus, Loader2
 } from "lucide-react";
+import imageCompression from 'browser-image-compression';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -293,8 +294,25 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
   const uploadImage = async (item: QueueItem): Promise<string> => {
     if (!item.imageFile) return item.image_url;
 
+    // Compress the image before uploading
+    const options = {
+      maxSizeMB: 0.8, // Target max 800KB
+      maxWidthOrHeight: 1200, // Reasonable max dimension
+      useWebWorker: true,
+      fileType: 'image/webp' // Optimize to webp format
+    };
+    
+    let fileToUpload = item.imageFile;
+    let ext = fileToUpload.name.split(".").pop() || 'webp';
+    
+    try {
+      fileToUpload = await imageCompression(item.imageFile, options);
+      ext = 'webp'; // Force webp extension since we converted it
+    } catch (error) {
+      console.error("Image compression failed, uploading original:", error);
+    }
+
     const supabase = createSupabaseBrowserClient();
-    const ext = item.imageFile.name.split(".").pop();
     const path = `products/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
     // Simulate progress
@@ -305,7 +323,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
       else updateQueue(item.id, { uploadProgress: prog, status: "uploading" });
     }, 200);
 
-    const { error } = await supabase.storage.from("images").upload(path, item.imageFile, { upsert: true });
+    const { error } = await supabase.storage.from("images").upload(path, fileToUpload, { upsert: true });
     clearInterval(ticker);
 
     if (error) throw new Error("Image upload failed: " + error.message);

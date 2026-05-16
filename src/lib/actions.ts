@@ -1,7 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "./supabase/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_cache, revalidateTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 
 // Admin client bypasses RLS for system operations like chat messages
@@ -33,19 +33,27 @@ async function requireAdmin() {
   return supabase;
 }
 
-export async function getProducts() {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.from('products').select('*');
-  if (error) {
-    console.error("Error fetching products:", error);
-    return [];
-  }
-  
-  const products = data || [];
-  return products.sort((a, b) => 
-    a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
-  );
-}
+export const getProducts = unstable_cache(
+  async () => {
+    // Use anon client without cookies so it can be fully cached
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data, error } = await supabase.from('products').select('*');
+    if (error) {
+      console.error("Error fetching products:", error);
+      return [];
+    }
+    
+    const products = data || [];
+    return products.sort((a, b) => 
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    );
+  },
+  ['products-cache'],
+  { tags: ['products'] }
+);
 
 export async function addProduct(product: Omit<Product, "id" | "created_at">) {
   const supabase = await requireAdmin();
@@ -57,6 +65,7 @@ export async function addProduct(product: Omit<Product, "id" | "created_at">) {
   revalidatePath("/");
   revalidatePath("/catalog");
   revalidatePath("/admin");
+  revalidateTag("products");
   return { success: true, count: 1, data };
 }
 
@@ -70,18 +79,44 @@ export async function addProducts(products: Omit<Product, "id" | "created_at">[]
   revalidatePath("/");
   revalidatePath("/catalog");
   revalidatePath("/admin");
+  revalidateTag("products");
   return { success: true, count: data?.length ?? products.length, data };
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>) {
   const supabase = await requireAdmin();
+
+  // If we are updating the image_url, we should check what the old image was so we can delete it
+  let oldImageUrl: string | undefined;
+  if (updates.image_url) {
+    const { data: oldProduct } = await supabase.from('products').select('image_url').eq('id', id).single();
+    if (oldProduct?.image_url && oldProduct.image_url !== updates.image_url) {
+      oldImageUrl = oldProduct.image_url;
+    }
+  }
+
   const { data, error } = await supabase.from('products').update(updates).eq('id', id).select().single();
   if (error) {
     return { error: error.message };
   }
+
+  // Delete old image if it was replaced
+  if (oldImageUrl) {
+    try {
+      const urlParts = oldImageUrl.split('/public/images/');
+      if (urlParts.length === 2) {
+        const path = urlParts[1];
+        await supabase.storage.from('images').remove([path]);
+      }
+    } catch (err) {
+      console.error("Failed to delete orphaned image:", err);
+    }
+  }
+
   revalidatePath("/");
   revalidatePath("/catalog");
   revalidatePath("/admin");
+  revalidateTag("products");
   return { success: true, count: 1, data };
 }
 
@@ -95,18 +130,38 @@ export async function updateProductCategoryName(oldName: string, newName: string
   revalidatePath("/");
   revalidatePath("/catalog");
   revalidatePath("/admin");
+  revalidateTag("products");
   return { success: true };
 }
 
 export async function deleteProduct(id: string) {
   const supabase = await requireAdmin();
+
+  // Get the product to find the image URL
+  const { data: product } = await supabase.from('products').select('image_url').eq('id', id).single();
+
   const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) {
     return { error: error.message };
   }
+
+  // If product deleted successfully, delete image from storage
+  if (product?.image_url) {
+    try {
+      const urlParts = product.image_url.split('/public/images/');
+      if (urlParts.length === 2) {
+        const path = urlParts[1];
+        await supabase.storage.from('images').remove([path]);
+      }
+    } catch (err) {
+      console.error("Failed to delete orphaned image:", err);
+    }
+  }
+
   revalidatePath("/");
   revalidatePath("/catalog");
   revalidatePath("/admin");
+  revalidateTag("products");
   return { success: true };
 }
 
