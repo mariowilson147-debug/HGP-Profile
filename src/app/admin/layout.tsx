@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminChatSidebar from "@/components/AdminChatSidebar";
 import Link from "next/link";
@@ -7,14 +8,9 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { Bell, User, LogOut } from "lucide-react";
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function AdminNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user, logout } = useAuth();
   
   const activeTab = searchParams.get("tab") || "overview";
 
@@ -29,6 +25,32 @@ export default function AdminLayout({
   ];
 
   return (
+    <nav className="hidden md:flex items-center gap-1">
+      {navLinks.map((link) => (
+        <Link 
+          key={link.name} 
+          href={link.href}
+          className={`px-4 py-5 text-sm font-medium border-b-4 transition-colors ${
+            link.active 
+              ? 'border-white text-white' 
+              : 'border-transparent text-blue-100 hover:text-white hover:border-blue-300'
+          }`}
+        >
+          {link.name}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { logout } = useAuth();
+  
+  return (
     <ProtectedRoute reqRole="admin">
       <div className="flex flex-col min-h-screen w-full bg-[#f4f7f6] font-sans">
         
@@ -40,21 +62,9 @@ export default function AdminLayout({
                 IFS
               </Link>
               
-              <nav className="hidden md:flex items-center gap-1">
-                {navLinks.map((link) => (
-                  <Link 
-                    key={link.name} 
-                    href={link.href}
-                    className={`px-4 py-5 text-sm font-medium border-b-4 transition-colors ${
-                      link.active 
-                        ? 'border-white text-white' 
-                        : 'border-transparent text-blue-100 hover:text-white hover:border-blue-300'
-                    }`}
-                  >
-                    {link.name}
-                  </Link>
-                ))}
-              </nav>
+              <Suspense fallback={<div className="hidden md:flex items-center gap-1 w-96 h-10 bg-white/5 animate-pulse rounded" />}>
+                <AdminNav />
+              </Suspense>
             </div>
 
             <div className="flex items-center gap-6">
@@ -89,3 +99,4 @@ export default function AdminLayout({
     </ProtectedRoute>
   );
 }
+
