@@ -61,7 +61,13 @@ function AdminSidebarNav() {
 
 function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const [threads, setThreads] = useState<any[]>([]);
+  const [threads, setThreads] = useState<{
+    session_id: string;
+    name: string;
+    updated_at: string;
+    last_message: string;
+    has_unread: boolean;
+  }[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
