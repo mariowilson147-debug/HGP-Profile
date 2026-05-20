@@ -60,6 +60,13 @@ export default function ExportsHub() {
     { id: "EXP-8919", target: "Client Shared Link", format: "LINK", size: "--", status: "COMPLETED", date: new Date(Date.now() - 86400000 * 2).toLocaleDateString("en-GB") },
   ]);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(historyLogs.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const visibleLogs = historyLogs.slice(startIndex, startIndex + itemsPerPage);
+
   useEffect(() => {
     const loadCategories = async () => {
       const data = await getProducts();
@@ -307,12 +314,12 @@ export default function ExportsHub() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
+          <button className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
             <Filter size={14} /> Refine View
           </button>
           <button 
             onClick={() => setShowModal(true)}
-            className="bg-apex-primary hover:brightness-110 text-[#0b1326] font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(192,193,255,0.3)] transition-all flex items-center gap-2 cursor-pointer"
+            className="bg-apex-primary hover:brightness-110 text-apex-bg font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(192,193,255,0.3)] transition-all flex items-center gap-2 cursor-pointer"
           >
             <Plus size={14} /> Export Data
           </button>
@@ -320,13 +327,13 @@ export default function ExportsHub() {
       </div>
 
       {/* Main Table Panel */}
-      <div className="bg-[#131b2e] border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
+      <div className="bg-apex-surface-low border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
         
         {/* Table Canvas */}
         <div className="overflow-x-auto min-h-64">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#171f33]/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
+              <tr className="bg-apex-surface/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
                 <th className="py-4 px-6 font-bold w-24">FORMAT</th>
                 <th className="py-4 px-6 font-bold">EXPORT TARGET</th>
                 <th className="py-4 px-6 font-bold">FILE TYPE</th>
@@ -343,12 +350,12 @@ export default function ExportsHub() {
                   </td>
                 </tr>
               ) : (
-                historyLogs.map((log) => {
+                visibleLogs.map((log) => {
                   return (
-                    <tr key={log.id} className="hover:bg-[#171f33]/40 transition-colors group">
+                    <tr key={log.id} className="hover:bg-apex-surface/40 transition-colors group">
                       {/* FORMAT VISUAL */}
                       <td className="py-3 px-6">
-                        <div className={`w-12 h-10 bg-[#060e20] border flex items-center justify-center shrink-0 group-hover:border-apex-primary/50 transition-colors ${log.status === "COMPLETED" ? "border-apex-primary/30 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]" : "border-apex-outline-variant/30 text-apex-on-surface-variant group-hover:text-apex-primary/80"}`}>
+                        <div className={`w-12 h-10 bg-apex-surface-lowest border flex items-center justify-center shrink-0 group-hover:border-apex-primary/50 transition-colors ${log.status === "COMPLETED" ? "border-apex-primary/30 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]" : "border-apex-outline-variant/30 text-apex-on-surface-variant group-hover:text-apex-primary/80"}`}>
                           {log.format === ".XLSX" ? <FileSpreadsheet size={16} /> : log.format === "LINK" ? <Share2 size={16} /> : <FileText size={16} />}
                         </div>
                       </td>
@@ -368,7 +375,7 @@ export default function ExportsHub() {
                       <td className="py-3 px-6 text-center">
                         <span className={`inline-block px-2 py-0.5 border font-apex-mono text-[9px] font-bold tracking-widest uppercase ${
                           log.status === "FAILED"
-                            ? "bg-[#060e20] border-apex-outline-variant/30 text-apex-on-surface-variant"
+                            ? "bg-apex-surface-lowest border-apex-outline-variant/30 text-apex-on-surface-variant"
                             : "border-apex-primary/30 bg-apex-primary/10 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]"
                         }`}>
                           {log.status}
@@ -409,18 +416,27 @@ export default function ExportsHub() {
         </div>
         
         {/* Registry Footer Pagination */}
-        <div className="px-6 py-4 bg-[#0b1326] border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
+        <div className="px-6 py-4 bg-apex-bg border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
           <div className="flex items-center gap-4">
-            <span>SHOWING ENTRY 001-{(historyLogs.length < 10 ? historyLogs.length : '010')} OF {historyLogs.length}</span>
-            <div className="w-24 h-1 bg-[#171f33] rounded-full overflow-hidden flex">
-              <div className="w-full h-full bg-apex-primary"></div>
+            <span>SHOWING ENTRY {historyLogs.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + itemsPerPage, historyLogs.length)} OF {historyLogs.length}</span>
+            <div className="w-24 h-1 bg-apex-surface rounded-full overflow-hidden flex">
+              <div className="h-full bg-apex-primary" style={{ width: `${historyLogs.length ? ((Math.min(startIndex + itemsPerPage, historyLogs.length)) / historyLogs.length) * 100 : 0}%` }}></div>
             </div>
           </div>
           <div className="flex gap-1.5 text-xs text-apex-text select-none">
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">&lt;</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-apex-primary bg-[#131b2e] text-apex-primary font-bold">01</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors opacity-50 cursor-not-allowed">02</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors opacity-50 cursor-not-allowed">&gt;</button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >&lt;</button>
+            <span className="px-3 h-8 flex items-center justify-center rounded border border-apex-primary bg-apex-surface-low text-apex-primary font-bold">
+              {currentPage} / {totalPages}
+            </span>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >&gt;</button>
           </div>
         </div>
 
@@ -430,21 +446,21 @@ export default function ExportsHub() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-apex-sans">
           <div
-            className="absolute inset-0 bg-[#0b1326]/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-apex-bg/80 backdrop-blur-sm"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-[#0b1326] p-8 w-full max-w-2xl shadow-[0_0_30px_rgba(192,193,255,0.1)] rounded border border-apex-primary/30 text-apex-text apex-scanline-effect">
+          <div className="relative bg-apex-bg p-8 w-full max-w-2xl shadow-[0_0_30px_rgba(192,193,255,0.1)] rounded border border-apex-primary/30 text-apex-text apex-scanline-effect">
             
             <div className="flex justify-between items-start mb-6 pb-4 border-b border-apex-outline-variant/30">
               <h2 className="text-xl font-apex-sans font-black text-apex-text uppercase">
                 EXPORT CONFIGURATION
               </h2>
-              <div className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 p-1 rounded font-apex-mono text-xs">
+              <div className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 p-1 rounded font-apex-mono text-xs">
                 <button 
                   onClick={() => setSelectedFormat("pdf")}
                   className={`px-4 py-1.5 rounded transition-all duration-250 ${
                     selectedFormat === "pdf"
-                      ? "bg-apex-primary text-[#0b1326] font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
+                      ? "bg-apex-primary text-apex-bg font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
                       : "text-apex-on-surface-variant hover:text-apex-primary"
                   }`}
                 >
@@ -454,7 +470,7 @@ export default function ExportsHub() {
                   onClick={() => setSelectedFormat("excel")}
                   className={`px-4 py-1.5 rounded transition-all duration-250 ${
                     selectedFormat === "excel"
-                      ? "bg-apex-primary text-[#0b1326] font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
+                      ? "bg-apex-primary text-apex-bg font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
                       : "text-apex-on-surface-variant hover:text-apex-primary"
                   }`}
                 >
@@ -464,7 +480,7 @@ export default function ExportsHub() {
                   onClick={() => setSelectedFormat("link")}
                   className={`px-4 py-1.5 rounded transition-all duration-250 ${
                     selectedFormat === "link"
-                      ? "bg-apex-primary text-[#0b1326] font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
+                      ? "bg-apex-primary text-apex-bg font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
                       : "text-apex-on-surface-variant hover:text-apex-primary"
                   }`}
                 >
@@ -481,12 +497,12 @@ export default function ExportsHub() {
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {categories.map(cat => (
-                    <label key={cat} className="flex items-center gap-3 p-2.5 bg-[#131b2e] border border-apex-outline-variant/10 rounded cursor-pointer hover:border-apex-primary/30 transition-colors select-none">
+                    <label key={cat} className="flex items-center gap-3 p-2.5 bg-apex-surface-low border border-apex-outline-variant/10 rounded cursor-pointer hover:border-apex-primary/30 transition-colors select-none">
                       <input 
                         type="checkbox" 
                         checked={selectedCategories.includes(cat)}
                         onChange={() => handleCategoryToggle(cat)}
-                        className="rounded text-apex-primary focus:ring-apex-primary bg-[#0b1326] border-apex-outline-variant"
+                        className="rounded text-apex-primary focus:ring-apex-primary bg-apex-bg border-apex-outline-variant"
                       />
                       <span className="font-apex-sans text-xs text-apex-text font-semibold">{cat}</span>
                     </label>
@@ -502,11 +518,11 @@ export default function ExportsHub() {
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {["SKU_ID", "VAL_UNIT", "TIMESTAMP", "GEO_TAG", "STATUS_FLG", "OPER_ID", "PRIORITY", "METADATA"].map((col, idx) => (
-                    <label key={idx} className="flex items-center gap-2 p-2 bg-[#131b2e] border border-apex-outline-variant/10 rounded cursor-pointer select-none">
+                    <label key={idx} className="flex items-center gap-2 p-2 bg-apex-surface-low border border-apex-outline-variant/10 rounded cursor-pointer select-none">
                       <input 
                         type="checkbox" 
                         defaultChecked={idx !== 3 && idx !== 5 && idx !== 7}
-                        className="rounded text-apex-primary focus:ring-apex-primary bg-[#0b1326] border-apex-outline-variant"
+                        className="rounded text-apex-primary focus:ring-apex-primary bg-apex-bg border-apex-outline-variant"
                       />
                       <span className="font-apex-mono text-[11px] text-apex-on-surface-variant/80">{col}</span>
                     </label>
@@ -518,14 +534,14 @@ export default function ExportsHub() {
             <div className="flex gap-3 pt-8 mt-4 border-t border-apex-outline-variant/30">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 py-2.5 bg-[#131b2e] hover:bg-[#171f33] border border-apex-outline-variant/30 text-apex-text text-xs font-apex-mono uppercase tracking-wider rounded transition-colors cursor-pointer"
+                className="flex-1 py-2.5 bg-apex-surface-low hover:bg-apex-surface border border-apex-outline-variant/30 text-apex-text text-xs font-apex-mono uppercase tracking-wider rounded transition-colors cursor-pointer"
               >
                 ABORT
               </button>
               <button
                 onClick={handleInitializeExport}
                 disabled={exporting}
-                className="flex-1 py-2.5 bg-apex-primary hover:brightness-110 text-[#0b1326] text-xs font-apex-sans font-bold uppercase tracking-wider rounded disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(192,193,255,0.2)]"
+                className="flex-1 py-2.5 bg-apex-primary hover:brightness-110 text-apex-bg text-xs font-apex-sans font-bold uppercase tracking-wider rounded disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(192,193,255,0.2)]"
               >
                 {exporting && <RefreshCw size={14} className="animate-spin" />}
                 {exporting ? "INITIALIZING EXPORT..." : "AUTHORIZE EXPORT"}

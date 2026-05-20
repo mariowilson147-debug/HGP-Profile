@@ -37,6 +37,13 @@ export default function ProductsPage() {
   };
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const visibleProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   // Stats calculation
   const totalValuation = products.reduce((acc, curr) => acc + (curr.retail_price || 0), 0);
@@ -58,16 +65,16 @@ export default function ProductsPage() {
         <div className="flex items-center gap-4">
           <Link 
             href="/admin?tab=categories" 
-            className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded"
+            className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded"
           >
             <Database size={14} /> Manage Categories
           </Link>
-          <button className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
+          <button className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
             <Filter size={14} /> Refine View
           </button>
           <Link 
             href="/admin/product/new" 
-            className="bg-apex-text hover:bg-white text-[#0b1326] font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(218,226,253,0.3)] transition-all flex items-center gap-2 cursor-pointer"
+            className="bg-apex-text hover:bg-white text-apex-bg font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(218,226,253,0.3)] transition-all flex items-center gap-2 cursor-pointer"
           >
             <Plus size={14} /> Initialize New Unit
           </Link>
@@ -75,7 +82,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Main Table Panel */}
-      <div className="bg-[#131b2e] border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
+      <div className="bg-apex-surface-low border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
         
         {/* Search Overlay Input (Optional integration) */}
         <div className="absolute top-0 right-0 p-4 w-64 opacity-0 pointer-events-none">
@@ -87,7 +94,7 @@ export default function ProductsPage() {
         <div className="overflow-x-auto min-h-64">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#171f33]/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
+              <tr className="bg-apex-surface/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
                 <th className="py-4 px-6 font-bold w-24">ASSET_VISUAL</th>
                 <th className="py-4 px-6 font-bold">IDENTIFIER_STRING</th>
                 <th className="py-4 px-6 font-bold">CORE_SERIAL_SKU</th>
@@ -113,17 +120,17 @@ export default function ProductsPage() {
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((product) => {
+                visibleProducts.map((product) => {
                   const cat = categories.find(c => c.name === product.category);
                   const prefix = cat?.sku_prefix || product.category.substring(0, 1);
                   const sku = `NX-${product.id.substring(0, 4)}-${prefix}-CORE`.toUpperCase();
                   const isDeleting = deletingId === product.id;
                   
                   return (
-                    <tr key={product.id} className="hover:bg-[#171f33]/40 transition-colors group">
+                    <tr key={product.id} className="hover:bg-apex-surface/40 transition-colors group">
                       {/* ASSET_VISUAL */}
                       <td className="py-3 px-6">
-                        <Link href={`/admin/product/${product.id}`} className="block w-16 h-10 bg-[#060e20] border border-apex-outline-variant/30 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-apex-secondary/50 transition-colors">
+                        <Link href={`/admin/product/${product.id}`} className="block w-16 h-10 bg-apex-surface-lowest border border-apex-outline-variant/30 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-apex-secondary/50 transition-colors">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={product.image_url} alt="" className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300" />
                         </Link>
@@ -185,19 +192,27 @@ export default function ProductsPage() {
         </div>
         
         {/* Registry Footer Pagination */}
-        <div className="px-6 py-4 bg-[#0b1326] border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
+        <div className="px-6 py-4 bg-apex-bg border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
           <div className="flex items-center gap-4">
-            <span>SHOWING ENTRY 001-{(filteredProducts.length < 4 ? filteredProducts.length : '004')} OF {products.length}</span>
-            <div className="w-24 h-1 bg-[#171f33] rounded-full overflow-hidden flex">
-              <div className="w-1/4 h-full bg-apex-secondary"></div>
+            <span>SHOWING ENTRY {filteredProducts.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredProducts.length)} OF {filteredProducts.length}</span>
+            <div className="w-24 h-1 bg-apex-surface rounded-full overflow-hidden flex">
+              <div className="h-full bg-apex-secondary" style={{ width: `${filteredProducts.length ? ((Math.min(startIndex + itemsPerPage, filteredProducts.length)) / filteredProducts.length) * 100 : 0}%` }}></div>
             </div>
           </div>
           <div className="flex gap-1.5 text-xs text-apex-text select-none">
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">&lt;</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-apex-secondary bg-[#131b2e] text-apex-secondary font-bold">01</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">02</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">03</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">&gt;</button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >&lt;</button>
+            <span className="px-3 h-8 flex items-center justify-center rounded border border-apex-secondary bg-apex-surface-low text-apex-secondary font-bold">
+              {currentPage} / {totalPages}
+            </span>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >&gt;</button>
           </div>
         </div>
 
@@ -206,7 +221,7 @@ export default function ProductsPage() {
       {/* Telemetry Cards at Bottom */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
         
-        <div className="bg-[#131b2e] border-l-2 border-l-apex-secondary border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
+        <div className="bg-apex-surface-low border-l-2 border-l-apex-secondary border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
           <div className="flex justify-between items-start text-apex-on-surface-variant">
             <span className="font-apex-sans text-xs tracking-widest uppercase font-bold">GLOBAL ASSETS</span>
             <Database size={16} className="text-apex-secondary" />
@@ -221,7 +236,7 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        <div className="bg-[#131b2e] border-l-2 border-l-apex-text border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
+        <div className="bg-apex-surface-low border-l-2 border-l-apex-text border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
           <div className="flex justify-between items-start text-apex-on-surface-variant">
             <span className="font-apex-sans text-xs tracking-widest uppercase font-bold">ACTIVE NODES</span>
             <HardDrive size={16} className="text-apex-text" />
@@ -236,7 +251,7 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        <div className="bg-[#131b2e] border-l-2 border-l-apex-text border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
+        <div className="bg-apex-surface-low border-l-2 border-l-apex-text border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
           <div className="flex justify-between items-start text-apex-on-surface-variant">
             <span className="font-apex-sans text-xs tracking-widest uppercase font-bold">NETWORK SPEED</span>
             <Zap size={16} className="text-apex-text" />

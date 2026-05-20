@@ -20,6 +20,13 @@ export default function CategoriesTab() {
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(localCategories.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const visibleCategories = localCategories.slice(startIndex, startIndex + itemsPerPage);
+
   const handleAdd = async () => {
     setLoading(true);
     const newCat = {
@@ -102,17 +109,17 @@ export default function CategoriesTab() {
           <button 
             onClick={handleSync}
             disabled={loading}
-            className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded disabled:opacity-50"
+            className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded disabled:opacity-50"
           >
             <CloudLightning size={14} /> Sync Core
           </button>
-          <button className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
+          <button className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
             <Filter size={14} /> Refine View
           </button>
           <button 
             onClick={handleAdd}
             disabled={loading}
-            className="bg-apex-text hover:bg-white text-[#0b1326] font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(218,226,253,0.3)] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="bg-apex-text hover:bg-white text-apex-bg font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(218,226,253,0.3)] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Plus size={14} /> Initialize New Category
           </button>
@@ -120,13 +127,13 @@ export default function CategoriesTab() {
       </div>
 
       {/* Main Table Panel */}
-      <div className="bg-[#131b2e] border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
+      <div className="bg-apex-surface-low border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
         
         {/* Table Canvas */}
         <div className="overflow-x-auto min-h-64">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-[#171f33]/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
+              <tr className="bg-apex-surface/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
                 <th className="py-4 px-6 font-bold w-24">CAT_VISUAL</th>
                 <th className="py-4 px-6 font-bold">IDENTIFIER_STRING</th>
                 <th className="py-4 px-6 font-bold">CORE_PREFIX_SLUG</th>
@@ -143,15 +150,15 @@ export default function CategoriesTab() {
                   </td>
                 </tr>
               ) : (
-                localCategories.map((cat) => {
+                visibleCategories.map((cat) => {
                   const CatIcon = IconMap[cat.icon_name || "Package"] || Package;
                   const isDeleting = deletingId === cat.id;
                   
                   return (
-                    <tr key={cat.id} className="hover:bg-[#171f33]/40 transition-colors group">
+                    <tr key={cat.id} className="hover:bg-apex-surface/40 transition-colors group">
                       {/* CAT_VISUAL */}
                       <td className="py-3 px-6">
-                        <div className="w-16 h-10 bg-[#060e20] border border-apex-outline-variant/30 flex items-center justify-center shrink-0 group-hover:border-apex-secondary/50 transition-colors relative overflow-hidden text-apex-secondary/80 group-hover:text-apex-secondary group-hover:bg-apex-secondary/10">
+                        <div className="w-16 h-10 bg-apex-surface-lowest border border-apex-outline-variant/30 flex items-center justify-center shrink-0 group-hover:border-apex-secondary/50 transition-colors relative overflow-hidden text-apex-secondary/80 group-hover:text-apex-secondary group-hover:bg-apex-secondary/10">
                           <select
                             className="absolute inset-0 opacity-0 cursor-pointer"
                             value={cat.icon_name || "Package"}
@@ -207,7 +214,7 @@ export default function CategoriesTab() {
                           <span className={`inline-block px-3 py-1 border font-apex-mono text-[9px] font-bold tracking-widest uppercase transition-colors ${
                             cat.is_visible 
                               ? 'border-apex-secondary/50 bg-apex-secondary/10 text-apex-secondary shadow-[0_0_10px_rgba(76,215,246,0.1)]' 
-                              : 'border-apex-outline-variant/30 bg-[#060e20] text-apex-on-surface-variant'
+                              : 'border-apex-outline-variant/30 bg-apex-surface-lowest text-apex-on-surface-variant'
                           }`}>
                             {cat.is_visible ? 'ACTIVE' : 'IDLE'}
                           </span>
@@ -244,18 +251,27 @@ export default function CategoriesTab() {
         </div>
         
         {/* Registry Footer Pagination */}
-        <div className="px-6 py-4 bg-[#0b1326] border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
+        <div className="px-6 py-4 bg-apex-bg border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
           <div className="flex items-center gap-4">
-            <span>SHOWING ENTRY 001-{(localCategories.length < 10 ? localCategories.length : '010')} OF {localCategories.length}</span>
-            <div className="w-24 h-1 bg-[#171f33] rounded-full overflow-hidden flex">
-              <div className="w-full h-full bg-apex-secondary"></div>
+            <span>SHOWING ENTRY {localCategories.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + itemsPerPage, localCategories.length)} OF {localCategories.length}</span>
+            <div className="w-24 h-1 bg-apex-surface rounded-full overflow-hidden flex">
+              <div className="h-full bg-apex-secondary" style={{ width: `${localCategories.length ? ((Math.min(startIndex + itemsPerPage, localCategories.length)) / localCategories.length) * 100 : 0}%` }}></div>
             </div>
           </div>
           <div className="flex gap-1.5 text-xs text-apex-text select-none">
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">&lt;</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-apex-secondary bg-[#131b2e] text-apex-secondary font-bold">01</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors opacity-50 cursor-not-allowed">02</button>
-            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors opacity-50 cursor-not-allowed">&gt;</button>
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >&lt;</button>
+            <span className="px-3 h-8 flex items-center justify-center rounded border border-apex-secondary bg-apex-surface-low text-apex-secondary font-bold">
+              {currentPage} / {totalPages}
+            </span>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >&gt;</button>
           </div>
         </div>
 

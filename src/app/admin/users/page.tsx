@@ -138,6 +138,13 @@ export default function UsersManagement() {
     u.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const visibleUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
   const activeCount = users.filter((u) => !u.is_banned).length;
   const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID;
 
@@ -156,12 +163,12 @@ export default function UsersManagement() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
+          <button className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
             <Filter size={14} /> Refine View
           </button>
           <button 
             onClick={() => handleOpenModal()}
-            className="bg-apex-primary hover:brightness-110 text-[#0b1326] font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(192,193,255,0.3)] transition-all flex items-center gap-2 cursor-pointer"
+            className="bg-apex-primary hover:brightness-110 text-apex-bg font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(192,193,255,0.3)] transition-all flex items-center gap-2 cursor-pointer"
           >
             <Plus size={14} /> Initialize New Node
           </button>
@@ -179,7 +186,7 @@ export default function UsersManagement() {
 
       {/* Main Table Panel */}
       {!error && (
-        <div className="bg-[#131b2e] border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
+        <div className="bg-apex-surface-low border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
           
           <div className="absolute top-0 right-0 p-4 w-64 opacity-0 pointer-events-none">
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -188,7 +195,7 @@ export default function UsersManagement() {
           <div className="overflow-x-auto min-h-64">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#171f33]/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
+                <tr className="bg-apex-surface/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
                   <th className="py-4 px-6 font-bold w-24">NODE_VISUAL</th>
                   <th className="py-4 px-6 font-bold">IDENTIFIER_STRING</th>
                   <th className="py-4 px-6 font-bold">CORE_PREFIX_SLUG</th>
@@ -214,15 +221,15 @@ export default function UsersManagement() {
                     </td>
                   </tr>
                 ) : (
-                  filteredUsers.map((u) => {
+                  visibleUsers.map((u) => {
                     const isAdmin = u.id === ADMIN_UID;
                     const isPending = pendingBanId === u.id;
                     
                     return (
-                      <tr key={u.id} className="hover:bg-[#171f33]/40 transition-colors group">
+                      <tr key={u.id} className="hover:bg-apex-surface/40 transition-colors group">
                         {/* NODE_VISUAL */}
                         <td className="py-3 px-6">
-                          <div className={`w-12 h-10 bg-[#060e20] border flex items-center justify-center shrink-0 group-hover:border-apex-primary/50 transition-colors ${isAdmin ? "border-apex-primary/30 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]" : "border-apex-outline-variant/30 text-apex-on-surface-variant group-hover:text-apex-primary/80"}`}>
+                          <div className={`w-12 h-10 bg-apex-surface-lowest border flex items-center justify-center shrink-0 group-hover:border-apex-primary/50 transition-colors ${isAdmin ? "border-apex-primary/30 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]" : "border-apex-outline-variant/30 text-apex-on-surface-variant group-hover:text-apex-primary/80"}`}>
                             {isAdmin ? <Shield size={16} /> : <Users size={16} />}
                           </div>
                         </td>
@@ -250,7 +257,7 @@ export default function UsersManagement() {
                           ) : (
                             <span className={`inline-block px-2 py-0.5 border font-apex-mono text-[9px] font-bold tracking-widest uppercase ${
                               u.is_banned
-                                ? "bg-[#060e20] border-apex-outline-variant/30 text-apex-on-surface-variant"
+                                ? "bg-apex-surface-lowest border-apex-outline-variant/30 text-apex-on-surface-variant"
                                 : "border-apex-primary/30 bg-apex-primary/10 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]"
                             }`}>
                               {u.is_banned ? "IDLE" : "ACTIVE"}
@@ -299,19 +306,27 @@ export default function UsersManagement() {
           </div>
           
           {/* Registry Footer Pagination */}
-          <div className="px-6 py-4 bg-[#0b1326] border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
+          <div className="px-6 py-4 bg-apex-bg border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
             <div className="flex items-center gap-4">
-              <span>SHOWING ENTRY 001-{(filteredUsers.length < 10 ? filteredUsers.length : '010')} OF {users.length}</span>
-              <div className="w-24 h-1 bg-[#171f33] rounded-full overflow-hidden flex">
-                <div className="w-1/4 h-full bg-apex-primary"></div>
+              <span>SHOWING ENTRY {filteredUsers.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredUsers.length)} OF {filteredUsers.length}</span>
+              <div className="w-24 h-1 bg-apex-surface rounded-full overflow-hidden flex">
+                <div className="h-full bg-apex-primary" style={{ width: `${filteredUsers.length ? ((Math.min(startIndex + itemsPerPage, filteredUsers.length)) / filteredUsers.length) * 100 : 0}%` }}></div>
               </div>
             </div>
             <div className="flex gap-1.5 text-xs text-apex-text select-none">
-              <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">&lt;</button>
-              <button className="w-8 h-8 flex items-center justify-center rounded border border-apex-primary bg-[#131b2e] text-apex-primary font-bold">01</button>
-              <button className="w-8 h-8 flex items-center justify-center rounded border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">02</button>
-              <button className="w-8 h-8 flex items-center justify-center rounded border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">03</button>
-              <button className="w-8 h-8 flex items-center justify-center rounded border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">&gt;</button>
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >&lt;</button>
+              <span className="px-3 h-8 flex items-center justify-center rounded border border-apex-primary bg-apex-surface-low text-apex-primary font-bold">
+                {currentPage} / {totalPages}
+              </span>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >&gt;</button>
             </div>
           </div>
 
@@ -322,7 +337,7 @@ export default function UsersManagement() {
       {!error && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
           
-          <div className="bg-[#131b2e] border-l-2 border-l-apex-primary border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
+          <div className="bg-apex-surface-low border-l-2 border-l-apex-primary border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
             <div className="flex justify-between items-start text-apex-on-surface-variant">
               <span className="font-apex-sans text-xs tracking-widest uppercase font-bold">ACTIVE NODES</span>
               <Activity size={16} className="text-apex-primary" />
@@ -337,7 +352,7 @@ export default function UsersManagement() {
             </div>
           </div>
 
-          <div className="bg-[#131b2e] border-l-2 border-l-apex-text border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
+          <div className="bg-apex-surface-low border-l-2 border-l-apex-text border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
             <div className="flex justify-between items-start text-apex-on-surface-variant">
               <span className="font-apex-sans text-xs tracking-widest uppercase font-bold">TOTAL PERSONNEL</span>
               <Users size={16} className="text-apex-text" />
@@ -352,7 +367,7 @@ export default function UsersManagement() {
             </div>
           </div>
 
-          <div className="bg-[#131b2e] border-l-2 border-l-apex-secondary border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative group cursor-pointer hover:border-apex-secondary/50 transition-colors" onClick={() => handleOpenModal()}>
+          <div className="bg-apex-surface-low border-l-2 border-l-apex-secondary border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative group cursor-pointer hover:border-apex-secondary/50 transition-colors" onClick={() => handleOpenModal()}>
             <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-apex-secondary/50"></div>
             <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-apex-secondary/50"></div>
             <div className="flex justify-between items-start text-apex-secondary">
@@ -371,10 +386,10 @@ export default function UsersManagement() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-apex-sans">
           <div
-            className="absolute inset-0 bg-[#0b1326]/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-apex-bg/80 backdrop-blur-sm"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-[#0b1326] p-8 w-full max-w-md shadow-[0_0_30px_rgba(192,193,255,0.1)] rounded border border-apex-primary/30 text-apex-text apex-scanline-effect">
+          <div className="relative bg-apex-bg p-8 w-full max-w-md shadow-[0_0_30px_rgba(192,193,255,0.1)] rounded border border-apex-primary/30 text-apex-text apex-scanline-effect">
             <button
               onClick={() => setShowModal(false)}
               className="absolute top-5 right-5 text-apex-on-surface-variant hover:text-apex-text transition-colors cursor-pointer"
@@ -411,7 +426,7 @@ export default function UsersManagement() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#131b2e] border border-apex-outline-variant/30 text-apex-text pl-11 pr-4 py-3 rounded text-xs focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all font-apex-mono"
+                    className="w-full bg-apex-surface-low border border-apex-outline-variant/30 text-apex-text pl-11 pr-4 py-3 rounded text-xs focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all font-apex-mono"
                     placeholder="sys.op@apex.com"
                   />
                 </div>
@@ -429,7 +444,7 @@ export default function UsersManagement() {
                     type="password"
                     value={editPassword}
                     onChange={(e) => setEditPassword(e.target.value)}
-                    className="w-full bg-[#131b2e] border border-apex-outline-variant/30 text-apex-text px-4 py-3 rounded text-xs focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all font-apex-mono"
+                    className="w-full bg-apex-surface-low border border-apex-outline-variant/30 text-apex-text px-4 py-3 rounded text-xs focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all font-apex-mono"
                     placeholder="••••••••"
                   />
                 </div>
@@ -439,14 +454,14 @@ export default function UsersManagement() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 py-2.5 bg-[#131b2e] hover:bg-[#171f33] border border-apex-outline-variant/30 text-apex-text text-xs font-apex-mono uppercase tracking-wider rounded transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 bg-apex-surface-low hover:bg-apex-surface border border-apex-outline-variant/30 text-apex-text text-xs font-apex-mono uppercase tracking-wider rounded transition-colors cursor-pointer"
                 >
                   ABORT
                 </button>
                 <button
                   type="submit"
                   disabled={modalLoading}
-                  className="flex-1 py-2.5 bg-apex-primary hover:brightness-110 text-[#0b1326] text-xs font-apex-sans font-bold uppercase tracking-wider rounded disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(192,193,255,0.2)]"
+                  className="flex-1 py-2.5 bg-apex-primary hover:brightness-110 text-apex-bg text-xs font-apex-sans font-bold uppercase tracking-wider rounded disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(192,193,255,0.2)]"
                 >
                   {modalLoading && <Loader2 size={14} className="animate-spin" />}
                   {editId ? "COMMIT CHANGES" : "AUTHORIZE"}

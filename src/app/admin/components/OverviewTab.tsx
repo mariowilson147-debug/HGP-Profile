@@ -58,7 +58,7 @@ export default function OverviewTab({ stats }: { stats: any }) {
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
-          <span className="px-3 py-1 bg-[#060e20] border border-[#2d3449] text-apex-secondary font-apex-sans font-bold text-[10px] tracking-wider rounded uppercase flex items-center gap-2">
+          <span className="px-3 py-1 bg-apex-surface-lowest border border-apex-surface-highest text-apex-secondary font-apex-sans font-bold text-[10px] tracking-wider rounded uppercase flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-apex-secondary rounded-full apex-glow-accent"></span>
             LIVE STREAM ACTIVE
           </span>
@@ -128,7 +128,7 @@ export default function OverviewTab({ stats }: { stats: any }) {
 
       {/* Technical Detail Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-[#131b2e] border border-apex-outline-variant/20 p-6 flex flex-col justify-center relative">
+        <div className="bg-apex-surface-low border border-apex-outline-variant/20 p-6 flex flex-col justify-center relative">
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-apex-secondary/80"></div>
           <p className="font-apex-sans text-xs text-apex-on-surface-variant tracking-wider uppercase mb-2">Database Sync Status</p>
           <div className="flex items-start gap-3 mt-1 text-apex-text">
@@ -137,7 +137,7 @@ export default function OverviewTab({ stats }: { stats: any }) {
           </div>
         </div>
         
-        <div className="bg-[#131b2e] border border-apex-outline-variant/20 p-6 flex flex-col justify-center relative">
+        <div className="bg-apex-surface-low border border-apex-outline-variant/20 p-6 flex flex-col justify-center relative">
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-apex-primary/40"></div>
           <p className="font-apex-sans text-xs text-apex-on-surface-variant tracking-wider uppercase mb-2">System Uptime</p>
           <div className="flex items-end gap-4 mt-1 text-apex-text">
