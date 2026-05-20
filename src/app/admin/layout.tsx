@@ -20,7 +20,9 @@ import {
   Users, 
   Download, 
   Settings, 
-  HelpCircle 
+  HelpCircle,
+  Menu,
+  X
 } from "lucide-react";
 
 function AdminSidebarNav() {
@@ -157,6 +159,7 @@ export default function AdminLayout({
     loadPercent: "0.0%",
     threadCount: 0
   });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     getSystemMetrics().then(m => setMetrics(m));
@@ -171,10 +174,24 @@ export default function AdminLayout({
       <div className="flex min-h-screen w-full bg-apex-bg text-apex-text font-apex-sans selection:bg-apex-secondary/30 relative">
         
         {/* SideNavBar Shell */}
-        <aside className="h-screen w-64 fixed left-0 top-0 bg-[#0b1326] border-r border-apex-outline-variant/30 flex flex-col py-8 z-50">
-          <div className="px-6 mb-8">
-            <h1 className="font-apex-sans text-3xl font-black text-apex-primary tracking-tighter leading-none uppercase">ifs</h1>
-            <p className="font-apex-mono text-[9px] text-apex-secondary tracking-widest mt-2 uppercase font-bold">V3.0 COMMAND CENTER</p>
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm" 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
+        )}
+        <aside className={`h-screen w-64 fixed left-0 top-0 bg-[#0b1326] border-r border-apex-outline-variant/30 flex flex-col py-8 z-50 transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
+          <div className="px-6 mb-8 flex justify-between items-start">
+            <div>
+              <h1 className="font-apex-sans text-3xl font-black text-apex-primary tracking-tighter leading-none uppercase">ifs</h1>
+              <p className="font-apex-mono text-[9px] text-apex-secondary tracking-widest mt-2 uppercase font-bold">V3.0 COMMAND CENTER</p>
+            </div>
+            <button 
+              className="lg:hidden text-apex-on-surface-variant hover:text-apex-text"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <X size={24} />
+            </button>
           </div>
           
           <Suspense fallback={<div className="flex-1 w-full bg-white/5 animate-pulse" />}>
@@ -193,11 +210,17 @@ export default function AdminLayout({
         </aside>
 
         {/* Right Side Content Canvas Wrapper */}
-        <div className="flex-1 flex flex-col pl-64 w-full min-h-screen relative z-10">
+        <div className="flex-1 flex flex-col pl-0 lg:pl-64 w-full min-h-screen relative z-10 transition-all duration-300">
           {/* TopNavBar Shell */}
-          <header className="fixed top-0 right-0 w-[calc(100%-16rem)] h-[72px] bg-[#0b1326]/95 backdrop-blur-md border-b border-apex-outline-variant/20 flex justify-between items-center px-8 z-40">
+          <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-16rem)] h-[72px] bg-[#0b1326]/95 backdrop-blur-md border-b border-apex-outline-variant/20 flex justify-between items-center px-4 lg:px-8 z-40 transition-all duration-300">
             <div className="flex items-center gap-4 flex-1">
-              <div className="relative w-[400px] group">
+              <button 
+                className="lg:hidden text-apex-on-surface-variant hover:text-apex-text p-2 -ml-2"
+                onClick={() => setIsMobileMenuOpen(true)}
+              >
+                <Menu size={24} />
+              </button>
+              <div className="relative w-full max-w-[400px] group hidden sm:block">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-apex-on-surface-variant/50">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </span>
