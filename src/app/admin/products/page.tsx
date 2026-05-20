@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getProducts, deleteProduct } from "@/lib/actions";
-import { Product } from "@/components/ProductModal";
+import { Product } from "@/lib/actions";
 import Link from "next/link";
 import { Trash2, Search, Package, Download, ChevronLeft } from "lucide-react";
 

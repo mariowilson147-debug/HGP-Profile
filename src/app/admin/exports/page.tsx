@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getProducts } from "@/lib/actions";
-import { FileSpreadsheet, Download, FileText, Clock, CheckCircle2, XCircle, RefreshCw, Share2, Save, Filter } from "lucide-react";
+import { FileSpreadsheet, Download, FileText, RefreshCw, Share2, Filter } from "lucide-react";
 import { useSettings } from "@/components/SettingsProvider";
 
 const getBase64ImageFromUrl = async (imageUrl: string) => {
@@ -27,11 +27,6 @@ export default function ExportsHub() {
   
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  
-  // Automated Reports State
-  const [reportEmail, setReportEmail] = useState("");
-  const [reportFreq, setReportFreq] = useState("weekly");
-  const [reportFormat, setReportFormat] = useState("pdf");
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -226,11 +221,6 @@ export default function ExportsHub() {
     setExportingPDF(false);
   };
 
-  const handleSaveReportSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert("Automated report settings saved successfully!");
-  };
-
   return (
     <div className="w-full bg-slate-50 min-h-full pb-12 pt-12">
 
@@ -312,94 +302,9 @@ export default function ExportsHub() {
             </div>
           </div>
 
-          {/* Automated Reports Settings */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <Clock size={20} className="text-slate-800" />
-              <h3 className="text-lg font-display font-bold text-slate-800">Automated Reports</h3>
-            </div>
-            
-            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-              Configure scheduled catalog distributions to your connected partners.
-            </p>
-
-            <form onSubmit={handleSaveReportSettings} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Recipient Email</label>
-                <input 
-                  type="email" 
-                  required
-                  value={reportEmail}
-                  onChange={(e) => setReportEmail(e.target.value)}
-                  placeholder="partner@example.com"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Frequency</label>
-                <select 
-                  value={reportFreq}
-                  onChange={(e) => setReportFreq(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Format</label>
-                <select 
-                  value={reportFormat}
-                  onChange={(e) => setReportFormat(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="pdf">PDF Document</option>
-                  <option value="excel">Excel Spreadsheet</option>
-                </select>
-              </div>
-              <button 
-                type="submit"
-                className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 mt-2"
-              >
-                <Save size={16} /> Save Settings
-              </button>
-            </form>
-          </div>
+          {/* Removed Automated Reports and Recent Export History sections based on user request */}
         </div>
 
-        {/* History Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-800 tracking-tight">Recent Export History</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="p-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Export Name</th>
-                  <th className="p-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Date & Time</th>
-                  <th className="p-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="p-4 px-6 text-[10px] font-bold text-slate-500 uppercase tracking-wider">User</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                <tr className="border-b border-slate-100 hover:bg-slate-50/50">
-                  <td className="p-4 px-6 font-medium text-slate-700 flex items-center gap-2">
-                    <FileSpreadsheet size={16} className="text-slate-400" /> Custom_Wholesale_Q3.xlsx
-                  </td>
-                  <td className="p-4 px-6 text-slate-500 font-mono text-xs">Oct 24, 14:32</td>
-                  <td className="p-4 px-6">
-                    <span className="flex items-center gap-1 text-[10px] font-bold tracking-wider text-emerald-600 bg-emerald-50 px-2 py-1 rounded w-max">
-                      <CheckCircle2 size={12} /> COMPLETED
-                    </span>
-                  </td>
-                  <td className="p-4 px-6 text-slate-500 text-xs">admin@catalogpro.com</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
 
       </div>
     </div>

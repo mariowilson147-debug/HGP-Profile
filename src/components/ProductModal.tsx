@@ -4,16 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Heart, ShieldCheck, Award, Zap } from "lucide-react";
 import { User } from "@/components/AuthProvider";
 import { useChat } from "./ChatProvider";
+import { useSettings } from "./SettingsProvider";
 
-export type Product = {
-  id: string;
-  name: string;
-  category: string;
-  image_url: string;
-  buying_price?: number;
-  wholesale_price?: number;
-  retail_price?: number;
-};
+import { Product } from "@/lib/actions";
 
 interface ProductModalProps {
   product: Product | null;
@@ -24,6 +17,7 @@ interface ProductModalProps {
 
 export default function ProductModal({ product, isOpen, onClose, user }: ProductModalProps) {
   const { openChat } = useChat();
+  const { settings } = useSettings();
 
   if (!product) return null;
 
@@ -90,15 +84,27 @@ export default function ProductModal({ product, isOpen, onClose, user }: Product
                 )}
 
                 {!user && (
-                  <button 
-                    onClick={() => {
-                      onClose();
-                      openChat(`Hi, I'm interested in the product: ${product.name}`);
-                    }}
-                    className="px-6 py-3 bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors rounded-xl shadow-md flex items-center justify-center"
-                  >
-                    Contact Sales
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {settings.enableWhatsapp && settings.whatsappNumber && (
+                      <a 
+                        href={`https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi, I'm interested in the product: ${product.name}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-3 bg-[#25D366] text-white text-sm font-medium hover:bg-[#20b858] transition-colors rounded-xl shadow-md flex items-center justify-center gap-2"
+                      >
+                        WhatsApp
+                      </a>
+                    )}
+                    <button 
+                      onClick={() => {
+                        onClose();
+                        openChat(`Hi, I'm interested in the product: ${product.name}`);
+                      }}
+                      className="px-6 py-3 bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors rounded-xl shadow-md flex items-center justify-center"
+                    >
+                      Contact Sales
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Product } from "./ProductModal";
+import { Product } from "@/lib/actions";
 import { addProducts, updateProduct } from "@/lib/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useSettings } from "./SettingsProvider";
@@ -24,6 +24,10 @@ interface QueueItem {
   imagePreview: string;
   image_url: string;
   prices: PriceFields;
+  visibility: 'visible' | 'hidden' | 'archived';
+  availability: 'in_stock' | 'out_of_stock' | 'coming_soon';
+  is_featured: boolean;
+  tags: string;
   uploadProgress: number;   // 0–100
   status: "idle" | "uploading" | "done" | "error";
   errorMsg: string;
@@ -38,6 +42,10 @@ function blankItem(defaultCategory: string, id?: string): QueueItem {
     imagePreview: "",
     image_url: "",
     prices: { buying_price: "", wholesale_price: "", retail_price: "" },
+    visibility: 'visible',
+    availability: 'in_stock',
+    is_featured: false,
+    tags: "",
     uploadProgress: 0,
     status: "idle",
     errorMsg: "",
@@ -229,6 +237,58 @@ function QueueCard({
             ))}
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Visibility</label>
+              <select
+                value={item.visibility}
+                onChange={e => onChange(item.id, { visibility: e.target.value as 'visible' | 'hidden' | 'archived' })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+              >
+                <option value="visible">Visible (Public)</option>
+                <option value="hidden">Hidden (Admin Only)</option>
+                <option value="archived">Archived (Disabled)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Availability</label>
+              <select
+                value={item.availability}
+                onChange={e => onChange(item.id, { availability: e.target.value as 'in_stock' | 'out_of_stock' | 'coming_soon' })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+              >
+                <option value="in_stock">In Stock</option>
+                <option value="out_of_stock">Out of Stock</option>
+                <option value="coming_soon">Coming Soon</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tags (Comma separated)</label>
+              <input
+                type="text"
+                value={item.tags}
+                onChange={e => onChange(item.id, { tags: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+                placeholder="e.g. Sale, Trending, New"
+              />
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <input 
+                type="checkbox"
+                id={`featured-${item.id}`}
+                checked={item.is_featured}
+                onChange={e => onChange(item.id, { is_featured: e.target.checked })}
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <label htmlFor={`featured-${item.id}`} className="text-sm font-semibold text-slate-700 cursor-pointer select-none">
+                Mark as Featured Product
+              </label>
+            </div>
+          </div>
+
           {margin !== null && (
             <div className="flex items-center justify-between text-xs bg-slate-100 rounded-lg px-3 py-2">
               <span className="text-slate-500">Retail Margin</span>
@@ -274,6 +334,10 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         wholesale_price: String(initialData.wholesale_price),
         retail_price: String(initialData.retail_price),
       },
+      visibility: initialData.visibility || 'visible',
+      availability: initialData.availability || 'in_stock',
+      is_featured: initialData.is_featured || false,
+      tags: initialData.tags ? initialData.tags.join(", ") : "",
       uploadProgress: 0,
       status: "idle",
       errorMsg: "",
@@ -351,6 +415,12 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         buying_price: +editItem.prices.buying_price,
         wholesale_price: +editItem.prices.wholesale_price,
         retail_price: +editItem.prices.retail_price,
+        visibility: editItem.visibility,
+        availability: editItem.availability,
+        is_featured: editItem.is_featured,
+        tags: editItem.tags.split(',').map(t => t.trim()).filter(Boolean),
+        sort_order: initialData!.sort_order || 0,
+        attributes: initialData!.attributes || {},
       });
       if (result?.error) throw new Error(result.error);
       addToast("Product updated successfully!", "success");
@@ -388,13 +458,19 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
     }
 
     // Bulk insert
-    const payload = queue.map(item => ({
+    const payload = queue.map((item, idx) => ({
       name: item.name,
       category: item.category.trim(),
       image_url: finalUrls[item.id],
       buying_price: +item.prices.buying_price,
       wholesale_price: +item.prices.wholesale_price,
       retail_price: +item.prices.retail_price,
+      visibility: item.visibility,
+      availability: item.availability,
+      is_featured: item.is_featured,
+      tags: item.tags.split(',').map(t => t.trim()).filter(Boolean),
+      attributes: {},
+      sort_order: idx,
     }));
 
     try {

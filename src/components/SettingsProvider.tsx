@@ -1,20 +1,20 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { getDbCategories, getStoreSettings, Category } from "@/lib/actions";
 
-export type CategoryConfig = {
-  id: string;
-  name: string;
-  iconName: string;
-  skuPrefix: string;
-};
+export type { Category as CategoryConfig } from "@/lib/actions";
 
+// Merge both for UI convenience, mapping store_settings to the old Settings format
 export type Settings = {
   companyName: string;
-  companyLogoUrl: string;
   theme: "light" | "dark" | "system";
   accentColor: string;
-  categories: CategoryConfig[];
+  categories: Category[];
+  whatsappNumber: string | null;
+  enableWhatsapp: boolean;
+  inquiryAutoReply: string | null;
+  mediaWatermarkEnabled: boolean;
 };
 
 interface SettingsContextType {
@@ -25,16 +25,13 @@ interface SettingsContextType {
 
 const defaultSettings: Settings = {
   companyName: "Interior Finishes Supermarket",
-  companyLogoUrl: "",
   theme: "light",
   accentColor: "#3b82f6",
-  categories: [
-    { id: "1", name: "Lighting", iconName: "Lightbulb", skuPrefix: "LGT" },
-    { id: "2", name: "Bathroom & Plumbing", iconName: "Bath", skuPrefix: "BTH" },
-    { id: "3", name: "Interior Decor", iconName: "Sofa", skuPrefix: "DEC" },
-    { id: "4", name: "Electricals", iconName: "Plug", skuPrefix: "ELE" },
-    { id: "5", name: "Work Wear", iconName: "Shirt", skuPrefix: "WRK" },
-  ],
+  categories: [],
+  whatsappNumber: null,
+  enableWhatsapp: true,
+  inquiryAutoReply: null,
+  mediaWatermarkEnabled: false,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -44,23 +41,31 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("catalog_settings");
-    if (stored) {
+    const fetchSettings = async () => {
       try {
-        const parsed = JSON.parse(stored);
-        if (!parsed.categories || parsed.categories.length === 0) {
-          parsed.categories = defaultSettings.categories;
-        }
-        if (parsed.companyName === "Prutam Enterprise Limited" || parsed.companyName === "Prutam Enterprise Ltd" || parsed.companyName === "Prutam") {
-          parsed.companyName = "Interior Finishes Supermarket";
-          localStorage.setItem("catalog_settings", JSON.stringify(parsed));
-        }
-        setSettings(parsed);
-      } catch {
-        // Syntax error mapping fallback
+        const [dbCats, dbSettings] = await Promise.all([
+          getDbCategories(),
+          getStoreSettings()
+        ]);
+        
+        setSettings({
+          companyName: dbSettings?.company_name || defaultSettings.companyName,
+          theme: (dbSettings?.theme as 'light' | 'dark' | 'system') || defaultSettings.theme,
+          accentColor: dbSettings?.accent_color || defaultSettings.accentColor,
+          categories: dbCats || [],
+          whatsappNumber: dbSettings?.whatsapp_number || null,
+          enableWhatsapp: dbSettings?.enable_whatsapp ?? true,
+          inquiryAutoReply: dbSettings?.inquiry_auto_reply || null,
+          mediaWatermarkEnabled: dbSettings?.media_watermark_enabled ?? false,
+        });
+      } catch (e) {
+        console.error("Failed to load global settings", e);
+      } finally {
+        setIsMounted(true);
       }
-    }
-    setIsMounted(true);
+    };
+    
+    fetchSettings();
   }, []);
 
   useEffect(() => {
@@ -72,7 +77,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         document.documentElement.classList.add("light");
         document.documentElement.classList.remove("dark");
       } else {
-        // system
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
           document.documentElement.classList.add("dark");
           document.documentElement.classList.remove("light");
@@ -85,8 +89,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings.theme, isMounted]);
 
   const updateSettings = (newSettings: Settings) => {
+    // We only update local state here. 
+    // Database updates must be handled explicitly via server actions (updateStoreSettings / updateDbCategory)
+    // to ensure security and proper revalidation.
     setSettings(newSettings);
-    localStorage.setItem("catalog_settings", JSON.stringify(newSettings));
   };
 
   return (

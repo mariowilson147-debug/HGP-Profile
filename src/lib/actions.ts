@@ -20,7 +20,38 @@ export type Product = {
   buying_price: number;
   wholesale_price: number;
   retail_price: number;
+  visibility: 'visible' | 'hidden' | 'archived';
+  is_featured: boolean;
+  tags: string[];
+  attributes: Record<string, string | string[]>;
+  availability: 'in_stock' | 'out_of_stock' | 'coming_soon';
+  sort_order: number;
   created_at?: string;
+};
+
+export type Category = {
+  id: string;
+  name: string;
+  sku_prefix: string;
+  icon_name: string | null;
+  parent_id: string | null;
+  is_featured: boolean;
+  is_visible: boolean;
+  banner_url: string | null;
+  sort_order: number;
+  created_at?: string;
+};
+
+export type StoreSettings = {
+  id: number;
+  company_name: string;
+  theme: string;
+  accent_color: string;
+  whatsapp_number: string | null;
+  enable_whatsapp: boolean;
+  inquiry_auto_reply: string | null;
+  media_watermark_enabled: boolean;
+  updated_at?: string;
 };
 
 // Check for Server Side Authorized action
@@ -163,6 +194,179 @@ export async function deleteProduct(id: string) {
   revalidatePath("/admin");
   revalidateTag("products");
   return { success: true };
+}
+
+// --- Categories Actions ---
+
+export const getDbCategories = unstable_cache(
+  async () => {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
+    if (error) {
+      console.error("Error fetching categories:", error);
+      return [];
+    }
+    return data as Category[];
+  },
+  ['categories-cache'],
+  { tags: ['categories'] }
+);
+
+export async function addDbCategory(category: Omit<Category, "id" | "created_at">) {
+  const supabase = await requireAdmin();
+  const { data, error } = await supabase.from('categories').insert([category]).select().single();
+  if (error) return { error: error.message };
+  revalidateTag("categories");
+  return { success: true, data };
+}
+
+export async function updateDbCategory(id: string, updates: Partial<Category>) {
+  const supabase = await requireAdmin();
+  const { data, error } = await supabase.from('categories').update(updates).eq('id', id).select().single();
+  if (error) return { error: error.message };
+  revalidateTag("categories");
+  return { success: true, data };
+}
+
+export async function deleteDbCategory(id: string) {
+  const supabase = await requireAdmin();
+  const { error } = await supabase.from('categories').delete().eq('id', id);
+  if (error) return { error: error.message };
+  revalidateTag("categories");
+  return { success: true };
+}
+
+export async function syncCategoriesFromProducts() {
+  const supabase = await requireAdmin();
+  
+  // 1. Get all unique categories from products
+  const { data: products, error: pError } = await supabase.from('products').select('category');
+  if (pError) return { error: pError.message };
+  
+  const uniqueCategories = Array.from(new Set(products.map(p => p.category).filter(c => c && c.trim() !== "")));
+  
+  // 2. Get existing categories
+  const { data: existing, error: eError } = await supabase.from('categories').select('name');
+  if (eError) return { error: eError.message };
+  
+  const existingNames = new Set(existing.map(c => c.name));
+  
+  // 3. Find missing ones
+  const missing = uniqueCategories.filter(c => !existingNames.has(c));
+  
+  if (missing.length > 0) {
+    const payloads = missing.map((name, index) => ({
+      name,
+      sku_prefix: name.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, ''),
+      icon_name: 'Package',
+      is_visible: true,
+      is_featured: false,
+      sort_order: existing.length + index
+    }));
+    
+    const { error: insertError } = await supabase.from('categories').insert(payloads);
+    if (insertError) return { error: insertError.message };
+  }
+  
+  // Force cache invalidation
+  revalidateTag('categories');
+  revalidatePath('/');
+  revalidatePath('/admin');
+  
+  // Return updated full list
+  const { data: finalData } = await supabase.from('categories').select('*').order('sort_order');
+  return { success: true, count: missing.length, data: finalData as Category[] };
+}
+
+export async function deleteEmptyCategories() {
+  const supabase = await requireAdmin();
+  
+  // 1. Get all products to see which categories are in use
+  const { data: products, error: pError } = await supabase.from('products').select('category');
+  if (pError) return { error: pError.message };
+  
+  const activeCategoryNames = new Set(products.map(p => p.category).filter(Boolean));
+  
+  // 2. Get all existing categories
+  const { data: existing, error: eError } = await supabase.from('categories').select('id, name');
+  if (eError) return { error: eError.message };
+  
+  // 3. Find empty ones
+  const emptyCategories = existing.filter(c => !activeCategoryNames.has(c.name));
+  console.log("Active categories:", Array.from(activeCategoryNames));
+  console.log("Existing categories:", existing);
+  console.log("Empty categories found:", emptyCategories);
+  
+  if (emptyCategories.length > 0) {
+    const emptyIds = emptyCategories.map(c => c.id);
+    const { error: deleteError } = await supabase.from('categories').delete().in('id', emptyIds);
+    if (deleteError) return { error: deleteError.message };
+  }
+  
+  // Force cache invalidation
+  revalidateTag('categories');
+  revalidatePath('/');
+  revalidatePath('/admin');
+  
+  // Return updated full list
+  const { data: finalData } = await supabase.from('categories').select('*').order('sort_order');
+  return { success: true, count: emptyCategories.length, data: finalData as Category[] };
+}
+
+// --- Store Settings Actions ---
+
+export const getStoreSettings = unstable_cache(
+  async () => {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data, error } = await supabase.from('store_settings').select('*').eq('id', 1).single();
+    if (error) {
+      console.error("Error fetching store settings:", error);
+      return null;
+    }
+    return data as StoreSettings;
+  },
+  ['store-settings-cache'],
+  { tags: ['store_settings'] }
+);
+
+export async function updateStoreSettings(updates: Partial<StoreSettings>) {
+  const supabase = await requireAdmin();
+  const { data, error } = await supabase.from('store_settings').update(updates).eq('id', 1).select().single();
+  if (error) return { error: error.message };
+  revalidateTag("store_settings");
+  return { success: true, data };
+}
+
+// --- Analytics Actions ---
+
+export async function logProductView(productId: string, sessionId: string) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  await supabase.from('product_views').insert([{ product_id: productId, session_id: sessionId }]);
+}
+
+export async function logSearchQuery(query: string, sessionId: string) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  await supabase.from('search_analytics').insert([{ query, session_id: sessionId }]);
+}
+
+export async function getAnalyticsSummary() {
+  const supabase = await requireAdmin();
+  // Fetch views
+  const { count: totalViews } = await supabase.from('product_views').select('*', { count: 'exact', head: true });
+  // You would typically group by here, but for simplicity we return the total
+  return { totalViews };
 }
 
 export async function sendMessage(message: { session_id?: string; name: string; email: string; content: string; is_admin_reply?: boolean }) {

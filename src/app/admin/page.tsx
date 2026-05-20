@@ -1,145 +1,115 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { getUsers } from "@/lib/auth-actions";
-import Link from "next/link";
-import { Package, Plus, MessageSquare, Users, Download, Settings, Bookmark } from "lucide-react";
+import { getProducts, getChatThreads, Product } from "@/lib/actions";
 import { useAuth } from "@/components/AuthProvider";
+import { useSearchParams } from "next/navigation";
+import OverviewTab from "./components/OverviewTab";
+import IntelligenceTab from "./components/IntelligenceTab";
+import CategoriesTab from "./components/CategoriesTab";
+import InquiriesTab from "./components/InquiriesTab";
 
-export default function AdminDashboard() {
-  const [totalStaff, setTotalStaff] = useState(0);
+function AdminDashboardContent() {
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") || "overview";
+  
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const loadStaffCount = async () => {
+  // Data states
+  const [products, setProducts] = useState<Product[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [staffCount, setStaffCount] = useState(0);
+
+  const loadData = async () => {
     try {
-      const staff = await getUsers();
-      setTotalStaff(staff.length);
+      setLoading(true);
+      const [fetchedProducts, fetchedStaff, fetchedChats] = await Promise.all([
+        getProducts(),
+        getUsers(),
+        getChatThreads()
+      ]);
+      setProducts(fetchedProducts || []);
+      setStaffCount(fetchedStaff.length || 0);
+      setMessages(fetchedChats || []);
     } catch (e) {
-      console.error("Failed to load staff count", e);
+      console.error("Failed to load dashboard data", e);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadStaffCount();
+    loadData();
   }, []);
 
+  // Compute stats
+  const stats = useMemo(() => {
+    const totalInquiries = messages.length;
+
+    const categories = new Map<string, { count: number, products: any[] }>();
+    products.forEach(p => {
+      const c = p.category || 'Uncategorized';
+      if (!categories.has(c)) {
+        categories.set(c, { count: 0, products: [] });
+      }
+      const cat = categories.get(c)!;
+      cat.count++;
+      cat.products.push(p);
+    });
+
+    const categoryStats = Array.from(categories.entries()).map(([name, data]) => ({
+      name,
+      count: data.count,
+      products: data.products
+    }));
+
+    // Replaced "trending" with "recently added"
+    const recentlyAddedProducts = [...products].sort((a, b) => {
+      if (!a.created_at || !b.created_at) return 0;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
+    return {
+      totalProducts: products.length,
+      activeCategories: categories.size,
+      totalInquiries,
+      products,
+      categoryStats,
+      recentlyAddedProducts,
+      recentMessages: messages,
+      staffCount
+    };
+  }, [products, messages, staffCount]);
+
   return (
-    <div className="w-full bg-slate-50 min-h-full">
-
-      <div className="p-8 max-w-7xl mx-auto space-y-8">
-        
-        {/* Huge Launchpad Grid (Primary View) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-12 mt-6">
-          
-          {/* Products Card */}
-          <Link href="/admin/products" className="bg-white border border-slate-100 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 flex flex-col group block">
-            <div className="flex justify-between items-start mb-6">
-              <div className="w-12 h-12 bg-slate-50 text-slate-800 rounded-full flex items-center justify-center">
-                <Package size={24} strokeWidth={2} />
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider font-semibold rounded-md">
-                <Bookmark size={12} /> Active
-              </div>
-            </div>
-            <p className="text-xs font-semibold text-slate-400 mb-1 tracking-wide">CATALOG</p>
-            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Product Inventory</h3>
-            <div className="flex gap-2 mb-8 flex-wrap">
-              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Manage</span>
-              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Pricing</span>
-            </div>
-            <div className="flex items-center justify-between mt-auto pt-2">
-              <div className="flex flex-col">
-                <span className="text-[15px] font-bold text-slate-900">Manage Catalog</span>
-                <span className="text-[11px] text-slate-400 font-medium">In Database</span>
-              </div>
-              <div className="px-5 py-2.5 bg-[#0f172a] text-white text-xs font-bold rounded-xl group-hover:bg-slate-700 transition-colors">
-                Open now
-              </div>
-            </div>
-          </Link>
-
-          {/* New Product Card */}
-          <Link href="/admin/product/new" className="bg-white border border-slate-100 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 flex flex-col group block">
-            <div className="flex justify-between items-start mb-6">
-              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
-                <Plus size={24} strokeWidth={2} />
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider font-semibold rounded-md">
-                <Bookmark size={12} /> Setup
-              </div>
-            </div>
-            <p className="text-xs font-semibold text-slate-400 mb-1 tracking-wide">ADDITIONS</p>
-            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">New Product</h3>
-            <div className="flex gap-2 mb-8 flex-wrap">
-              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Create</span>
-              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Upload</span>
-            </div>
-            <div className="flex items-center justify-between mt-auto pt-2">
-              <div className="flex flex-col">
-                <span className="text-[15px] font-bold text-slate-900">Add Entry</span>
-                <span className="text-[11px] text-slate-400 font-medium">To Catalog</span>
-              </div>
-              <div className="px-5 py-2.5 bg-[#0f172a] text-white text-xs font-bold rounded-xl group-hover:bg-slate-700 transition-colors">
-                Create
-              </div>
-            </div>
-          </Link>
-
-          {/* Staff Card */}
-          <Link href="/admin/users" className="bg-white border border-slate-100 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 flex flex-col group block">
-            <div className="flex justify-between items-start mb-6">
-              <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center">
-                <Users size={24} strokeWidth={2} />
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider font-semibold rounded-md">
-                <Bookmark size={12} /> HR
-              </div>
-            </div>
-            <p className="text-xs font-semibold text-slate-400 mb-1 tracking-wide">TEAM</p>
-            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Staff Management</h3>
-            <div className="flex gap-2 mb-8 flex-wrap">
-              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Roles</span>
-              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Access</span>
-            </div>
-            <div className="flex items-center justify-between mt-auto pt-2">
-              <div className="flex flex-col">
-                <span className="text-[15px] font-bold text-slate-900">{totalStaff} Users</span>
-                <span className="text-[11px] text-slate-400 font-medium">Registered staff</span>
-              </div>
-              <div className="px-5 py-2.5 bg-[#0f172a] text-white text-xs font-bold rounded-xl group-hover:bg-slate-700 transition-colors">
-                Manage
-              </div>
-            </div>
-          </Link>
-
-          {/* Exports Card */}
-          <Link href="/admin/exports" className="bg-white border border-slate-100 rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 flex flex-col group block">
-            <div className="flex justify-between items-start mb-6">
-              <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center">
-                <Download size={24} strokeWidth={2} />
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider font-semibold rounded-md">
-                <Bookmark size={12} /> Share
-              </div>
-            </div>
-            <p className="text-xs font-semibold text-slate-400 mb-1 tracking-wide">DOCUMENTS</p>
-            <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">Data Exports</h3>
-            <div className="flex gap-2 mb-8 flex-wrap">
-              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">PDF</span>
-              <span className="px-3 py-1 bg-slate-100/80 text-slate-600 text-xs font-semibold rounded-md">Excel</span>
-            </div>
-            <div className="flex items-center justify-between mt-auto pt-2">
-              <div className="flex flex-col">
-                <span className="text-[15px] font-bold text-slate-900">Download</span>
-                <span className="text-[11px] text-slate-400 font-medium">Generate reports</span>
-              </div>
-              <div className="px-5 py-2.5 bg-[#0f172a] text-white text-xs font-bold rounded-xl group-hover:bg-slate-700 transition-colors">
-                Export
-              </div>
-            </div>
-          </Link>
-        </div>
+    <div className="w-full bg-transparent min-h-full pb-20">
+      <div className="p-8 max-w-7xl mx-auto">
+        {/* Content Area */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <div className="relative animate-in fade-in duration-500">
+            {activeTab === 'overview' && <OverviewTab stats={stats} />}
+            {activeTab === 'intelligence' && <IntelligenceTab stats={stats} />}
+            {activeTab === 'categories' && <CategoriesTab />}
+            {activeTab === 'inquiries' && <InquiriesTab stats={stats} />}
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={<div className="flex h-full items-center justify-center p-8"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
+      <AdminDashboardContent />
+    </Suspense>
   );
 }

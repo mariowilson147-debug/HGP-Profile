@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense, useMemo } from "react";
-import { Product } from "./ProductModal";
+import { Product } from "@/lib/actions";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 
@@ -46,12 +46,14 @@ function ProductGridContent({ products }: { products: Product[] }) {
   
   const filteredProducts = useMemo(() => {
     return products
+      // Treat null/undefined visibility as 'visible' — only explicitly hide 'hidden' or 'archived'
+      .filter(p => p.visibility !== 'hidden' && p.visibility !== 'archived')
       .filter(p => selectedCategory === "All Collections" || p.category === selectedCategory)
-      .filter(p => p.name.toLowerCase().includes(urlQuery.toLowerCase()))
+      .filter(p => p.name.toLowerCase().includes(urlQuery.toLowerCase()) || (p.tags && p.tags.some(t => t.toLowerCase().includes(urlQuery.toLowerCase()))))
       .sort((a, b) => {
-        const catCompare = a.category.localeCompare(b.category);
-        if (catCompare !== 0) return catCompare;
-        return a.name.localeCompare(b.name);
+        if (a.is_featured && !b.is_featured) return -1;
+        if (!a.is_featured && b.is_featured) return 1;
+        return (a.sort_order || 0) - (b.sort_order || 0);
       });
   }, [products, selectedCategory, urlQuery]);
 
@@ -130,6 +132,22 @@ function ProductGridContent({ products }: { products: Product[] }) {
               >
                 <div className="relative aspect-square w-full overflow-hidden bg-[#f4f4f4] mb-4">
                   <Image src={product.image_url} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
+                  
+                  {/* Badges */}
+                  <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                    {product.is_featured && (
+                      <span className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">FEATURED</span>
+                    )}
+                    {product.availability === 'out_of_stock' && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">OUT OF STOCK</span>
+                    )}
+                    {product.availability === 'coming_soon' && (
+                      <span className="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">COMING SOON</span>
+                    )}
+                    {product.tags && product.tags.map((tag, idx) => (
+                      <span key={idx} className="bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm uppercase">{tag}</span>
+                    ))}
+                  </div>
                 </div>
                 <div className="flex flex-col">
                   <h3 className="font-display font-medium text-lg text-slate-900 leading-tight mb-1">{product.name}</h3>
