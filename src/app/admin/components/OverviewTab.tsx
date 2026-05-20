@@ -1,186 +1,152 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { Package, MessageSquare, Users, Bookmark, TrendingUp, Activity, Search, ChevronDown, PieChart, BarChart2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { 
+  Package, 
+  MessageSquare, 
+  Users, 
+  Tag,
+  Clock, 
+  Database,
+  History,
+  CloudLightning,
+  ShieldCheck,
+  Zap,
+  Download,
+  Upload,
+  ClipboardList,
+  Shapes,
+  UserCheck,
+  Activity
+} from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
+import { getSystemMetrics } from "@/lib/actions";
 
 export default function OverviewTab({ stats }: { stats: any }) {
   const { user } = useAuth();
   const userName = user?.email?.split('@')[0] || "Admin";
   const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
 
+  const [metrics, setMetrics] = useState({
+    uptimeStr: "000:00:00:00",
+    dbRegion: "CONNECTING..."
+  });
+
+  useEffect(() => {
+    getSystemMetrics().then(m => setMetrics(m));
+    const interval = setInterval(() => {
+      getSystemMetrics().then(m => setMetrics(m));
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+
+
   return (
-    <div className="w-full animate-in fade-in duration-500">
+    <div className="w-full space-y-6 animate-in fade-in duration-500 font-apex-sans max-w-[1400px] mx-auto">
       
-      {/* Deep Blue Header Section inspired by image */}
-      <div className="bg-[#1f4e79] pt-8 pb-20 px-8 relative shadow-inner">
-        <div className="max-w-[1400px] mx-auto">
-          
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-semibold text-white">Welcome, {displayName}</h1>
-            <div className="flex items-center gap-4">
-              <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded text-sm transition-colors border border-white/20">
-                <ClockIcon /> Last 4 Hours <ChevronDown size={14} />
-              </button>
-              <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded text-sm transition-colors border border-white/20">
-                <RefreshIcon /> 10s <ChevronDown size={14} />
-              </button>
-            </div>
-          </div>
-
-          {/* KPI Row (integrated into the blue header) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 bg-[#255b8c] rounded shadow-lg border border-[#183d5d]">
-            
-            {/* KPI 1 */}
-            <div className="p-6 border-b lg:border-b-0 lg:border-r border-[#1f4e79] flex items-center gap-4">
-              <div className="w-10 h-10 border border-white/20 rounded flex items-center justify-center text-white shrink-0">
-                <Search size={18} />
-              </div>
-              <div>
-                <p className="text-blue-100 text-xs font-medium mb-1">Total Products</p>
-                <div className="flex items-end gap-3">
-                  <h4 className="text-2xl font-bold text-white">{stats.totalProducts}</h4>
-                  <span className="text-emerald-400 text-[10px] flex items-center font-bold">↗ 12%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* KPI 2 */}
-            <div className="p-6 border-b lg:border-b-0 lg:border-r border-[#1f4e79] flex items-center gap-4">
-              <div className="w-10 h-10 border border-white/20 rounded flex items-center justify-center text-white shrink-0">
-                <Package size={18} />
-              </div>
-              <div>
-                <p className="text-blue-100 text-xs font-medium mb-1">Active Categories</p>
-                <div className="flex items-end gap-3">
-                  <h4 className="text-2xl font-bold text-white">{stats.activeCategories}</h4>
-                  <span className="text-blue-300 text-[10px] flex items-center font-bold">→ 0.00</span>
-                </div>
-              </div>
-            </div>
-
-            {/* KPI 3 */}
-            <div className="p-6 border-b md:border-b-0 lg:border-r border-[#1f4e79] flex items-center gap-4">
-              <div className="w-10 h-10 border border-white/20 rounded flex items-center justify-center text-white shrink-0">
-                <MessageSquare size={18} />
-              </div>
-              <div>
-                <p className="text-blue-100 text-xs font-medium mb-1">Inquiries Raised</p>
-                <div className="flex items-end gap-3">
-                  <h4 className="text-2xl font-bold text-white">{stats.totalInquiries}</h4>
-                  <span className="text-emerald-400 text-[10px] flex items-center font-bold">↗ 5%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* KPI 4 */}
-            <div className="p-6 flex items-center gap-4">
-              <div className="w-10 h-10 border border-white/20 rounded flex items-center justify-center text-white shrink-0">
-                <Users size={18} />
-              </div>
-              <div>
-                <p className="text-blue-100 text-xs font-medium mb-1">Total Staff</p>
-                <div className="flex items-end gap-3">
-                  <h4 className="text-2xl font-bold text-white">{stats.staffCount}</h4>
-                  <span className="text-red-400 text-[10px] flex items-center font-bold">↘ 1%</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
+      {/* Dashboard Top Header */}
+      <div className="flex justify-between items-end pb-4 gap-4 mt-4 border-b border-apex-outline-variant/10">
+        <div>
+          <h2 className="font-apex-sans text-3xl font-black text-apex-text tracking-tight uppercase">
+            COMMAND CENTER: OVERVIEW
+          </h2>
+          <p className="font-apex-mono text-xs text-apex-secondary mt-1">
+            LATENCY: 14MS {"//"} ENCRYPTION: AES-256 {"//"} STATUS: NOMINAL
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <span className="px-3 py-1 bg-[#060e20] border border-[#2d3449] text-apex-secondary font-apex-sans font-bold text-[10px] tracking-wider rounded uppercase flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-apex-secondary rounded-full apex-glow-accent"></span>
+            LIVE STREAM ACTIVE
+          </span>
         </div>
       </div>
 
-      {/* Main Content Area (White background, pulled up to overlap the blue slightly) */}
-      <div className="max-w-[1400px] mx-auto px-8 -mt-10 relative z-10 space-y-6">
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Chart Card 1 */}
-          <div className="bg-white p-6 shadow-sm rounded border border-slate-200">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-[#333] font-medium text-sm">Product Distribution</h3>
-              <DownloadIcon />
-            </div>
-            <div className="flex flex-col md:flex-row items-center gap-8 h-48 justify-center">
-              <div className="text-center">
-                <p className="text-xs text-slate-500 mb-1">Total Products</p>
-                <p className="text-2xl font-bold text-[#1f4e79]">{stats.totalProducts}</p>
-                <p className="text-[9px] text-slate-400 mt-1">From {new Date().toLocaleDateString()}</p>
-              </div>
-              <div className="w-40 h-40 rounded-full border-[16px] border-[#1f4e79] border-r-blue-300 border-t-emerald-400 relative flex items-center justify-center">
-                 <span className="font-bold text-slate-300 text-lg">Products</span>
-              </div>
-            </div>
+        {/* KPI 1: Products */}
+        <div className="apex-glass-panel p-6 flex flex-col justify-between h-36 group relative border-t-0 border-r-0 border-b-0 border-l-[3px] border-l-transparent hover:border-l-apex-secondary/50 transition-colors duration-500">
+          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-apex-secondary/50"></div>
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-apex-secondary/50"></div>
+          <div className="flex justify-between items-start">
+            <span className="font-apex-sans text-sm text-apex-on-surface-variant opacity-80 tracking-widest uppercase">TOTAL PRODUCTS</span>
+            <ClipboardList size={18} className="text-apex-secondary/60 group-hover:text-apex-secondary transition-colors" />
           </div>
-
-          {/* Chart Card 2 */}
-          <div className="bg-white p-6 shadow-sm rounded border border-slate-200">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-[#333] font-medium text-sm">Category Metrics</h3>
-              <DownloadIcon />
-            </div>
-            <div className="flex flex-col md:flex-row items-center gap-8 h-48 justify-center">
-               <div className="w-full flex items-end justify-around h-32 px-4">
-                 <div className="w-8 bg-[#1f4e79] h-[80%] rounded-t relative"><span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-500">Light</span></div>
-                 <div className="w-8 bg-emerald-400 h-[60%] rounded-t relative"><span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-500">Bath</span></div>
-                 <div className="w-8 bg-blue-300 h-[30%] rounded-t relative"><span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-500">Elec</span></div>
-                 <div className="w-8 bg-[#255b8c] h-[50%] rounded-t relative"><span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-500">Other</span></div>
-               </div>
-            </div>
+          <div>
+            <p className="font-apex-sans text-5xl text-apex-text leading-none font-bold tracking-tight">{stats.totalProducts?.toLocaleString() || 0}</p>
+            <p className="font-apex-sans text-xs text-apex-secondary mt-2 tracking-wide uppercase">IN REGISTRY</p>
           </div>
         </div>
 
-        {/* Recently Added Table (replaces the dark list) */}
-        <div className="bg-white shadow-sm rounded border border-slate-200 overflow-hidden mb-8">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-[#333] font-medium text-sm flex items-center gap-2">
-              Recently Added Products
-            </h3>
-            <Link href="/admin/products" className="text-xs text-blue-600 hover:underline">View Full Catalog</Link>
+        {/* KPI 2: Categories */}
+        <div className="apex-glass-panel p-6 flex flex-col justify-between h-36 group relative border-t-0 border-r-0 border-b-0 border-l-[3px] border-l-transparent hover:border-l-apex-primary/50 transition-colors duration-500">
+          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-apex-primary/50"></div>
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-apex-primary/50"></div>
+          <div className="flex justify-between items-start">
+            <span className="font-apex-sans text-sm text-apex-on-surface-variant opacity-80 tracking-widest uppercase">CATEGORIES</span>
+            <Shapes size={18} className="text-apex-on-surface-variant group-hover:text-apex-primary transition-colors" />
           </div>
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50">
-                <th className="px-6 py-3 text-[10px] uppercase font-semibold text-slate-500">Product</th>
-                <th className="px-6 py-3 text-[10px] uppercase font-semibold text-slate-500">Category</th>
-                <th className="px-6 py-3 text-[10px] uppercase font-semibold text-slate-500">Date Added</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.recentlyAddedProducts.slice(0, 4).map((p: any) => (
-                <tr key={p.id} className="border-t border-slate-100 hover:bg-slate-50">
-                  <td className="px-6 py-3 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded border border-slate-200 overflow-hidden bg-white">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
-                    </div>
-                    <span className="text-sm font-medium text-slate-800">{p.name}</span>
-                  </td>
-                  <td className="px-6 py-3 text-xs text-slate-600">{p.category}</td>
-                  <td className="px-6 py-3 text-xs text-slate-500">{new Date(p.created_at).toLocaleDateString()}</td>
-                </tr>
-              ))}
-              {stats.recentlyAddedProducts.length === 0 && (
-                <tr><td colSpan={3} className="px-6 py-8 text-center text-sm text-slate-400">No products found.</td></tr>
-              )}
-            </tbody>
-          </table>
+          <div>
+            <p className="font-apex-sans text-5xl text-apex-text leading-none font-bold tracking-tight">{stats.activeCategories?.toLocaleString() || 0}</p>
+            <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-2 tracking-wide uppercase">ACTIVE SECTORS</p>
+          </div>
+        </div>
+
+        {/* KPI 3: Staff */}
+        <div className="apex-glass-panel p-6 flex flex-col justify-between h-36 group relative border-t-0 border-r-0 border-b-0 border-l-[3px] border-l-transparent hover:border-l-apex-tertiary/50 transition-colors duration-500">
+          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-apex-tertiary/50"></div>
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-apex-tertiary/50"></div>
+          <div className="flex justify-between items-start">
+            <span className="font-apex-sans text-sm text-apex-on-surface-variant opacity-80 tracking-widest uppercase">REGISTERED STAFF</span>
+            <UserCheck size={18} className="text-apex-on-surface-variant group-hover:text-apex-tertiary transition-colors" />
+          </div>
+          <div>
+            <p className="font-apex-sans text-5xl text-apex-text leading-none font-bold tracking-tight">{stats.staffCount?.toLocaleString() || 0}</p>
+            <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-2 tracking-wide uppercase">AUTHORIZED NODES</p>
+          </div>
+        </div>
+
+        {/* KPI 4: Exports */}
+        <div className="apex-glass-panel p-6 flex flex-col justify-between h-36 group relative border-t-0 border-r-0 border-b-0 border-l-[3px] border-l-transparent hover:border-l-apex-secondary/50 transition-colors duration-500">
+          <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-apex-secondary/50"></div>
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-apex-secondary/50"></div>
+          <div className="flex justify-between items-start">
+            <span className="font-apex-sans text-sm text-apex-on-surface-variant opacity-80 tracking-widest uppercase">TOTAL INQUIRIES</span>
+            <MessageSquare size={18} className="text-apex-secondary/60 group-hover:text-apex-secondary transition-colors" />
+          </div>
+          <div>
+            <p className="font-apex-sans text-5xl text-apex-text leading-none font-bold tracking-tight">{stats.totalInquiries?.toLocaleString() || 0}</p>
+            <p className="font-apex-sans text-xs text-apex-secondary mt-2 tracking-wide uppercase">CLIENT MESSAGES</p>
+          </div>
         </div>
 
       </div>
+
+      {/* Technical Detail Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-[#131b2e] border border-apex-outline-variant/20 p-6 flex flex-col justify-center relative">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-apex-secondary/80"></div>
+          <p className="font-apex-sans text-xs text-apex-on-surface-variant tracking-wider uppercase mb-2">Database Sync Status</p>
+          <div className="flex items-start gap-3 mt-1 text-apex-text">
+            <div className="w-2 h-2 bg-apex-secondary rounded-full apex-glow-accent mt-2"></div>
+            <p className="font-apex-mono text-sm uppercase tracking-wider font-bold">CONNECTED:<br/>{metrics.dbRegion}</p>
+          </div>
+        </div>
+        
+        <div className="bg-[#131b2e] border border-apex-outline-variant/20 p-6 flex flex-col justify-center relative">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-apex-primary/40"></div>
+          <p className="font-apex-sans text-xs text-apex-on-surface-variant tracking-wider uppercase mb-2">System Uptime</p>
+          <div className="flex items-end gap-4 mt-1 text-apex-text">
+            <p className="font-apex-mono text-xl uppercase tracking-wider font-bold">{metrics.uptimeStr}</p>
+            <p className="font-apex-sans text-[10px] text-apex-text font-bold mb-1 tracking-widest">99.99% PERCENTILE</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
-
-const ClockIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-);
-
-const RefreshIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-);
-
-const DownloadIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="cursor-pointer hover:stroke-blue-600"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-);

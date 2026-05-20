@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bookmark, Plus, Trash2, Save, Package, LayoutGrid, Plug, Shirt, Home, Wrench, Box, ShoppingCart, Lightbulb, Bath, Sofa } from "lucide-react";
+import { Bookmark, Plus, Trash2, Save, Package, LayoutGrid, Plug, Shirt, Home, Wrench, Box, ShoppingCart, Lightbulb, Bath, Sofa, MoreVertical, Filter, CloudLightning } from "lucide-react";
 import { useSettings } from "@/components/SettingsProvider";
 import { Category, addDbCategory, updateDbCategory, deleteDbCategory, syncCategoriesFromProducts, deleteEmptyCategories } from "@/lib/actions";
 
@@ -18,6 +18,7 @@ export default function CategoriesTab() {
   const { settings, updateSettings } = useSettings();
   const [localCategories, setLocalCategories] = useState<Category[]>(settings.categories || []);
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleAdd = async () => {
     setLoading(true);
@@ -40,15 +41,20 @@ export default function CategoriesTab() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
-    setLoading(true);
-    const { error } = await deleteDbCategory(id);
-    if (!error) {
-      const filtered = localCategories.filter(c => c.id !== id);
-      setLocalCategories(filtered);
-      updateSettings({ ...settings, categories: filtered });
+    if (deletingId === id) {
+      setLoading(true);
+      const { error } = await deleteDbCategory(id);
+      if (!error) {
+        const filtered = localCategories.filter(c => c.id !== id);
+        setLocalCategories(filtered);
+        updateSettings({ ...settings, categories: filtered });
+      }
+      setDeletingId(null);
+      setLoading(false);
+    } else {
+      setDeletingId(id);
+      setTimeout(() => setDeletingId(null), 3000);
     }
-    setLoading(false);
   };
 
   const handleSync = async () => {
@@ -60,20 +66,6 @@ export default function CategoriesTab() {
       setLocalCategories(data);
       updateSettings({ ...settings, categories: data });
       alert(count === 0 ? "All categories are already synced." : `Successfully synced ${count} new categories from products!`);
-    }
-    setLoading(false);
-  };
-
-  const handleCleanEmpty = async () => {
-    if (!confirm("Are you sure you want to delete all categories that have zero products?")) return;
-    setLoading(true);
-    const { success, count, data, error } = await deleteEmptyCategories();
-    if (error) {
-      alert("Failed to clean empty categories: " + error);
-    } else if (success && data) {
-      setLocalCategories(data);
-      updateSettings({ ...settings, categories: data });
-      alert(count === 0 ? "No empty categories found." : `Successfully deleted ${count} empty categories!`);
     }
     setLoading(false);
   };
@@ -93,133 +85,182 @@ export default function CategoriesTab() {
   };
 
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-xl font-semibold text-slate-800 tracking-tight">Category Management</h2>
-        <p className="text-sm text-slate-500">Configure categories, SKU prefixes, and visibility.</p>
-      </div>
-
-      <div className="bg-white shadow-sm rounded border border-slate-200 overflow-hidden">
-        
-        {/* Toolbar */}
-        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50">
+    <div className="w-full space-y-8 animate-in fade-in duration-500 font-apex-sans max-w-[1400px] mx-auto pt-6 px-2 select-none">
+      
+      {/* Header Section */}
+      <div className="flex justify-between items-start pb-4">
+        <div>
           <div className="flex items-center gap-3">
-            <button 
-              onClick={handleAdd}
-              disabled={loading}
-              className="flex items-center gap-2 bg-[#1f4e79] text-white px-4 py-2.5 rounded text-sm font-medium hover:bg-[#183d5d] transition-colors disabled:opacity-50"
-            >
-              <Plus size={16} /> New Category
-            </button>
-            <button 
-              onClick={handleSync}
-              disabled={loading}
-              className="flex items-center gap-2 bg-white text-slate-700 border border-slate-300 px-4 py-2.5 rounded text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
-            >
-              <Save size={16} /> Sync Existing
-            </button>
+            <div className="w-2 h-6 bg-apex-secondary"></div>
+            <h2 className="font-apex-sans text-3xl font-black text-apex-text uppercase tracking-tight">REGISTRY: CATEGORIES</h2>
           </div>
-          
+          <p className="font-apex-mono text-[10px] text-apex-secondary mt-2 tracking-widest uppercase">
+            ARCHIVE_QUERY: [FILTER=CATALOGUE_ALL] | RECORDS_TOTAL: {localCategories.length}
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
           <button 
-            onClick={handleCleanEmpty}
+            onClick={handleSync}
             disabled={loading}
-            className="flex items-center gap-2 text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-2.5 rounded text-sm font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded disabled:opacity-50"
           >
-            <Trash2 size={16} /> Clean Empty
+            <CloudLightning size={14} /> Sync Core
+          </button>
+          <button className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
+            <Filter size={14} /> Refine View
+          </button>
+          <button 
+            onClick={handleAdd}
+            disabled={loading}
+            className="bg-apex-text hover:bg-white text-[#0b1326] font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(218,226,253,0.3)] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            <Plus size={14} /> Initialize New Category
           </button>
         </div>
+      </div>
 
-        {/* Categories Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
+      {/* Main Table Panel */}
+      <div className="bg-[#131b2e] border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
+        
+        {/* Table Canvas */}
+        <div className="overflow-x-auto min-h-64">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 bg-white">
-                <th className="px-6 py-4 text-[10px] uppercase font-semibold text-slate-400 tracking-wider w-16">Icon</th>
-                <th className="px-6 py-4 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Display Name</th>
-                <th className="px-6 py-4 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">URL Slug</th>
-                <th className="px-6 py-4 text-[10px] uppercase font-semibold text-slate-400 tracking-wider text-center">Visibility</th>
-                <th className="px-6 py-4 text-[10px] uppercase font-semibold text-slate-400 tracking-wider text-right">Actions</th>
+              <tr className="bg-[#171f33]/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
+                <th className="py-4 px-6 font-bold w-24">CAT_VISUAL</th>
+                <th className="py-4 px-6 font-bold">IDENTIFIER_STRING</th>
+                <th className="py-4 px-6 font-bold">CORE_PREFIX_SLUG</th>
+                <th className="py-4 px-6 font-bold text-center">STATUS</th>
+                <th className="py-4 px-6 font-bold text-center">PROTOCOL</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {localCategories.map(cat => {
-                const CatIcon = IconMap[cat.icon_name || "Package"] || Package;
-                return (
-                  <tr key={cat.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="w-10 h-10 rounded border border-slate-200 flex items-center justify-center bg-slate-50 text-[#1f4e79] shrink-0 group-hover:border-[#1f4e79] group-hover:bg-blue-50 transition-colors relative">
-                        <select
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          value={cat.icon_name || "Package"}
-                          onChange={(e) => {
-                            handleUpdate(cat.id, 'icon_name', e.target.value);
-                            handleSave(cat.id);
-                          }}
-                        >
-                          {AVAILABLE_ICONS.map(i => <option key={i} value={i}>{i}</option>)}
-                        </select>
-                        <CatIcon size={18} />
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <input 
-                        type="text" 
-                        value={cat.name}
-                        onChange={(e) => handleUpdate(cat.id, 'name', e.target.value)}
-                        onBlur={() => handleSave(cat.id)}
-                        className="w-full bg-transparent border-none font-semibold text-slate-800 text-sm focus:ring-0 focus:outline-none placeholder-slate-400 p-0"
-                        placeholder="Category Name"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <input 
-                        type="text" 
-                        value={cat.sku_prefix}
-                        onChange={(e) => handleUpdate(cat.id, 'sku_prefix', e.target.value)}
-                        onBlur={() => handleSave(cat.id)}
-                        className="w-32 bg-transparent border-none text-slate-500 font-mono text-xs focus:ring-0 focus:outline-none uppercase p-0"
-                        placeholder="SLUG"
-                        maxLength={5}
-                      />
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer"
-                          checked={cat.is_visible}
-                          onChange={(e) => {
-                            handleUpdate(cat.id, 'is_visible', e.target.checked);
-                            handleSave(cat.id);
-                          }}
-                        />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1f4e79]"></div>
-                      </label>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => handleDelete(cat.id)}
-                        disabled={loading}
-                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                        title="Delete Category"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {localCategories.length === 0 && (
+            <tbody className="divide-y divide-apex-outline-variant/10 text-apex-text">
+              {localCategories.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-400">
-                    No categories found. Sync existing from products or create a new one.
+                  <td colSpan={5} className="py-20 text-center flex-col items-center justify-center text-apex-on-surface-variant/40 font-apex-mono">
+                    <LayoutGrid size={48} className="mb-4 text-apex-outline/20 mx-auto" strokeWidth={1} />
+                    <p className="font-bold text-xs uppercase tracking-widest">NO CATEGORY REGISTRIES DETECTED</p>
                   </td>
                 </tr>
+              ) : (
+                localCategories.map((cat) => {
+                  const CatIcon = IconMap[cat.icon_name || "Package"] || Package;
+                  const isDeleting = deletingId === cat.id;
+                  
+                  return (
+                    <tr key={cat.id} className="hover:bg-[#171f33]/40 transition-colors group">
+                      {/* CAT_VISUAL */}
+                      <td className="py-3 px-6">
+                        <div className="w-16 h-10 bg-[#060e20] border border-apex-outline-variant/30 flex items-center justify-center shrink-0 group-hover:border-apex-secondary/50 transition-colors relative overflow-hidden text-apex-secondary/80 group-hover:text-apex-secondary group-hover:bg-apex-secondary/10">
+                          <select
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            value={cat.icon_name || "Package"}
+                            onChange={(e) => {
+                              handleUpdate(cat.id, 'icon_name', e.target.value);
+                              handleSave(cat.id);
+                            }}
+                          >
+                            {AVAILABLE_ICONS.map(i => <option key={i} className="bg-apex-surface text-apex-text" value={i}>{i}</option>)}
+                          </select>
+                          <CatIcon size={20} className={cat.is_visible ? "apex-glow-accent" : ""} />
+                        </div>
+                      </td>
+                      
+                      {/* IDENTIFIER_STRING */}
+                      <td className="py-3 px-6">
+                        <input 
+                          type="text" 
+                          value={cat.name}
+                          onChange={(e) => handleUpdate(cat.id, 'name', e.target.value)}
+                          onBlur={() => handleSave(cat.id)}
+                          className="w-full bg-transparent border-none font-apex-sans font-bold text-sm tracking-wide text-apex-text focus:ring-0 focus:outline-none placeholder-apex-on-surface-variant/30 p-0"
+                          placeholder="CATEGORY_NAME"
+                        />
+                        <p className="font-apex-mono text-[9px] text-apex-secondary tracking-widest uppercase mt-0.5">SUBCAT_COUNT_0</p>
+                      </td>
+
+                      {/* CORE_PREFIX_SLUG */}
+                      <td className="py-3 px-6">
+                        <input 
+                          type="text" 
+                          value={cat.sku_prefix}
+                          onChange={(e) => handleUpdate(cat.id, 'sku_prefix', e.target.value)}
+                          onBlur={() => handleSave(cat.id)}
+                          className="w-32 bg-transparent border-none text-apex-on-surface-variant font-apex-mono text-xs focus:ring-0 focus:outline-none uppercase p-0 tracking-wider"
+                          placeholder="SLUG"
+                          maxLength={5}
+                        />
+                      </td>
+
+                      {/* STATUS */}
+                      <td className="py-3 px-6 text-center">
+                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only"
+                            checked={cat.is_visible}
+                            onChange={(e) => {
+                              handleUpdate(cat.id, 'is_visible', e.target.checked);
+                              handleSave(cat.id);
+                            }}
+                          />
+                          <span className={`inline-block px-3 py-1 border font-apex-mono text-[9px] font-bold tracking-widest uppercase transition-colors ${
+                            cat.is_visible 
+                              ? 'border-apex-secondary/50 bg-apex-secondary/10 text-apex-secondary shadow-[0_0_10px_rgba(76,215,246,0.1)]' 
+                              : 'border-apex-outline-variant/30 bg-[#060e20] text-apex-on-surface-variant'
+                          }`}>
+                            {cat.is_visible ? 'ACTIVE' : 'IDLE'}
+                          </span>
+                        </label>
+                      </td>
+
+                      {/* PROTOCOL */}
+                      <td className="py-3 px-6 text-center">
+                        {isDeleting ? (
+                          <button 
+                            onClick={(e) => { e.preventDefault(); handleDelete(cat.id); }}
+                            disabled={loading}
+                            className="bg-apex-error/20 text-apex-error border border-apex-error/50 px-2 py-1 font-apex-mono text-[9px] font-bold uppercase rounded tracking-widest shadow-[0_0_10px_rgba(255,180,171,0.2)] animate-pulse"
+                          >
+                            CONFIRM
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={(e) => { e.preventDefault(); handleDelete(cat.id); }}
+                            disabled={loading}
+                            className="text-apex-on-surface-variant/50 hover:text-apex-error transition-colors p-2 disabled:opacity-50"
+                            title="Delete Registry"
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
+        
+        {/* Registry Footer Pagination */}
+        <div className="px-6 py-4 bg-[#0b1326] border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
+          <div className="flex items-center gap-4">
+            <span>SHOWING ENTRY 001-{(localCategories.length < 10 ? localCategories.length : '010')} OF {localCategories.length}</span>
+            <div className="w-24 h-1 bg-[#171f33] rounded-full overflow-hidden flex">
+              <div className="w-full h-full bg-apex-secondary"></div>
+            </div>
+          </div>
+          <div className="flex gap-1.5 text-xs text-apex-text select-none">
+            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">&lt;</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded border border-apex-secondary bg-[#131b2e] text-apex-secondary font-bold">01</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors opacity-50 cursor-not-allowed">02</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors opacity-50 cursor-not-allowed">&gt;</button>
+          </div>
+        </div>
+
       </div>
+
     </div>
   );
 }

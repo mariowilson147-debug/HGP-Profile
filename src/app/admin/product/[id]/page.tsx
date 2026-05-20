@@ -12,7 +12,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <div className="w-full bg-slate-50 min-h-screen">
+    <div className="w-full bg-transparent">
       <ProductForm initialData={product} />
     </div>
   );

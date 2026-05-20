@@ -83,7 +83,12 @@ export default function Header() {
   const submitMainSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
+      let url = `/?q=${encodeURIComponent(searchQuery.trim())}`;
+      if (isStrict) {
+        const allowedCats = categories.filter(c => c !== "All Collections");
+        url += `&category=${encodeURIComponent(allowedCats.join(','))}&strict=true`;
+      }
+      router.push(url);
     }
   };
 
@@ -108,7 +113,12 @@ export default function Header() {
                 if (isSearching) {
                   submitMainSearch();
                 } else {
-                  router.push("/");
+                  if (isStrict) {
+                    const allowedCats = categories.filter(c => c !== "All Collections");
+                    router.push(`/?category=${encodeURIComponent(allowedCats.join(','))}&strict=true`);
+                  } else {
+                    router.push("/");
+                  }
                 }
               }}
               className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0 z-10 hover:scale-105 transition-all shadow-sm"

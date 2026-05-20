@@ -3,6 +3,7 @@
 import { createSupabaseServerClient } from "./supabase/server";
 import { revalidatePath, unstable_cache, revalidateTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
+import os from "os";
 
 // Admin client bypasses RLS for system operations like chat messages
 function getAdminSupabase() {
@@ -424,4 +425,41 @@ export async function getChatThreads() {
     }
   }
   return Array.from(threads.values());
+}
+
+export async function getSystemMetrics() {
+  try {
+    const uptime = os.uptime();
+    const d = Math.floor(uptime / (3600 * 24));
+    const h = Math.floor((uptime % (3600 * 24)) / 3600);
+    const m = Math.floor((uptime % 3600) / 60);
+    const s = Math.floor(uptime % 60);
+    const uptimeStr = `${d.toString().padStart(3, '0')}:${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+    const load = os.loadavg()[0];
+    const cpus = os.cpus().length;
+    const loadPercent = ((load / cpus) * 100).toFixed(1);
+    
+    let dbRegion = "LOCAL_VAULT_01";
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      try {
+        const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
+        dbRegion = url.hostname.split('.')[0].toUpperCase();
+      } catch(e) {}
+    }
+
+    return {
+      uptimeStr,
+      loadPercent,
+      threadCount: cpus * 2 + 4,
+      dbRegion
+    };
+  } catch (e) {
+    return {
+      uptimeStr: "000:00:00:00",
+      loadPercent: "0.0",
+      threadCount: 1,
+      dbRegion: "UNKNOWN"
+    };
+  }
 }

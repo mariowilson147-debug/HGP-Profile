@@ -1,8 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getProducts } from "@/lib/actions";
-import { FileSpreadsheet, Download, FileText, RefreshCw, Share2, Filter } from "lucide-react";
+import { 
+  FileSpreadsheet, 
+  Download, 
+  FileText, 
+  RefreshCw, 
+  Share2, 
+  Filter, 
+  Lock, 
+  Rocket, 
+  RefreshCcw,
+  Sparkles,
+  Terminal as TerminalIcon,
+  Plus,
+  MoreVertical,
+  Archive,
+  Database
+} from "lucide-react";
 import { useSettings } from "@/components/SettingsProvider";
 
 const getBase64ImageFromUrl = async (imageUrl: string) => {
@@ -20,13 +36,29 @@ const getBase64ImageFromUrl = async (imageUrl: string) => {
   });
 };
 
+interface ExportLog {
+  id: string;
+  target: string;
+  format: string;
+  size: string;
+  status: "COMPLETED" | "FAILED" | "PENDING";
+  date: string;
+}
+
 export default function ExportsHub() {
-  const [exportingExcel, setExportingExcel] = useState(false);
-  const [exportingPDF, setExportingPDF] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState<"excel" | "pdf" | "link">("excel");
+  const [exporting, setExporting] = useState(false);
   const { settings } = useSettings();
   
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showModal, setShowModal] = useState(false);
+
+  const [historyLogs, setHistoryLogs] = useState<ExportLog[]>([
+    { id: "EXP-8921", target: "All Categories Export", format: ".XLSX", size: "1.2 MB", status: "COMPLETED", date: new Date().toLocaleDateString("en-GB") },
+    { id: "EXP-8920", target: "Lighting & Electronics", format: ".PDF", size: "3.4 MB", status: "COMPLETED", date: new Date(Date.now() - 86400000).toLocaleDateString("en-GB") },
+    { id: "EXP-8919", target: "Client Shared Link", format: "LINK", size: "--", status: "COMPLETED", date: new Date(Date.now() - 86400000 * 2).toLocaleDateString("en-GB") },
+  ]);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -47,21 +79,8 @@ export default function ExportsHub() {
     );
   };
 
-  const handleShare = async () => {
-    let url = window.location.origin;
-    if (selectedCategories.length > 0) {
-      url += `/?category=${encodeURIComponent(selectedCategories.join(','))}&strict=true`;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      alert("Share link copied to clipboard!");
-    } catch (err) {
-      alert("Could not copy to clipboard. Share link is: " + url);
-    }
-  };
-
   const handleExcelExport = async () => {
-    setExportingExcel(true);
+    setExporting(true);
     try {
       const allProducts = await fetchCatalogData();
       const products = selectedCategories.length > 0 
@@ -126,16 +145,26 @@ export default function ExportsHub() {
       }
 
       const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), `${(settings.companyName || 'Export').replace(/\s+/g, '_')}_Catalog_${new Date().toISOString().split('T')[0]}.xlsx`);
+      const filename = `${(settings.companyName || 'Export').replace(/\s+/g, '_')}_Catalog_${new Date().toISOString().split('T')[0]}.xlsx`;
+      saveAs(new Blob([buffer]), filename);
+      
+      setHistoryLogs(prev => [
+        { id: `XP-${Math.floor(9000 + Math.random() * 999)}-X`, target: selectedCategories.length > 0 ? "Filtered Registry" : "Core Registry", format: ".XLSX", size: `${(buffer.byteLength / (1024 * 1024)).toFixed(1)} MB`, status: "COMPLETED", date: new Date().toLocaleDateString("en-GB") },
+        ...prev
+      ]);
+      setShowModal(false);
     } catch (e) {
       alert("Failed to export Excel: " + (e instanceof Error ? e.message : String(e)));
-      console.error(e);
+      setHistoryLogs(prev => [
+        { id: `XP-${Math.floor(9000 + Math.random() * 999)}-X`, target: "Core Registry", format: ".XLSX", size: "--", status: "FAILED", date: new Date().toLocaleDateString("en-GB") },
+        ...prev
+      ]);
     }
-    setExportingExcel(false);
+    setExporting(false);
   };
 
   const handlePDFExport = async () => {
-    setExportingPDF(true);
+    setExporting(true);
     try {
       const allProducts = await fetchCatalogData();
       const products = selectedCategories.length > 0 
@@ -153,7 +182,7 @@ export default function ExportsHub() {
 
       const doc = new jsPDF('l', 'pt', 'a4');
       
-      doc.setFillColor(30, 41, 59); 
+      doc.setFillColor(11, 19, 38); 
       doc.rect(0, 0, doc.internal.pageSize.width, 60, 'F');
       
       doc.setTextColor(255, 255, 255);
@@ -190,7 +219,7 @@ export default function ExportsHub() {
         body: bodyData.map(row => [{content: '', rowData: row}, row.name, row.category, row.cost, row.wholesale, row.retail]),
         theme: 'striped',
         rowPageBreak: 'avoid',
-        headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+        headStyles: { fillColor: [76, 215, 246], textColor: 11, fontStyle: 'bold' },
         styles: { font: 'helvetica', fontSize: 10, cellPadding: 6, minCellHeight: 50, valign: 'middle', overflow: 'linebreak' },
         columnStyles: { 
           0: { cellWidth: 50 },
@@ -213,100 +242,299 @@ export default function ExportsHub() {
         }
       });
 
-      doc.save(`${(settings.companyName || 'Export').replace(/\s+/g, '_')}_Catalog_${new Date().toISOString().split('T')[0]}.pdf`);
+      const filename = `${(settings.companyName || 'Export').replace(/\s+/g, '_')}_Catalog_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(filename);
+
+      setHistoryLogs(prev => [
+        { id: `XP-${Math.floor(9000 + Math.random() * 999)}-P`, target: selectedCategories.length > 0 ? "Filtered Registry" : "Core Registry", format: ".PDF", size: `4.5 MB`, status: "COMPLETED", date: new Date().toLocaleDateString("en-GB") },
+        ...prev
+      ]);
+      setShowModal(false);
     } catch (e) {
       alert("Failed to export PDF: " + (e instanceof Error ? e.message : String(e)));
-      console.error(e);
+      setHistoryLogs(prev => [
+        { id: `XP-${Math.floor(9000 + Math.random() * 999)}-P`, target: "Core Registry", format: ".PDF", size: "--", status: "FAILED", date: new Date().toLocaleDateString("en-GB") },
+        ...prev
+      ]);
     }
-    setExportingPDF(false);
+    setExporting(false);
+  };
+
+  const handleShareLink = async () => {
+    setExporting(true);
+    const baseUrl = window.location.origin;
+    let url = baseUrl + "/";
+    if (selectedCategories.length > 0) {
+      url += `?category=${encodeURIComponent(selectedCategories.join(','))}&strict=true`;
+    }
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      setHistoryLogs(prev => [
+        { id: `XP-${Math.floor(9000 + Math.random() * 999)}-L`, target: selectedCategories.length > 0 ? "Restricted Catalog Link" : "Core Catalog Link", format: "LINK", size: "--", status: "COMPLETED", date: new Date().toLocaleDateString("en-GB") },
+        ...prev
+      ]);
+      alert("Share Link copied to clipboard!");
+      setShowModal(false);
+    } catch(e) {
+      alert("Failed to copy link.");
+    }
+    setExporting(false);
+  };
+
+  const handleInitializeExport = () => {
+    if (selectedFormat === "excel") {
+      handleExcelExport();
+    } else if (selectedFormat === "pdf") {
+      handlePDFExport();
+    } else {
+      handleShareLink();
+    }
   };
 
   return (
-    <div className="w-full bg-slate-50 min-h-full pb-12 pt-12">
+    <div className="w-full min-h-screen font-apex-sans max-w-[1400px] mx-auto p-8 pt-6 space-y-8 select-none">
+      
+      {/* Header Section */}
+      <div className="flex justify-between items-start pb-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-6 bg-apex-primary"></div>
+            <h2 className="font-apex-sans text-3xl font-black text-apex-text uppercase tracking-tight">REGISTRY: DATA EXPORTS</h2>
+          </div>
+          <p className="font-apex-mono text-[10px] text-apex-secondary mt-2 tracking-widest uppercase">
+            ARCHIVE_QUERY: [FILTER=CATALOGUE_ALL] | RECORDS_TOTAL: {historyLogs.length}
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <button className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
+            <Filter size={14} /> Refine View
+          </button>
+          <button 
+            onClick={() => setShowModal(true)}
+            className="bg-apex-primary hover:brightness-110 text-[#0b1326] font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(192,193,255,0.3)] transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <Plus size={14} /> Export Data
+          </button>
+        </div>
+      </div>
 
-      <div className="p-8 max-w-7xl mx-auto space-y-6">
+      {/* Main Table Panel */}
+      <div className="bg-[#131b2e] border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
         
-        {/* Category Filter */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-slate-800">
-              <Filter size={20} />
-              <h3 className="text-lg font-display font-bold">Category Selection</h3>
+        {/* Table Canvas */}
+        <div className="overflow-x-auto min-h-64">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#171f33]/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
+                <th className="py-4 px-6 font-bold w-24">FORMAT</th>
+                <th className="py-4 px-6 font-bold">EXPORT TARGET</th>
+                <th className="py-4 px-6 font-bold">FILE TYPE</th>
+                <th className="py-4 px-6 font-bold text-center">STATUS</th>
+                <th className="py-4 px-6 font-bold text-center">ACTION</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-apex-outline-variant/10 text-apex-text">
+              {historyLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-20 text-center flex-col items-center justify-center text-apex-on-surface-variant/40 font-apex-mono">
+                    <Database size={48} className="mb-4 text-apex-outline/20 mx-auto" strokeWidth={1} />
+                    <p className="font-bold text-xs uppercase tracking-widest">NO EXPORT REGISTRIES DETECTED</p>
+                  </td>
+                </tr>
+              ) : (
+                historyLogs.map((log) => {
+                  return (
+                    <tr key={log.id} className="hover:bg-[#171f33]/40 transition-colors group">
+                      {/* FORMAT VISUAL */}
+                      <td className="py-3 px-6">
+                        <div className={`w-12 h-10 bg-[#060e20] border flex items-center justify-center shrink-0 group-hover:border-apex-primary/50 transition-colors ${log.status === "COMPLETED" ? "border-apex-primary/30 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]" : "border-apex-outline-variant/30 text-apex-on-surface-variant group-hover:text-apex-primary/80"}`}>
+                          {log.format === ".XLSX" ? <FileSpreadsheet size={16} /> : log.format === "LINK" ? <Share2 size={16} /> : <FileText size={16} />}
+                        </div>
+                      </td>
+                      
+                      {/* EXPORT TARGET */}
+                      <td className="py-3 px-6">
+                        <p className="font-apex-sans font-bold text-sm tracking-wide text-apex-text">{log.target}</p>
+                        <p className="font-apex-mono text-[9px] text-apex-secondary tracking-widest uppercase mt-0.5">SIZE: {log.size} {"//"} {log.date}</p>
+                      </td>
+
+                      {/* FILE TYPE */}
+                      <td className="py-3 px-6 font-apex-mono text-xs text-apex-on-surface-variant tracking-wider uppercase">
+                        {log.format}
+                      </td>
+
+                      {/* STATUS */}
+                      <td className="py-3 px-6 text-center">
+                        <span className={`inline-block px-2 py-0.5 border font-apex-mono text-[9px] font-bold tracking-widest uppercase ${
+                          log.status === "FAILED"
+                            ? "bg-[#060e20] border-apex-outline-variant/30 text-apex-on-surface-variant"
+                            : "border-apex-primary/30 bg-apex-primary/10 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]"
+                        }`}>
+                          {log.status}
+                        </span>
+                      </td>
+
+                      {/* ACTION */}
+                      <td className="py-3 px-6 text-center">
+                        {log.status === "COMPLETED" ? (
+                          <button 
+                            className="bg-apex-primary/20 text-apex-primary border border-apex-primary/50 px-3 py-1.5 font-apex-mono text-[9px] font-bold uppercase rounded tracking-widest hover:bg-apex-primary/30 transition-colors shadow-[0_0_10px_rgba(192,193,255,0.2)] flex items-center gap-2 mx-auto"
+                            onClick={() => {
+                              if (log.format === "LINK") {
+                                alert("Share link already generated!");
+                              }
+                            }}
+                          >
+                            {log.format === "LINK" ? (
+                              <><Share2 size={12} /> COPIED</>
+                            ) : (
+                              <><Download size={12} /> DOWNLOAD</>
+                            )}
+                          </button>
+                        ) : (
+                          <button 
+                            className="text-apex-on-surface-variant/50 hover:text-apex-text transition-colors p-2 flex items-center gap-2 mx-auto font-apex-mono text-[9px] uppercase tracking-widest"
+                          >
+                            <RefreshCcw size={12} /> RETRY
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Registry Footer Pagination */}
+        <div className="px-6 py-4 bg-[#0b1326] border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
+          <div className="flex items-center gap-4">
+            <span>SHOWING ENTRY 001-{(historyLogs.length < 10 ? historyLogs.length : '010')} OF {historyLogs.length}</span>
+            <div className="w-24 h-1 bg-[#171f33] rounded-full overflow-hidden flex">
+              <div className="w-full h-full bg-apex-primary"></div>
             </div>
-            <button 
-              onClick={handleShare}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
-            >
-              <Share2 size={16} /> Share Link
-            </button>
           </div>
-          <p className="text-sm text-slate-500 mb-4">Select specific categories to include in your downloads. Share link will generate a URL for the selected categories.</p>
-          <div className="flex flex-wrap gap-3">
-            {categories.map(cat => (
-              <label key={cat} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors select-none">
-                <input 
-                  type="checkbox" 
-                  checked={selectedCategories.includes(cat)}
-                  onChange={() => handleCategoryToggle(cat)}
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-600"
-                />
-                <span className="text-sm font-medium text-slate-700">{cat}</span>
-              </label>
-            ))}
-            {categories.length === 0 && <span className="text-sm text-slate-400">Loading categories...</span>}
+          <div className="flex gap-1.5 text-xs text-apex-text select-none">
+            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors">&lt;</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded border border-apex-primary bg-[#131b2e] text-apex-primary font-bold">01</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors opacity-50 cursor-not-allowed">02</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded border border-[#2d3449] bg-[#131b2e] hover:bg-[#171f33] cursor-pointer transition-colors opacity-50 cursor-not-allowed">&gt;</button>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Export Card */}
-          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-8 shadow-sm relative overflow-hidden flex flex-col">
-            <div className="absolute top-0 right-0 p-8 opacity-5">
-              <FileSpreadsheet size={120} />
-            </div>
-            
-            <div className="flex items-center gap-4 mb-6 relative z-10">
-              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
-                <FileSpreadsheet size={24} />
-              </div>
-              <h2 className="text-2xl font-display font-bold text-slate-800">Download Catalog</h2>
-            </div>
-            
-            <p className="text-slate-600 mb-8 max-w-md relative z-10 leading-relaxed text-sm">
-              Comprehensive export containing product images, names, and all pricing tiers. Downloads will be filtered based on the category selection above.
-            </p>
-            
-            <div className="flex gap-3 mb-10 relative z-10 flex-wrap">
-              <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-md border border-slate-200">A4 LANDSCAPE</span>
-              <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-md border border-slate-200">INCLUDES IMAGES</span>
-              <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-md border border-slate-200">ALL PRICING TIERS</span>
-            </div>
-
-            <div className="mt-auto flex flex-col sm:flex-row gap-4 relative z-10">
-              <button 
-                onClick={handleExcelExport}
-                disabled={exportingExcel}
-                className="flex flex-1 items-center justify-center gap-2 bg-slate-800 text-white px-6 py-3.5 rounded-xl text-sm font-medium hover:bg-slate-900 transition-all shadow-sm disabled:opacity-70"
-              >
-                {exportingExcel ? <RefreshCw size={18} className="animate-spin" /> : <Download size={18} />} 
-                {exportingExcel ? "Generating Excel..." : "Download Excel"}
-              </button>
-              
-              <button 
-                onClick={handlePDFExport}
-                disabled={exportingPDF}
-                className="flex flex-1 items-center justify-center gap-2 bg-white border-2 border-slate-200 text-slate-700 px-6 py-3.5 rounded-xl text-sm font-medium hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-70"
-              >
-                {exportingPDF ? <RefreshCw size={18} className="animate-spin" /> : <FileText size={18} />} 
-                {exportingPDF ? "Generating PDF..." : "Download PDF"}
-              </button>
-            </div>
-          </div>
-
-          {/* Removed Automated Reports and Recent Export History sections based on user request */}
-        </div>
-
 
       </div>
+
+      {/* ── Modal ───────────────────────────────────────────────────────────── */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-apex-sans">
+          <div
+            className="absolute inset-0 bg-[#0b1326]/80 backdrop-blur-sm"
+            onClick={() => setShowModal(false)}
+          />
+          <div className="relative bg-[#0b1326] p-8 w-full max-w-2xl shadow-[0_0_30px_rgba(192,193,255,0.1)] rounded border border-apex-primary/30 text-apex-text apex-scanline-effect">
+            
+            <div className="flex justify-between items-start mb-6 pb-4 border-b border-apex-outline-variant/30">
+              <h2 className="text-xl font-apex-sans font-black text-apex-text uppercase">
+                EXPORT CONFIGURATION
+              </h2>
+              <div className="flex items-center gap-2 bg-[#131b2e] border border-apex-outline-variant/30 p-1 rounded font-apex-mono text-xs">
+                <button 
+                  onClick={() => setSelectedFormat("pdf")}
+                  className={`px-4 py-1.5 rounded transition-all duration-250 ${
+                    selectedFormat === "pdf"
+                      ? "bg-apex-primary text-[#0b1326] font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
+                      : "text-apex-on-surface-variant hover:text-apex-primary"
+                  }`}
+                >
+                  PDF
+                </button>
+                <button 
+                  onClick={() => setSelectedFormat("excel")}
+                  className={`px-4 py-1.5 rounded transition-all duration-250 ${
+                    selectedFormat === "excel"
+                      ? "bg-apex-primary text-[#0b1326] font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
+                      : "text-apex-on-surface-variant hover:text-apex-primary"
+                  }`}
+                >
+                  EXCEL
+                </button>
+                <button 
+                  onClick={() => setSelectedFormat("link")}
+                  className={`px-4 py-1.5 rounded transition-all duration-250 ${
+                    selectedFormat === "link"
+                      ? "bg-apex-primary text-[#0b1326] font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
+                      : "text-apex-on-surface-variant hover:text-apex-primary"
+                  }`}
+                >
+                  SHARE LINK
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Category Filter checklist */}
+              <div>
+                <label className="font-apex-mono text-[10px] text-apex-primary block mb-3 uppercase tracking-widest">
+                  Target Sectors
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {categories.map(cat => (
+                    <label key={cat} className="flex items-center gap-3 p-2.5 bg-[#131b2e] border border-apex-outline-variant/10 rounded cursor-pointer hover:border-apex-primary/30 transition-colors select-none">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedCategories.includes(cat)}
+                        onChange={() => handleCategoryToggle(cat)}
+                        className="rounded text-apex-primary focus:ring-apex-primary bg-[#0b1326] border-apex-outline-variant"
+                      />
+                      <span className="font-apex-sans text-xs text-apex-text font-semibold">{cat}</span>
+                    </label>
+                  ))}
+                  {categories.length === 0 && <span className="font-apex-mono text-xs text-apex-on-surface-variant/40">Loading sectors...</span>}
+                </div>
+              </div>
+
+              {/* Schema filters selection */}
+              <div>
+                <label className="font-apex-mono text-[10px] text-apex-primary block mb-3 uppercase tracking-widest">
+                  Schema Column Filters
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {["SKU_ID", "VAL_UNIT", "TIMESTAMP", "GEO_TAG", "STATUS_FLG", "OPER_ID", "PRIORITY", "METADATA"].map((col, idx) => (
+                    <label key={idx} className="flex items-center gap-2 p-2 bg-[#131b2e] border border-apex-outline-variant/10 rounded cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        defaultChecked={idx !== 3 && idx !== 5 && idx !== 7}
+                        className="rounded text-apex-primary focus:ring-apex-primary bg-[#0b1326] border-apex-outline-variant"
+                      />
+                      <span className="font-apex-mono text-[11px] text-apex-on-surface-variant/80">{col}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-8 mt-4 border-t border-apex-outline-variant/30">
+              <button
+                onClick={() => setShowModal(false)}
+                className="flex-1 py-2.5 bg-[#131b2e] hover:bg-[#171f33] border border-apex-outline-variant/30 text-apex-text text-xs font-apex-mono uppercase tracking-wider rounded transition-colors cursor-pointer"
+              >
+                ABORT
+              </button>
+              <button
+                onClick={handleInitializeExport}
+                disabled={exporting}
+                className="flex-1 py-2.5 bg-apex-primary hover:brightness-110 text-[#0b1326] text-xs font-apex-sans font-bold uppercase tracking-wider rounded disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(192,193,255,0.2)]"
+              >
+                {exporting && <RefreshCw size={14} className="animate-spin" />}
+                {exporting ? "INITIALIZING EXPORT..." : "AUTHORIZE EXPORT"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

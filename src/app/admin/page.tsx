@@ -8,9 +8,8 @@ import { getProducts, getChatThreads, Product } from "@/lib/actions";
 import { useAuth } from "@/components/AuthProvider";
 import { useSearchParams } from "next/navigation";
 import OverviewTab from "./components/OverviewTab";
-import IntelligenceTab from "./components/IntelligenceTab";
+
 import CategoriesTab from "./components/CategoriesTab";
-import InquiriesTab from "./components/InquiriesTab";
 
 function AdminDashboardContent() {
   const searchParams = useSearchParams();
@@ -96,9 +95,7 @@ function AdminDashboardContent() {
         ) : (
           <div className="relative animate-in fade-in duration-500">
             {activeTab === 'overview' && <OverviewTab stats={stats} />}
-            {activeTab === 'intelligence' && <IntelligenceTab stats={stats} />}
             {activeTab === 'categories' && <CategoriesTab />}
-            {activeTab === 'inquiries' && <InquiriesTab stats={stats} />}
           </div>
         )}
       </div>
