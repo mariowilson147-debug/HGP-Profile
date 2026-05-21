@@ -131,3 +131,25 @@
   100% { transform: translateY(100%); }
 }
 
+/* ─── Admin Dark Theme: Input Visibility Fix ─────────────────────────────────
+   admin-workspace inputs use bg-[#060e20] but --color-apex-text resolves to
+   near-black. Force visible light text inside the admin layout. */
+
+.admin-workspace input,
+.admin-workspace select,
+.admin-workspace textarea {
+  color: #e2e8f0 !important;
+  caret-color: #c0c1ff;
+}
+
+.admin-workspace input::placeholder,
+.admin-workspace textarea::placeholder {
+  color: rgba(148, 163, 184, 0.35) !important;
+}
+
+.admin-workspace select option {
+  background-color: #131b2e;
+  color: #e2e8f0;
+}
+
+

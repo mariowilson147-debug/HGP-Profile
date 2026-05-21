@@ -3,50 +3,37 @@
 import { useState, useEffect, Suspense, useMemo } from "react";
 import { Product } from "@/lib/actions";
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import ImageCarousel from "./ImageCarousel";
 
 const ProductModal = dynamic(() => import("./ProductModal"), { ssr: false });
 import { useAuth } from "@/components/AuthProvider";
-import { Search, LayoutGrid, Lightbulb, Monitor, Watch, Bath, Sofa, Package } from "lucide-react";
+import { Search, Flower2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 
 const ITEMS_PER_PAGE = 52;
 
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case "All Collections":
-      return <LayoutGrid size={20} className="mb-2" />;
-    case "Lighting":
-      return <Lightbulb size={20} className="mb-2" />;
-    case "Electronics":
-      return <Monitor size={20} className="mb-2" />;
-    case "Watches":
-      return <Watch size={20} className="mb-2" />;
-    case "Bathroom Ware":
-    case "Bathroom":
-      return <Bath size={20} className="mb-2" />;
-    case "Interior Décor":
-    case "Interior":
-      return <Sofa size={20} className="mb-2" />;
-    default:
-      return <Package size={20} className="mb-2" />;
-  }
-};
+
+// Build the full images array for a product (primary + variation images)
+function getProductImages(product: Product): string[] {
+  const extras = Array.isArray(product.attributes?.image_urls)
+    ? (product.attributes.image_urls as string[]).filter(Boolean)
+    : [];
+  return [product.image_url, ...extras].filter(Boolean);
+}
 
 function ProductGridContent({ products }: { products: Product[] }) {
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q") || "";
   const categoryQuery = searchParams.get("category");
-  
+
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState(categoryQuery || "All Collections");
   const [currentPage, setCurrentPage] = useState(1);
   const { user } = useAuth();
-  
+
   const filteredProducts = useMemo(() => {
     return products
-      // Treat null/undefined visibility as 'visible' — only explicitly hide 'hidden' or 'archived'
       .filter(p => p.visibility !== 'hidden' && p.visibility !== 'archived')
       .filter(p => selectedCategory === "All Collections" || p.category === selectedCategory)
       .filter(p => p.name.toLowerCase().includes(urlQuery.toLowerCase()) || (p.tags && p.tags.some(t => t.toLowerCase().includes(urlQuery.toLowerCase()))))
@@ -125,36 +112,71 @@ function ProductGridContent({ products }: { products: Product[] }) {
       ) : (
         <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
           <AnimatePresence>
-            {paginatedProducts.map((product) => (
-              <motion.div 
-                layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.4 }}
-                key={product.id} onClick={() => setSelectedProduct(product)} className="group cursor-pointer flex flex-col"
-              >
-                <div className="relative aspect-square w-full overflow-hidden bg-[#f4f4f4] mb-4">
-                  <Image src={product.image_url} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
-                  
-                  {/* Badges */}
-                  <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                    {product.is_featured && (
-                      <span className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">FEATURED</span>
+            {paginatedProducts.map((product) => {
+              const images = getProductImages(product);
+              const isFlowerArrangement = product.category === "Flowers" &&
+                product.attributes?.component_type === "arrangement";
+              const compatibleVaseCount = isFlowerArrangement &&
+                Array.isArray(product.attributes?.compatible_vase_ids)
+                  ? (product.attributes.compatible_vase_ids as string[]).length
+                  : 0;
+
+              return (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.4 }}
+                  key={product.id}
+                  onClick={() => setSelectedProduct(product)}
+                  className="group cursor-pointer flex flex-col"
+                >
+                  <div className="relative w-full overflow-hidden bg-[#f4f4f4] mb-4">
+                    {/* Carousel handles its own aspect ratio */}
+                    <ImageCarousel
+                      images={images}
+                      alt={product.name}
+                      aspectRatio="aspect-square"
+                    />
+
+                    {/* Badges */}
+                    <div className="absolute top-2 left-2 flex flex-col gap-1 z-20 pointer-events-none">
+                      {product.is_featured && (
+                        <span className="bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">FEATURED</span>
+                      )}
+                      {product.availability === 'out_of_stock' && (
+                        <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">OUT OF STOCK</span>
+                      )}
+                      {product.availability === 'coming_soon' && (
+                        <span className="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">COMING SOON</span>
+                      )}
+                      {product.tags && product.tags.map((tag, idx) => (
+                        <span key={idx} className="bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm uppercase">{tag}</span>
+                      ))}
+                    </div>
+
+                    {/* Flower mix-match badge */}
+                    {isFlowerArrangement && compatibleVaseCount > 0 && (
+                      <div className="absolute bottom-8 left-2 z-20 pointer-events-none">
+                        <span className="flex items-center gap-1 bg-pink-500/90 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                          <Flower2 size={9} />
+                          {compatibleVaseCount} vase option{compatibleVaseCount !== 1 ? 's' : ''}
+                        </span>
+                      </div>
                     )}
-                    {product.availability === 'out_of_stock' && (
-                      <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">OUT OF STOCK</span>
-                    )}
-                    {product.availability === 'coming_soon' && (
-                      <span className="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">COMING SOON</span>
-                    )}
-                    {product.tags && product.tags.map((tag, idx) => (
-                      <span key={idx} className="bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm uppercase">{tag}</span>
-                    ))}
                   </div>
-                </div>
-                <div className="flex flex-col">
-                  <h3 className="font-display font-medium text-lg text-slate-900 leading-tight mb-1">{product.name}</h3>
-                  <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{product.category}</span>
-                </div>
-              </motion.div>
-            ))}
+
+                  <div className="flex flex-col">
+                    <h3 className="font-display font-medium text-lg text-slate-900 leading-tight mb-1">{product.name}</h3>
+                    <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{product.category}</span>
+                    {isFlowerArrangement && (
+                      <span className="text-pink-500 text-[9px] font-semibold mt-0.5">Tap to mix &amp; match vases</span>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </motion.div>
       )}
@@ -167,7 +189,13 @@ function ProductGridContent({ products }: { products: Product[] }) {
         </div>
       )}
 
-      <ProductModal product={selectedProduct} isOpen={!!selectedProduct} onClose={() => setSelectedProduct(null)} user={user} />
+      <ProductModal
+        product={selectedProduct}
+        isOpen={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        user={user}
+        allProducts={products}
+      />
     </div>
   );
 }

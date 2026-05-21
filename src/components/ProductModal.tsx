@@ -1,23 +1,75 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Heart, ShieldCheck, Award, Zap } from "lucide-react";
+import { X, Heart } from "lucide-react";
 import { User } from "@/components/AuthProvider";
 import { useChat } from "./ChatProvider";
 import { useSettings } from "./SettingsProvider";
-
 import { Product } from "@/lib/actions";
+import ImageCarousel from "./ImageCarousel";
+import dynamic from "next/dynamic";
+
+const FlowerMixMatch = dynamic(() => import("./FlowerMixMatch"), { ssr: false });
 
 interface ProductModalProps {
   product: Product | null;
   isOpen: boolean;
   onClose: () => void;
   user: User | null;
+  allProducts?: Product[];
 }
 
-export default function ProductModal({ product, isOpen, onClose, user }: ProductModalProps) {
+// Build full images array for a product
+function getProductImages(product: Product): string[] {
+  const extras = Array.isArray(product.attributes?.image_urls)
+    ? (product.attributes.image_urls as string[]).filter(Boolean)
+    : [];
+  return [product.image_url, ...extras].filter(Boolean);
+}
+
+export default function ProductModal({ product, isOpen, onClose, user, allProducts = [] }: ProductModalProps) {
   const { openChat } = useChat();
   const { settings } = useSettings();
+  const [selectedVaseImage, setSelectedVaseImage] = useState<string | null>(null);
+
+  // ── Derived values and hooks BEFORE early return (Rules of Hooks) ──────────
+
+  const images = product ? getProductImages(product) : [];
+
+  const isFlowerArrangement =
+    product?.category === "Flowers" &&
+    product?.attributes?.component_type === "arrangement";
+
+  const isVase =
+    product?.category === "Flowers" &&
+    product?.attributes?.component_type === "vase";
+
+  // Find compatible vases from allProducts
+  const compatibleVases = useMemo(() => {
+    if (!isFlowerArrangement || !product) return [];
+    const ids = Array.isArray(product.attributes?.compatible_vase_ids)
+      ? (product.attributes.compatible_vase_ids as string[])
+      : [];
+    return allProducts.filter(p => ids.includes(p.id));
+  }, [isFlowerArrangement, product, allProducts]);
+
+  // Count arrangements that reference this vase
+  const arrangementCount = useMemo(() => {
+    if (!isVase || !product) return 0;
+    return allProducts.filter(
+      p =>
+        p.category === "Flowers" &&
+        p.attributes?.component_type === "arrangement" &&
+        Array.isArray(p.attributes?.compatible_vase_ids) &&
+        (p.attributes.compatible_vase_ids as string[]).includes(product.id)
+    ).length;
+  }, [isVase, product, allProducts]);
+
+  // The displayed images: if a vase is selected in mix-match, show it as the active slide
+  const displayImages = selectedVaseImage
+    ? [selectedVaseImage, ...images]
+    : images;
 
   if (!product) return null;
 
@@ -32,7 +84,7 @@ export default function ProductModal({ product, isOpen, onClose, user }: Product
             onClick={onClose}
             className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
           />
-          
+
           <motion.div
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -41,35 +93,76 @@ export default function ProductModal({ product, isOpen, onClose, user }: Product
             className="relative w-full max-w-lg bg-[#EAEAEA] shadow-2xl rounded-3xl overflow-hidden my-auto"
           >
             {/* Top Image Section */}
-            <div className="w-full relative bg-[#EAEAEA] flex items-start justify-center pt-16 pb-12 px-12 h-[350px] overflow-y-auto">
+            <div className="w-full relative bg-[#EAEAEA] h-[340px]">
               <button
                 onClick={onClose}
-                className="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center text-slate-800 hover:text-slate-500 transition-colors"
+                className="absolute top-4 left-4 z-30 w-10 h-10 flex items-center justify-center text-slate-800 hover:text-slate-500 transition-colors bg-white/60 backdrop-blur-sm rounded-full"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
 
-              <button className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center text-slate-800 hover:text-red-500 transition-colors">
-                <Heart size={22} />
+              <button className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center text-slate-800 hover:text-red-500 transition-colors bg-white/60 backdrop-blur-sm rounded-full">
+                <Heart size={20} />
               </button>
 
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={product.image_url} alt={product.name} className="w-full h-auto mix-blend-multiply drop-shadow-md max-w-[280px] my-auto" />
+              {/* Selected vase indicator */}
+              {selectedVaseImage && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-pink-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-3 py-1 rounded-full">
+                  Viewing with selected vase
+                </div>
+              )}
+
+              <ImageCarousel
+                images={displayImages}
+                alt={product.name}
+                fill
+                objectFit="contain"
+              />
             </div>
 
             {/* Bottom Details Section */}
-            <div className="w-full bg-[#F3F3F3] px-8 py-8 flex flex-col">
-              <h2 className="text-2xl font-display text-slate-900 mb-8 font-normal">
+            <div className="w-full bg-[#F3F3F3] px-8 py-6 flex flex-col max-h-[60vh] overflow-y-auto">
+              {/* Category chip */}
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  {product.category}
+                </span>
+                {isFlowerArrangement && (
+                  <span className="text-[9px] font-bold bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full">
+                    🌸 Arrangement
+                  </span>
+                )}
+                {isVase && (
+                  <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                    🏺 Vase
+                  </span>
+                )}
+              </div>
+
+              <h2 className="text-2xl font-display text-slate-900 mb-4 font-normal leading-tight">
                 {product.name}
               </h2>
 
+              {/* Vase note */}
+              {isVase && arrangementCount > 0 && (
+                <p className="text-xs text-slate-500 mb-4 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                  Compatible with <span className="font-semibold text-amber-700">{arrangementCount}</span> flower arrangement{arrangementCount !== 1 ? 's' : ''} in our collection.
+                </p>
+              )}
+
               {/* Pricing & Actions */}
-              <div className="mt-auto flex items-end justify-between gap-4">
+              <div className="flex items-end justify-between gap-4 mt-auto">
                 {user ? (
                   <div className="flex flex-col gap-1">
                     {user.role === 'admin' && (
                       <div className="text-[10px] text-slate-500 font-medium mb-1">
                         Cost: KES {product.buying_price?.toLocaleString()}
+                      </div>
+                    )}
+                    {/* Show stem price for flower arrangements */}
+                    {isFlowerArrangement && product.attributes?.stem_price && (
+                      <div className="text-xs text-slate-500 font-medium">
+                        Stem only: KES {Number(product.attributes.stem_price).toLocaleString()}
                       </div>
                     )}
                     <div className="text-sm font-medium text-slate-500">Retail: KES {product.retail_price?.toLocaleString()}</div>
@@ -80,13 +173,18 @@ export default function ProductModal({ product, isOpen, onClose, user }: Product
                 ) : (
                   <div>
                     <h3 className="text-xl font-medium text-slate-900">Request Quote</h3>
+                    {isFlowerArrangement && compatibleVases.length > 0 && (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Available in {compatibleVases.length} vase option{compatibleVases.length !== 1 ? 's' : ''}
+                      </p>
+                    )}
                   </div>
                 )}
 
                 {!user && (
                   <div className="flex items-center gap-2">
                     {settings.enableWhatsapp && settings.whatsappNumber && (
-                      <a 
+                      <a
                         href={`https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi, I'm interested in the product: ${product.name}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -95,7 +193,7 @@ export default function ProductModal({ product, isOpen, onClose, user }: Product
                         WhatsApp
                       </a>
                     )}
-                    <button 
+                    <button
                       onClick={() => {
                         onClose();
                         openChat(`Hi, I'm interested in the product: ${product.name}`);
@@ -107,6 +205,16 @@ export default function ProductModal({ product, isOpen, onClose, user }: Product
                   </div>
                 )}
               </div>
+
+              {/* Flower Mix & Match section */}
+              {isFlowerArrangement && (
+                <FlowerMixMatch
+                  flower={product}
+                  compatibleVases={compatibleVases}
+                  user={user}
+                  onVaseImageChange={setSelectedVaseImage}
+                />
+              )}
             </div>
           </motion.div>
         </div>
@@ -114,4 +222,3 @@ export default function ProductModal({ product, isOpen, onClose, user }: Product
     </AnimatePresence>
   );
 }
-

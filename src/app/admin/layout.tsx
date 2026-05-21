@@ -171,7 +171,7 @@ export default function AdminLayout({
   
   return (
     <ProtectedRoute reqRole="admin">
-      <div className="flex min-h-screen w-full bg-apex-bg text-apex-text font-apex-sans selection:bg-apex-secondary/30 relative">
+      <div className="admin-workspace flex min-h-screen w-full bg-apex-bg text-apex-text font-apex-sans selection:bg-apex-secondary/30 relative">
         
         {/* SideNavBar Shell */}
         {isMobileMenuOpen && (

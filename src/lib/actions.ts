@@ -317,6 +317,48 @@ export async function deleteEmptyCategories() {
   return { success: true, count: emptyCategories.length, data: finalData as Category[] };
 }
 
+// --- Flowers Actions ---
+
+export async function ensureFlowersCategory() {
+  const supabase = await requireAdmin();
+  const { data: existing } = await supabase.from('categories').select('id').eq('name', 'Flowers').maybeSingle();
+  if (existing) return { success: true, created: false };
+
+  const { error } = await supabase.from('categories').insert([{
+    name: 'Flowers',
+    sku_prefix: 'FLW',
+    icon_name: 'Flower2',
+    is_featured: true,
+    is_visible: true,
+    sort_order: 0,
+    parent_id: null,
+    banner_url: null,
+  }]);
+  if (error) return { error: error.message };
+  revalidateTag('categories');
+  revalidatePath('/');
+  revalidatePath('/admin');
+  return { success: true, created: true };
+}
+
+export const getFlowerVaseProducts = unstable_cache(
+  async () => {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('category', 'Flowers');
+    if (error) return [];
+    // Filter to only vase-type products client-side (attributes is JSONB)
+    return (data || []).filter((p) => p.attributes?.component_type === 'vase') as Product[];
+  },
+  ['flower-vases-cache'],
+  { tags: ['products', 'flower-vases'] }
+);
+
 // --- Store Settings Actions ---
 
 export const getStoreSettings = unstable_cache(
