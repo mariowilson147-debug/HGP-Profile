@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Product } from "@/lib/actions";
 import { addProducts, updateProduct, getFlowerVaseProducts, ensureFlowersCategory } from "@/lib/actions";
@@ -645,7 +645,28 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
   const { toasts, add: addToast } = useToast();
   const [vaseProducts, setVaseProducts] = useState<Product[]>([]);
 
-  const defaultCategory = settings.categories[0]?.name || "General";
+  // Always guarantee "Flowers" appears in the category dropdown so the
+  // FlowerConfigSection (component_type, vase selector, stem price) is
+  // accessible even before the admin has explicitly created the category.
+  const categoriesWithFlowers = useMemo(() => {
+    const cats = settings.categories;
+    const hasFlowers = cats.some(c => c.name === 'Flowers');
+    if (hasFlowers) return cats;
+    const flowerEntry = {
+      id: '__flowers_virtual__',
+      name: 'Flowers',
+      sku_prefix: 'FLW',
+      icon_name: 'Flower2',
+      parent_id: null,
+      is_featured: true,
+      is_visible: true,
+      banner_url: null,
+      sort_order: -1,
+    };
+    return [flowerEntry, ...cats];
+  }, [settings.categories]);
+
+  const defaultCategory = categoriesWithFlowers[0]?.name || "General";
   const isEdit = !!initialData;
 
   // Load vase products for flower config
@@ -918,7 +939,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
               item={editItem}
               index={0}
               total={1}
-              categories={settings.categories}
+              categories={categoriesWithFlowers}
               vaseProducts={vaseProducts}
               onChange={(_, patch) => setEditItem(p => ({ ...p, ...patch }))}
               onRemove={() => {}}
@@ -930,7 +951,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
                 item={item}
                 index={i}
                 total={queue.length}
-                categories={settings.categories}
+                categories={categoriesWithFlowers}
                 vaseProducts={vaseProducts}
                 onChange={updateQueue}
                 onRemove={removeFromQueue}
