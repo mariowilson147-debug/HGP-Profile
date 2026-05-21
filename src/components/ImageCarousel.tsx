@@ -10,7 +10,7 @@ interface ImageCarouselProps {
   aspectRatio?: string;
   /** Fill the parent container instead of maintaining aspect ratio (useful in modal) */
   fill?: boolean;
-  /** Called when the user taps/clicks the image (not the dots) */
+  /** Called when the user taps the image (not after a swipe) */
   onClick?: () => void;
   /** objectFit style for the image */
   objectFit?: "cover" | "contain";
@@ -28,31 +28,59 @@ export default function ImageCarousel({
   const count = validImages.length;
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
+
+  // Touch tracking
   const touchStartX = useRef<number | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef<number | null>(null);
+  const didSwipe    = useRef(false);          // true when the gesture was a real swipe
 
   const next = useCallback(() => setCurrent((c) => (c + 1) % count), [count]);
   const prev = useCallback(() => setCurrent((c) => (c - 1 + count) % count), [count]);
 
-  // Auto-scroll every 3 s, paused on hover/touch
+  // Auto-scroll every 3 s, paused on hover / active touch
   useEffect(() => {
     if (count <= 1 || paused) return;
     const id = setInterval(next, 3000);
     return () => clearInterval(id);
   }, [count, paused, next]);
 
-  // Touch/swipe
+  // ── Touch handlers ──────────────────────────────────────────────────────────
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    didSwipe.current    = false;
     setPaused(true);
   };
+
   const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const delta = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(delta) > 30) { if (delta > 0) next(); else prev(); }
+    if (touchStartX.current === null || touchStartY.current === null) return;
+
+    const dx = touchStartX.current - e.changedTouches[0].clientX;
+    const dy = touchStartY.current - e.changedTouches[0].clientY;
+
+    // Only treat as a horizontal swipe when Δx dominates and is large enough
+    if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      didSwipe.current = true;
+      if (dx > 0) next(); else prev();
+    }
+
     touchStartX.current = null;
-    // resume auto-scroll after 5 s
+    touchStartY.current = null;
+
+    // Resume auto-scroll after 5 s
     setTimeout(() => setPaused(false), 5000);
+  };
+
+  // ── Click guard ─────────────────────────────────────────────────────────────
+  // The browser fires a synthetic click after touchend even on swipes.
+  // We suppress it when didSwipe is true so the parent modal doesn't open.
+  const handleClick = (e: React.MouseEvent) => {
+    if (didSwipe.current) {
+      e.stopPropagation();
+      didSwipe.current = false;
+      return;
+    }
+    onClick?.();
   };
 
   if (count === 0) {
@@ -65,7 +93,6 @@ export default function ImageCarousel({
 
   return (
     <div
-      ref={containerRef}
       className={`relative overflow-hidden ${fill ? "w-full h-full" : aspectRatio + " w-full"}`}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -77,7 +104,7 @@ export default function ImageCarousel({
         <div
           key={src + i}
           className={`absolute inset-0 transition-opacity duration-700 ${i === current ? "opacity-100 z-10" : "opacity-0 z-0"}`}
-          onClick={onClick}
+          onClick={handleClick}
         >
           {fill ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -98,17 +125,17 @@ export default function ImageCarousel({
         </div>
       ))}
 
-      {/* Dot indicators — only if multiple images */}
+      {/* Dot indicators — only when multiple images; NO count badge */}
       {count > 1 && (
         <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none">
           {validImages.map((_, i) => (
             <button
               key={i}
               aria-label={`Go to image ${i + 1}`}
-              className={`pointer-events-auto w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+              className={`pointer-events-auto transition-all duration-300 rounded-full ${
                 i === current
-                  ? "bg-white scale-125 shadow-sm"
-                  : "bg-white/50"
+                  ? "bg-white w-4 h-1.5 shadow-sm"   // active: wider pill
+                  : "bg-white/50 w-1.5 h-1.5"
               }`}
               onClick={(e) => {
                 e.stopPropagation();
@@ -118,13 +145,6 @@ export default function ImageCarousel({
               }}
             />
           ))}
-        </div>
-      )}
-
-      {/* Variation count badge */}
-      {count > 1 && (
-        <div className="absolute top-2 right-2 z-20 bg-black/40 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none">
-          {current + 1}/{count}
         </div>
       )}
     </div>

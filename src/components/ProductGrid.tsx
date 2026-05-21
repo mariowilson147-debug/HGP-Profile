@@ -129,15 +129,15 @@ function ProductGridContent({ products }: { products: Product[] }) {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.4 }}
                   key={product.id}
-                  onClick={() => setSelectedProduct(product)}
-                  className="group cursor-pointer flex flex-col"
+                  className="group flex flex-col"
                 >
+                  {/* ── Image area: carousel handles tap vs swipe internally ── */}
                   <div className="relative w-full overflow-hidden bg-[#f4f4f4] mb-4">
-                    {/* Carousel handles its own aspect ratio */}
                     <ImageCarousel
                       images={images}
                       alt={product.name}
                       aspectRatio="aspect-square"
+                      onClick={() => setSelectedProduct(product)}
                     />
 
                     {/* Badges */}
@@ -167,7 +167,11 @@ function ProductGridContent({ products }: { products: Product[] }) {
                     )}
                   </div>
 
-                  <div className="flex flex-col">
+                  {/* ── Info area: tap to open modal ── */}
+                  <div
+                    className="flex flex-col cursor-pointer"
+                    onClick={() => setSelectedProduct(product)}
+                  >
                     <h3 className="font-display font-medium text-lg text-slate-900 leading-tight mb-1">{product.name}</h3>
                     <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{product.category}</span>
                     {isFlowerArrangement && (
