@@ -6,7 +6,6 @@ import { Product } from "@/lib/actions";
 import { addProducts, updateProduct, getFlowerVaseProducts, ensureFlowersCategory } from "@/lib/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useSettings } from "./SettingsProvider";
-import {
 import { UploadCloud, Save, Plus, Trash2, CheckCircle2,
   AlertCircle, ArrowLeft, PackagePlus, Loader2, Flower2, X, Image as ImageIcon
 } from "lucide-react";
