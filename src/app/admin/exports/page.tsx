@@ -107,27 +107,23 @@ export default function ExportsHub() {
       const sheet = workbook.addWorksheet('Catalog');
 
       sheet.columns = [
-        { header: 'Image', key: 'image', width: 15 },
-        { header: 'SKU', key: 'sku', width: 20 },
-        { header: 'Product Name', key: 'name', width: 40 },
-        { header: 'Category', key: 'category', width: 25 },
-        { header: 'Cost Price', key: 'cost', width: 15 },
-        { header: 'Wholesale Price', key: 'wholesale', width: 15 },
-        { header: 'Retail Price', key: 'retail', width: 15 },
+        { header: 'S/No', key: 'sno', width: 10 },
+        { header: 'Image', key: 'image', width: 20 },
+        { header: 'Item Name', key: 'name', width: 45 },
+        { header: 'Wholesale Price', key: 'wholesale', width: 20 },
+        { header: 'Retail Price', key: 'retail', width: 20 },
       ];
 
       for (let i = 0; i < products.length; i++) {
         const p = products[i];
         const rowIndex = i + 2; 
         const row = sheet.addRow({
-          sku: `${p.category.substring(0,3).toUpperCase()}-${p.id.substring(0, 8).toUpperCase()}`,
+          sno: i + 1,
           name: p.name,
-          category: p.category,
-          cost: p.buying_price || 0,
           wholesale: p.wholesale_price || 0,
           retail: p.retail_price || 0
         });
-        row.height = 60; 
+        row.height = 80; 
 
         if (p.image_url) {
           try {
@@ -142,8 +138,8 @@ export default function ExportsHub() {
             });
             
             sheet.addImage(imageId, {
-              tl: { col: 0, row: rowIndex - 1 },
-              ext: { width: 50, height: 50 }
+              tl: { col: 1, row: rowIndex - 1 },
+              ext: { width: 70, height: 70 }
             });
           } catch (e) {
             console.error('Failed to add image to excel', e);
@@ -200,8 +196,9 @@ export default function ExportsHub() {
       doc.setTextColor(200, 200, 200);
       doc.text(`Generated on: ${new Date().toLocaleDateString()}`, doc.internal.pageSize.width - 40, 38, { align: 'right' });
 
-      const bodyData: Array<{image: string | null, name: string, category: string, cost: string, wholesale: string, retail: string}> = [];
-      for (const p of products) {
+      const bodyData: Array<{sno: number, image: string | null, name: string, wholesale: string, retail: string}> = [];
+      for (let i = 0; i < products.length; i++) {
+         const p = products[i];
          let imgData: string | null = null;
          try {
            if (p.image_url) {
@@ -210,10 +207,9 @@ export default function ExportsHub() {
          } catch(e) {}
          
          bodyData.push({
+           sno: i + 1,
            image: imgData,
            name: p.name,
-           category: p.category,
-           cost: `KES ${p.buying_price?.toLocaleString() || '0'}`,
            wholesale: `KES ${p.wholesale_price?.toLocaleString() || '0'}`,
            retail: `KES ${p.retail_price?.toLocaleString() || '0'}`
          });
@@ -221,28 +217,28 @@ export default function ExportsHub() {
 
       autoTable(doc, {
         startY: 80,
-        margin: { top: 80, left: 40, right: 40 },
-        head: [['Image', 'Product Name', 'Category', 'Cost Price', 'Wholesale', 'Retail']],
-        body: bodyData.map(row => [{content: '', rowData: row}, row.name, row.category, row.cost, row.wholesale, row.retail]),
-        theme: 'striped',
+        margin: { top: 80, left: 40, right: 40, bottom: 40 },
+        head: [['S/No', 'Image', 'Item Name', 'Wholesale Price', 'Retail Price']],
+        body: bodyData.map(row => [row.sno, {content: '', rowData: row}, row.name, row.wholesale, row.retail]),
+        theme: 'grid',
         rowPageBreak: 'avoid',
-        headStyles: { fillColor: [76, 215, 246], textColor: 11, fontStyle: 'bold' },
-        styles: { font: 'helvetica', fontSize: 10, cellPadding: 6, minCellHeight: 50, valign: 'middle', overflow: 'linebreak' },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold', halign: 'center', valign: 'middle' },
+        bodyStyles: { valign: 'middle' },
+        styles: { font: 'helvetica', fontSize: 11, cellPadding: 8, minCellHeight: 80, overflow: 'linebreak' },
         columnStyles: { 
-          0: { cellWidth: 50 },
-          1: { cellWidth: 'auto' },
-          2: { cellWidth: 100 },
-          3: { cellWidth: 90 },
-          4: { cellWidth: 90 },
-          5: { cellWidth: 90 }
+          0: { cellWidth: 40, halign: 'center' },
+          1: { cellWidth: 80, halign: 'center' },
+          2: { cellWidth: 'auto' },
+          3: { cellWidth: 100, halign: 'right' },
+          4: { cellWidth: 100, halign: 'right' }
         },
         didDrawCell: (data) => {
-          if (data.section === 'body' && data.column.index === 0) {
+          if (data.section === 'body' && data.column.index === 1) {
             const raw = data.cell.raw as { rowData?: { image?: string | null } };
             const rowData = raw?.rowData;
             if (rowData && rowData.image) {
               try {
-                doc.addImage(rowData.image as string, 'JPEG', data.cell.x + 5, data.cell.y + 5, 40, 40);
+                doc.addImage(rowData.image as string, 'JPEG', data.cell.x + 5, data.cell.y + 5, 70, 70);
               } catch(e){}
             }
           }
@@ -272,7 +268,7 @@ export default function ExportsHub() {
     const baseUrl = window.location.origin;
     let url = baseUrl + "/";
     if (selectedCategories.length > 0) {
-      url += `?category=${encodeURIComponent(selectedCategories.join(','))}&strict=true`;
+      url += `?category=${encodeURIComponent(selectedCategories[0])}`;
     }
     
     try {
