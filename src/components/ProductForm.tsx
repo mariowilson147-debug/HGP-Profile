@@ -855,7 +855,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
     // Ensure Flowers category if any item uses it
     if (queue.some(i => i.category === 'Flowers & Vases')) await ensureFlowersCategory();
 
-    const payloads = await Promise.all(queue.map(async (item) => {
+    const payloads = await Promise.all(queue.map(async (item, idx) => {
       const { primaryUrl, extraUrls } = await uploadAllImages(item);
       return {
         name: item.name,
@@ -869,6 +869,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         is_featured: item.is_featured,
         tags: item.tags.split(',').map(t => t.trim()).filter(Boolean),
         attributes: buildAttributes(item, extraUrls),
+        sort_order: idx,
       };
     }));
 
