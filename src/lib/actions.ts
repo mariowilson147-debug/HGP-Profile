@@ -89,6 +89,12 @@ export const getProducts = unstable_cache(
 
 export async function addProduct(product: Omit<Product, "id" | "created_at">) {
   const supabase = await requireAdmin();
+
+  const { data: existing } = await supabase.from('products').select('name').ilike('name', product.name);
+  if (existing && existing.length > 0) {
+    return { error: `A product with the name "${product.name}" already exists.` };
+  }
+
   const { data, error } = await supabase.from('products').insert([product]).select().single();
   if (error) {
     console.error("Insert error", error);
@@ -103,6 +109,16 @@ export async function addProduct(product: Omit<Product, "id" | "created_at">) {
 
 export async function addProducts(products: Omit<Product, "id" | "created_at">[]) {
   const supabase = await requireAdmin();
+
+  // Check for duplicates using ilike for case-insensitive match
+  // Supabase 'in' operator isn't case-insensitive directly, so we'll fetch existing names that match any
+  const names = products.map(p => p.name);
+  const { data: existing } = await supabase.from('products').select('name').in('name', names);
+  if (existing && existing.length > 0) {
+    const dupes = existing.map(e => e.name).join(", ");
+    return { error: `Duplicate product names found in database: ${dupes}` };
+  }
+
   const { data, error } = await supabase.from('products').insert(products).select();
   if (error) {
     console.error("Bulk insert error", error);
@@ -117,6 +133,13 @@ export async function addProducts(products: Omit<Product, "id" | "created_at">[]
 
 export async function updateProduct(id: string, updates: Partial<Product>) {
   const supabase = await requireAdmin();
+
+  if (updates.name) {
+    const { data: existing } = await supabase.from('products').select('id, name').ilike('name', updates.name).neq('id', id);
+    if (existing && existing.length > 0) {
+      return { error: `A product with the name "${updates.name}" already exists.` };
+    }
+  }
 
   // If we are updating the image_url, we should check what the old image was so we can delete it
   let oldImageUrl: string | undefined;

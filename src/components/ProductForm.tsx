@@ -7,10 +7,11 @@ import { addProducts, updateProduct, getFlowerVaseProducts, ensureFlowersCategor
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useSettings } from "./SettingsProvider";
 import {
-  UploadCloud, Save, Plus, Trash2, CheckCircle2,
+import { UploadCloud, Save, Plus, Trash2, CheckCircle2,
   AlertCircle, ArrowLeft, PackagePlus, Loader2, Flower2, X, Image as ImageIcon
 } from "lucide-react";
 import imageCompression from 'browser-image-compression';
+import { saveDraft, getDraft, deleteDraft } from "@/lib/idb";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -802,7 +803,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
   // ── Edit mode submit ──
   const handleEditSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!editItem.name.trim()) { addToast("IDENTIFIER_STRING is required.", "error"); return; }
+    if (!editItem.name.trim()) { addToast("Product Name is required.", "error"); return; }
     if (!editItem.imageFile && !editItem.image_url) { addToast("PRIMARY IMAGE is required.", "error"); return; }
     if (editItem.category === 'Flowers & Vases' && !editItem.componentType) { addToast("Select a Flower Component Type.", "error"); return; }
     setSubmitting(true);
@@ -836,59 +837,97 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
     }
   };
 
-  // ── Bulk add submit ──
   const handleBulkSubmit = async () => {
+    const names = new Set<string>();
     for (const item of queue) {
-      if (!item.name.trim()) { addToast(`Item ${queue.indexOf(item) + 1}: IDENTIFIER_STRING is required.`, "error"); return; }
+      if (!item.name.trim()) { addToast(`Item ${queue.indexOf(item) + 1}: Name is required.`, "error"); return; }
       if (!item.imageFile && !item.image_url) { addToast(`Item ${queue.indexOf(item) + 1}: PRIMARY IMAGE is required.`, "error"); return; }
       if (item.category === 'Flowers & Vases' && !item.componentType) { addToast(`Item ${queue.indexOf(item) + 1}: Select Flower Component Type.`, "error"); return; }
+      
+      const lowerName = item.name.trim().toLowerCase();
+      if (names.has(lowerName)) {
+        addToast(`Duplicate name in queue: "${item.name}". Names must be unique.`, "error");
+        return;
+      }
+      names.add(lowerName);
     }
     setSubmitting(true);
 
     // Ensure Flowers category if any item uses it
     if (queue.some(i => i.category === 'Flowers & Vases')) await ensureFlowersCategory();
 
-    const results: { item: QueueItem; primaryUrl: string; extraUrls: string[] }[] = [];
-    for (const item of queue) {
-      try {
-        updateQueue(item.id, { status: "uploading", uploadProgress: 5 });
-        const { primaryUrl, extraUrls } = await uploadAllImages(item);
-        results.push({ item, primaryUrl, extraUrls });
-        updateQueue(item.id, { status: "done", uploadProgress: 100 });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Upload failed";
-        updateQueue(item.id, { status: "error", errorMsg: msg });
-        addToast(`ASSET_UPLOAD_FAILED // "${item.name}".`, "error");
-        setSubmitting(false);
-        return;
-      }
-    }
-
-    const payload = results.map(({ item, primaryUrl, extraUrls }, idx) => ({
-      name: item.name,
-      category: item.category.trim(),
-      image_url: primaryUrl,
-      buying_price: +item.prices.buying_price,
-      wholesale_price: +item.prices.wholesale_price,
-      retail_price: +item.prices.retail_price,
-      visibility: item.visibility,
-      availability: item.availability,
-      is_featured: item.is_featured,
-      tags: item.tags.split(',').map(t => t.trim()).filter(Boolean),
-      attributes: buildAttributes(item, extraUrls),
-      sort_order: idx,
+    const payloads = await Promise.all(queue.map(async (item) => {
+      const { primaryUrl, extraUrls } = await uploadAllImages(item);
+      return {
+        name: item.name,
+        category: item.category.trim(),
+        image_url: primaryUrl,
+        buying_price: +item.prices.buying_price,
+        wholesale_price: +item.prices.wholesale_price,
+        retail_price: +item.prices.retail_price,
+        visibility: item.visibility,
+        availability: item.availability,
+        is_featured: item.is_featured,
+        tags: item.tags.split(',').map(t => t.trim()).filter(Boolean),
+        attributes: buildAttributes(item, extraUrls),
+      };
     }));
 
     try {
-      const result = await addProducts(payload);
+      const result = await addProducts(payloads);
       if (result?.error) throw new Error(result.error);
-      addToast(`[SUCCESS] ${result.count} REGISTR${result.count === 1 ? "Y" : "IES"} INITIALIZED`, "success");
+      
+      await deleteDraft('product_queue'); // Clear draft on success
+      
+      addToast(`SUCCESSFULLY ADDED ${queue.length} ITEM(S) TO REGISTRY`, "success");
+      setQueue([blankItem(defaultCategory)]);
       setTimeout(() => router.push("/admin/products"), 1500);
     } catch (err) {
       addToast(err instanceof Error ? err.message : "REGISTRY_INITIALIZATION_FAILED", "error");
       setSubmitting(false);
     }
   };
+
+  // ── Auto-save Drafts ──
+  useEffect(() => {
+    if (isEdit) return;
+    let mounted = true;
+    
+    getDraft('product_queue').then((draft: any) => {
+      if (!mounted) return;
+      if (draft && Array.isArray(draft) && draft.length > 0) {
+        // Only restore if there's actual data
+        const hasContent = draft.length > 1 || draft[0].name !== '' || draft[0].imageFile !== null;
+        if (hasContent) {
+          const restored = draft.map((item: QueueItem) => {
+            // Regenerate object URLs from the restored File objects since blob URLs expire across sessions
+            if (item.imageFile) item.imagePreview = URL.createObjectURL(item.imageFile);
+            item.extraImages.forEach(img => {
+              if (img.file) img.preview = URL.createObjectURL(img.file);
+            });
+            return item;
+          });
+          setQueue(restored);
+          addToast("Restored unsaved draft from your last session.", "info");
+        }
+      }
+    }).catch(err => console.error("Failed to load draft", err));
+    
+    return () => { mounted = false; };
+  }, [isEdit, addToast]);
+
+  useEffect(() => {
+    if (isEdit) return;
+    const timeout = setTimeout(() => {
+      const hasContent = queue.length > 1 || queue[0].name !== '' || queue[0].imageFile !== null;
+      if (hasContent) {
+        saveDraft('product_queue', queue).catch(err => console.error("Failed to save draft", err));
+      } else {
+        deleteDraft('product_queue').catch(() => {});
+      }
+    }, 1500);
+    return () => clearTimeout(timeout);
+  }, [queue, isEdit]);
 
   // ─── Render ──────────────────────────────────────────────────────────────
 
@@ -907,7 +946,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         ))}
       </div>
 
-      <div className="max-w-[1400px] mx-auto py-8 px-8 select-none">
+      <div className="max-w-[1400px] mx-auto py-8 px-8 pb-28 select-none">
 
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 pb-4 border-b border-apex-outline-variant/20">
@@ -977,21 +1016,37 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
           )}
         </div>
 
-        {/* Bottom Add / Submit bar (add mode) */}
-        {!isEdit && (
-          <div className="mt-8 pt-4 border-t border-apex-outline-variant/20 flex items-center justify-between">
+        {/* Bottom Add / Submit bar (add mode) - Removed static bar */}
+      </div>
+
+      {/* Sticky Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 lg:left-64 right-0 z-40 bg-apex-bg/80 backdrop-blur-md border-t border-apex-outline-variant/50 p-4 px-8 flex items-center justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.02)]">
+        <div className="flex items-center gap-4">
+          {!isEdit && (
+            <p className="text-sm font-medium text-apex-on-surface-variant">
+              Queue: <span className="text-apex-text font-bold">{queue.length}</span> {queue.length === 1 ? 'item' : 'items'}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          {!isEdit && (
             <button
               onClick={addToQueue}
               disabled={submitting}
-              className="flex items-center gap-2 text-sm font-medium text-apex-primary hover:text-apex-primary/80 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-apex-surface border border-apex-outline-variant/50 text-apex-text hover:bg-apex-surface-low rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
             >
-              <Plus size={16} /> Add another item
+              <Plus size={16} /> Add Another
             </button>
-            <p className="text-sm font-medium text-apex-on-surface-variant/70">
-              Total Items: {queue.length}
-            </p>
-          </div>
-        )}
+          )}
+          <button
+            onClick={isEdit ? handleEditSubmit : handleBulkSubmit}
+            disabled={submitting}
+            className="flex items-center gap-2 px-6 py-2 bg-apex-primary text-apex-bg rounded-lg text-sm font-semibold hover:bg-apex-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {submitting ? "Saving..." : isEdit ? "Save Changes" : "Save Products"}
+          </button>
+        </div>
       </div>
 
       <style>{`

@@ -13,6 +13,7 @@ import { useSettings } from "@/components/SettingsProvider";
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [isStrict, setIsStrict] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,6 +31,7 @@ export default function Header() {
         setIsStrict(strictMode);
 
         const products = await getProducts();
+        setAllProducts(products);
         const unique = Array.from(new Set(products.map(p => p.category)));
         
         let cats = ["All Collections", ...unique];
@@ -91,6 +93,12 @@ export default function Header() {
       router.push(url);
     }
   };
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return allProducts.filter(p => p.name.toLowerCase().includes(query)).slice(0, 5);
+  }, [searchQuery, allProducts]);
 
   return (
     <div className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 sm:px-6 pointer-events-none transition-all duration-300">
@@ -173,6 +181,47 @@ export default function Header() {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Instant Search Dropdown */}
+            <AnimatePresence>
+              {isSearching && searchQuery.trim() && searchResults.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute top-full left-0 w-[320px] mt-4 bg-[#f1f0ec]/95 backdrop-blur-xl border border-[#e5e4e0] shadow-2xl rounded-2xl flex flex-col p-2 gap-1 z-50 pointer-events-auto"
+                >
+                  <div className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    Products
+                  </div>
+                  {searchResults.map(p => (
+                    <Link
+                      key={p.id}
+                      href={`/?q=${encodeURIComponent(p.name)}`}
+                      onClick={() => { setIsSearching(false); setSearchQuery(""); }}
+                      className="flex items-center gap-3 p-2 hover:bg-white/60 rounded-xl transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-slate-100">
+                        {p.image_url ? (
+                          <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-slate-200" />
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-slate-800 line-clamp-1">{p.name}</span>
+                        <span className="text-xs text-slate-500">{p.category}</span>
+                      </div>
+                    </Link>
+                  ))}
+                  {searchResults.length === 5 && (
+                    <button type="submit" className="text-xs text-center text-slate-500 hover:text-slate-800 py-2 mt-1 w-full font-medium">
+                      View all results
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.form>
         </div>
 

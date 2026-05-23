@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ImageCarouselProps {
   images: string[];
@@ -93,7 +94,7 @@ export default function ImageCarousel({
 
   return (
     <div
-      className={`relative overflow-hidden ${fill ? "w-full h-full" : aspectRatio + " w-full"}`}
+      className={`relative overflow-hidden group ${fill ? "w-full h-full" : aspectRatio + " w-full"}`}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={onTouchStart}
@@ -124,6 +125,26 @@ export default function ImageCarousel({
           )}
         </div>
       ))}
+
+      {/* Left/Right Arrow Navigation */}
+      {count > 1 && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); prev(); setPaused(true); setTimeout(() => setPaused(false), 5000); }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 flex items-center justify-center bg-white/60 hover:bg-white/90 backdrop-blur-sm rounded-full text-slate-800 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto"
+            aria-label="Previous image"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); next(); setPaused(true); setTimeout(() => setPaused(false), 5000); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 flex items-center justify-center bg-white/60 hover:bg-white/90 backdrop-blur-sm rounded-full text-slate-800 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto"
+            aria-label="Next image"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </>
+      )}
 
       {/* Dot indicators — only when multiple images; NO count badge */}
       {count > 1 && (
