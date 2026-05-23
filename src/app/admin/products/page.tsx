@@ -13,15 +13,15 @@ import {
 // ─── Status & Visibility Badges ──────────────────────────────────────────────
 
 const availabilityConfig = {
-  in_stock:    { label: "In Stock",    color: "#4cd7f6", bg: "rgba(76,215,246,0.1)",  border: "rgba(76,215,246,0.3)"  },
-  out_of_stock:{ label: "Depleted",    color: "#ffb4ab", bg: "rgba(255,180,171,0.1)", border: "rgba(255,180,171,0.3)" },
-  coming_soon: { label: "Inbound",     color: "#c0c1ff", bg: "rgba(192,193,255,0.1)", border: "rgba(192,193,255,0.3)" },
+  in_stock:    { label: "In Stock",    color: "text-apex-tertiary", bg: "bg-apex-tertiary-container",  border: "border-transparent"  },
+  out_of_stock:{ label: "Depleted",    color: "text-apex-error", bg: "bg-apex-error-container", border: "border-transparent" },
+  coming_soon: { label: "Inbound",     color: "text-apex-secondary", bg: "bg-apex-surface-low", border: "border-apex-outline-variant" },
 };
 
 const visibilityConfig = {
-  visible:  { icon: Eye,     label: "Public",   color: "#4cd7f6" },
-  hidden:   { icon: EyeOff,  label: "Hidden",   color: "#7a8cb0" },
-  archived: { icon: Archive, label: "Archived", color: "#ffb4ab" },
+  visible:  { icon: Eye,     label: "Public",   color: "text-apex-tertiary" },
+  hidden:   { icon: EyeOff,  label: "Hidden",   color: "text-apex-on-surface-variant" },
+  archived: { icon: Archive, label: "Archived", color: "text-apex-error" },
 };
 
 // ─── Single Product Card ──────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ function ProductCard({
   const avail = availabilityConfig[product.availability as keyof typeof availabilityConfig] ?? availabilityConfig.in_stock;
   const vis   = visibilityConfig[product.visibility as keyof typeof visibilityConfig] ?? visibilityConfig.visible;
   const VisIcon = vis.icon;
-  const isFlower = product.category === "Flowers";
+  const isFlower = product.category === "Flowers & Vases";
   const compType = product.attributes?.component_type as string | undefined;
 
   const margin =
@@ -55,16 +55,16 @@ function ProductCard({
     <div className="admin-product-card flex flex-col group relative">
 
       {/* Image */}
-      <Link href={`/admin/product/${product.id}`} className="block relative overflow-hidden" style={{ aspectRatio: "4/3" }}>
+      <Link href={`/admin/product/${product.id}`} className="block relative overflow-hidden bg-apex-surface-lowest" style={{ aspectRatio: "4/3" }}>
         {product.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.image_url}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 grayscale-[30%] group-hover:grayscale-0"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-[#060e20]">
+          <div className="w-full h-full flex items-center justify-center bg-apex-surface-low">
             <Package size={32} className="text-apex-outline-variant" strokeWidth={1} />
           </div>
         )}
@@ -72,100 +72,82 @@ function ProductCard({
         {/* Top overlay badges */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
           {product.is_featured && (
-            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest font-apex-mono"
-              style={{ background: "rgba(192,193,255,0.15)", color: "#c0c1ff", border: "1px solid rgba(192,193,255,0.3)" }}>
-              <Star size={8} /> FEATURED
+            <span className="flex items-center gap-1 px-2 py-1 rounded bg-apex-surface/90 text-apex-primary text-[10px] font-bold shadow-sm">
+              <Star size={10} className="fill-apex-primary" /> Featured
             </span>
           )}
           {isFlower && (
-            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest font-apex-mono"
-              style={{ background: "rgba(236,72,153,0.15)", color: "#f472b6", border: "1px solid rgba(236,72,153,0.3)" }}>
-              <Flower2 size={8} /> {compType === "vase" ? "VASE" : compType === "arrangement" ? "ARRANGEMENT" : "FLOWER"}
+            <span className="flex items-center gap-1 px-2 py-1 rounded bg-pink-100 text-pink-600 border border-pink-200 text-[10px] font-bold shadow-sm">
+              <Flower2 size={10} /> {compType === "vase" ? "Vase" : compType === "arrangement" ? "Arrangement" : "Flower"}
             </span>
           )}
         </div>
 
         {/* Visibility icon top-right */}
-        <div className="absolute top-2 right-2 p-1 rounded" style={{ background: "rgba(8,15,30,0.7)" }}>
-          <VisIcon size={12} style={{ color: vis.color }} />
+        <div className="absolute top-2 right-2 p-1.5 rounded-full bg-apex-surface/90 shadow-sm">
+          <VisIcon size={14} className={vis.color} />
         </div>
-
-        {/* Gradient scrim at bottom */}
-        <div className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
-          style={{ background: "linear-gradient(to top, #131b2e, transparent)" }} />
       </Link>
 
       {/* Body */}
-      <div className="flex flex-col flex-1 p-4 gap-3">
+      <div className="flex flex-col flex-1 p-4 gap-3 bg-apex-surface border-b border-l border-r border-apex-outline-variant rounded-b-xl shadow-sm">
 
         {/* Name + Category */}
         <div>
           <Link href={`/admin/product/${product.id}`}>
-            <p className="font-bold text-sm leading-snug text-apex-text font-apex-sans tracking-wide line-clamp-1 hover:text-apex-primary transition-colors">
+            <p className="font-semibold text-sm leading-snug text-apex-text font-apex-sans line-clamp-1 hover:text-apex-primary transition-colors">
               {product.name}
             </p>
           </Link>
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="text-[9px] font-bold uppercase tracking-widest font-apex-mono px-2 py-0.5 rounded"
-              style={{ background: "rgba(76,215,246,0.08)", color: "#4cd7f6", border: "1px solid rgba(76,215,246,0.2)" }}>
-              {product.category || "—"}
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-apex-surface-low border border-apex-outline-variant text-apex-on-surface-variant">
+              {product.category || "Uncategorized"}
             </span>
-            <span className="text-[9px] font-apex-mono uppercase tracking-widest px-2 py-0.5 rounded"
-              style={{ background: avail.bg, color: avail.color, border: `1px solid ${avail.border}` }}>
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded border ${avail.bg} ${avail.color} ${avail.border}`}>
               {avail.label}
             </span>
           </div>
         </div>
 
         {/* Pricing row */}
-        <div className="flex items-end justify-between gap-2 pt-2 border-t border-apex-outline-variant/20">
+        <div className="flex items-end justify-between gap-2 pt-3 border-t border-apex-outline-variant">
           <div>
-            <p className="text-[9px] text-apex-on-surface-variant font-apex-mono uppercase tracking-widest mb-0.5">Retail</p>
-            <p className="text-base font-black font-apex-sans leading-none text-apex-text">
+            <p className="text-[10px] text-apex-on-surface-variant font-medium mb-0.5">Retail</p>
+            <p className="text-lg font-bold font-apex-sans leading-none text-apex-text">
               {(product.retail_price ?? 0).toLocaleString(undefined, { minimumFractionDigits: 0 })}
-              <span className="text-[9px] font-normal text-apex-on-surface-variant ml-1 font-apex-mono">KES</span>
+              <span className="text-[10px] font-medium text-apex-on-surface-variant ml-1">KES</span>
             </p>
           </div>
           {margin !== null && (
             <span
-              className="text-[9px] font-bold font-apex-mono uppercase tracking-widest px-2 py-1 rounded"
-              style={{
-                background: margin >= 20 ? "rgba(76,215,246,0.1)" : margin >= 10 ? "rgba(245,158,11,0.1)" : "rgba(255,180,171,0.1)",
-                color: margin >= 20 ? "#4cd7f6" : margin >= 10 ? "#f59e0b" : "#ffb4ab",
-                border: `1px solid ${margin >= 20 ? "rgba(76,215,246,0.3)" : margin >= 10 ? "rgba(245,158,11,0.3)" : "rgba(255,180,171,0.3)"}`,
-              }}>
+              className={`text-[10px] font-medium px-2 py-1 rounded-lg ${
+                margin >= 20 ? "bg-apex-tertiary-container text-apex-tertiary" : margin >= 10 ? "bg-apex-warning-container text-apex-warning" : "bg-apex-error-container text-apex-error"
+              }`}>
               {margin}% margin
             </span>
           )}
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 mt-auto pt-1">
+        <div className="flex items-center gap-2 mt-auto pt-2">
           <Link
             href={`/admin/product/${product.id}`}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-[10px] font-bold uppercase tracking-widest font-apex-mono transition-all"
-            style={{
-              background: "rgba(192,193,255,0.08)",
-              color: "#c0c1ff",
-              border: "1px solid rgba(192,193,255,0.2)",
-            }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium bg-apex-surface-low border border-apex-outline-variant hover:bg-apex-surface-highest transition-colors"
           >
-            <Pencil size={11} /> Edit
+            <Pencil size={14} /> Edit
           </Link>
 
           {isDeleting ? (
             <button
               onClick={() => onDelete(product.id)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded text-[10px] font-bold uppercase tracking-widest font-apex-mono animate-pulse"
-              style={{ background: "rgba(255,180,171,0.15)", color: "#ffb4ab", border: "1px solid rgba(255,180,171,0.4)" }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium bg-apex-error-container text-apex-error animate-pulse"
             >
               Confirm?
             </button>
           ) : (
             <button
               onClick={() => onDelete(product.id)}
-              className="p-2 rounded transition-all"
-              style={{ background: "rgba(255,180,171,0.06)", color: "#7a8cb0", border: "1px solid rgba(42,58,92,0.5)" }}
+              className="p-2.5 rounded-lg border border-apex-outline-variant bg-apex-surface-low text-apex-on-surface-variant hover:text-apex-error hover:bg-apex-error-container/20 transition-all"
               title="Delete"
             >
               <Trash2 size={14} />
@@ -237,28 +219,23 @@ export default function ProductsPage() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-6 rounded-sm" style={{ background: "#4cd7f6" }} />
-            <h2 className="text-3xl font-black text-apex-text uppercase tracking-tight">Registry: Products</h2>
-          </div>
-          <p className="font-apex-mono text-[10px] mt-1.5 uppercase tracking-widest" style={{ color: "#4cd7f6" }}>
-            Archive_Query [FILTER=Catalogue_All] · Records: {products.length.toLocaleString()}
+          <h2 className="text-3xl font-bold text-apex-text tracking-tight">Products</h2>
+          <p className="font-apex-sans text-sm text-apex-on-surface-variant mt-1.5">
+            Manage your product catalog • {products.length.toLocaleString()} total
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <Link
             href="/admin?tab=categories"
-            className="flex items-center gap-2 px-4 py-2.5 rounded text-[11px] font-bold uppercase tracking-wider font-apex-mono transition-all"
-            style={{ background: "rgba(42,58,92,0.5)", color: "#7a8cb0", border: "1px solid rgba(42,58,92,0.7)" }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-apex-surface border border-apex-outline-variant hover:bg-apex-surface-low transition-all shadow-sm"
           >
-            <Database size={13} /> Categories
+            <Database size={16} /> Categories
           </Link>
           <Link
             href="/admin/product/new"
-            className="flex items-center gap-2 px-5 py-2.5 rounded text-[11px] font-bold uppercase tracking-widest font-apex-mono transition-all shadow-[0_0_20px_rgba(192,193,255,0.15)]"
-            style={{ background: "#c0c1ff", color: "#080f1e" }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-apex-primary text-apex-bg hover:bg-apex-primary/90 transition-all shadow-sm"
           >
-            <Plus size={13} /> New Product
+            <Plus size={16} /> New Product
           </Link>
         </div>
       </div>
@@ -266,59 +243,54 @@ export default function ProductsPage() {
       {/* ── Stat Chips ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total Products", value: products.length, color: "#4cd7f6" },
-          { label: "In Stock",       value: inStockCount,    color: "#4cd7f6" },
-          { label: "Featured",       value: featuredCount,   color: "#c0c1ff" },
-          { label: "Retail Value (KES)", value: totalRetailValue.toLocaleString(undefined, { maximumFractionDigits: 0 }), color: "#c0c1ff" },
+          { label: "Total Products", value: products.length, dark: true },
+          { label: "In Stock",       value: inStockCount,    dark: false },
+          { label: "Featured",       value: featuredCount,   dark: false },
+          { label: "Retail Value",   value: `KES ${totalRetailValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, dark: true },
         ].map(stat => (
           <div
             key={stat.label}
-            className="rounded-lg px-4 py-3 flex flex-col gap-1"
-            style={{ background: "#131b2e", border: "1px solid rgba(42,58,92,0.7)" }}
+            className={`rounded-2xl px-6 py-5 flex flex-col gap-1 shadow-sm border border-apex-outline-variant ${
+              stat.dark ? "bg-apex-primary text-apex-bg" : "bg-apex-surface text-apex-text"
+            }`}
           >
-            <p className="text-[9px] font-bold uppercase tracking-widest font-apex-mono text-apex-on-surface-variant">{stat.label}</p>
-            <p className="text-xl font-black leading-none font-apex-sans" style={{ color: stat.color }}>{stat.value}</p>
+            <p className={`text-sm font-medium ${stat.dark ? "text-apex-bg/80" : "text-apex-on-surface-variant"}`}>{stat.label}</p>
+            <p className="text-2xl font-bold leading-none font-apex-sans">{stat.value}</p>
           </div>
         ))}
       </div>
 
       {/* ── Search + Category filter ── */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-4">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-apex-on-surface-variant" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-apex-on-surface-variant" />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search products…"
-            className="w-full pl-9 pr-4 py-2.5 rounded text-sm font-apex-mono focus:outline-none"
-            style={{
-              background: "#131b2e",
-              color: "#dae2fd",
-              border: "1px solid rgba(42,58,92,0.7)",
-            }}
+            className="w-full pl-10 pr-4 py-2 rounded-lg text-sm font-apex-sans bg-apex-surface border border-apex-outline-variant focus:outline-none focus:ring-1 focus:ring-apex-primary"
           />
           {searchQuery && (
             <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-apex-on-surface-variant hover:text-apex-text">
-              <X size={12} />
+              <X size={14} />
             </button>
           )}
         </div>
 
         {/* Category pills */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Filter size={13} className="text-apex-on-surface-variant shrink-0" />
+          <Filter size={16} className="text-apex-on-surface-variant shrink-0 mr-1" />
           {["all", ...categories.map(c => c.name)].map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className="px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest font-apex-mono transition-all"
-              style={{
-                background: selectedCategory === cat ? "rgba(76,215,246,0.15)" : "rgba(42,58,92,0.3)",
-                color:      selectedCategory === cat ? "#4cd7f6" : "#7a8cb0",
-                border:     `1px solid ${selectedCategory === cat ? "rgba(76,215,246,0.4)" : "rgba(42,58,92,0.5)"}`,
-              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                selectedCategory === cat 
+                  ? "bg-apex-primary text-apex-bg shadow-sm" 
+                  : "bg-apex-surface border border-apex-outline-variant text-apex-text hover:bg-apex-surface-low"
+              }`}
             >
               {cat === "all" ? "All" : cat}
             </button>
@@ -330,12 +302,12 @@ export default function ProductsPage() {
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="rounded-lg overflow-hidden animate-pulse" style={{ background: "#131b2e", border: "1px solid rgba(42,58,92,0.5)" }}>
-              <div className="w-full bg-apex-outline-variant/10" style={{ aspectRatio: "4/3" }} />
+            <div key={i} className="rounded-xl overflow-hidden animate-pulse bg-apex-surface border border-apex-outline-variant shadow-sm">
+              <div className="w-full bg-apex-surface-low" style={{ aspectRatio: "4/3" }} />
               <div className="p-4 space-y-2">
-                <div className="h-3 rounded bg-apex-outline-variant/20 w-3/4" />
-                <div className="h-2 rounded bg-apex-outline-variant/10 w-1/2" />
-                <div className="h-5 rounded bg-apex-outline-variant/20 w-1/3 mt-3" />
+                <div className="h-3 rounded bg-apex-surface-highest w-3/4" />
+                <div className="h-2 rounded bg-apex-surface-low w-1/2" />
+                <div className="h-5 rounded bg-apex-surface-highest w-1/3 mt-3" />
               </div>
             </div>
           ))}
@@ -362,29 +334,27 @@ export default function ProductsPage() {
 
       {/* ── Pagination ── */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2 font-apex-mono text-[10px] uppercase tracking-widest">
-          <span style={{ color: "#7a8cb0" }}>
+        <div className="flex items-center justify-between pt-4 font-apex-sans text-sm text-apex-on-surface-variant">
+          <span>
             Showing {startIndex + 1}–{Math.min(startIndex + CARDS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length}
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="w-8 h-8 flex items-center justify-center rounded transition-all disabled:opacity-30"
-              style={{ background: "#131b2e", border: "1px solid rgba(42,58,92,0.7)", color: "#7a8cb0" }}
+              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all disabled:opacity-30 border border-apex-outline-variant bg-apex-surface hover:bg-apex-surface-low"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={16} />
             </button>
-            <span className="px-3 h-8 flex items-center rounded font-bold" style={{ background: "rgba(76,215,246,0.1)", color: "#4cd7f6", border: "1px solid rgba(76,215,246,0.3)" }}>
+            <span className="px-4 h-8 flex items-center rounded-lg font-medium bg-apex-surface-lowest border border-apex-outline-variant">
               {currentPage} / {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="w-8 h-8 flex items-center justify-center rounded transition-all disabled:opacity-30"
-              style={{ background: "#131b2e", border: "1px solid rgba(42,58,92,0.7)", color: "#7a8cb0" }}
+              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all disabled:opacity-30 border border-apex-outline-variant bg-apex-surface hover:bg-apex-surface-low"
             >
-              <ChevronRight size={14} />
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>

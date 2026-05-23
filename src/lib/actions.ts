@@ -321,11 +321,11 @@ export async function deleteEmptyCategories() {
 
 export async function ensureFlowersCategory() {
   const supabase = await requireAdmin();
-  const { data: existing } = await supabase.from('categories').select('id').eq('name', 'Flowers').maybeSingle();
+  const { data: existing } = await supabase.from('categories').select('id').eq('name', 'Flowers & Vases').maybeSingle();
   if (existing) return { success: true, created: false };
 
   const { error } = await supabase.from('categories').insert([{
-    name: 'Flowers',
+    name: 'Flowers & Vases',
     sku_prefix: 'FLW',
     icon_name: 'Flower2',
     is_featured: true,
@@ -350,7 +350,7 @@ export const getFlowerVaseProducts = unstable_cache(
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .eq('category', 'Flowers');
+      .eq('category', 'Flowers & Vases');
     if (error) return [];
     // Filter to only vase-type products client-side (attributes is JSONB)
     return (data || []).filter((p) => p.attributes?.component_type === 'vase') as Product[];

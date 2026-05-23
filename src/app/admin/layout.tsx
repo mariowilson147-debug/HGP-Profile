@@ -22,7 +22,9 @@ import {
   Settings, 
   HelpCircle,
   Menu,
-  X
+  X,
+  Moon,
+  Sun
 } from "lucide-react";
 
 function AdminSidebarNav() {
@@ -39,21 +41,21 @@ function AdminSidebarNav() {
   ];
 
   return (
-    <nav className="flex-1 space-y-1 py-4">
+    <nav className="flex-1 space-y-2 py-4 px-4">
       {navLinks.map((link) => {
         const Icon = link.icon;
         return (
           <Link 
             key={link.name} 
             href={link.href}
-            className={`flex items-center gap-3 px-6 py-3 transition-all duration-300 border-l-2 ${
+            className={`flex items-center gap-3 px-4 py-3 transition-all duration-300 rounded-lg ${
               link.active 
-                ? 'text-apex-secondary border-apex-secondary bg-apex-secondary/10 shadow-[0_0_15px_rgba(76,215,246,0.15)] font-bold' 
-                : 'border-transparent text-apex-on-surface-variant hover:bg-apex-surface-high hover:text-apex-secondary'
+                ? 'bg-apex-surface-highest text-apex-text font-semibold shadow-sm' 
+                : 'text-apex-on-surface-variant hover:bg-apex-surface-low hover:text-apex-text'
             }`}
           >
-            <Icon size={18} className={link.active ? 'text-apex-secondary' : 'text-apex-on-surface-variant'} />
-            <span className="font-apex-sans text-sm tracking-wide">{link.name}</span>
+            <Icon size={18} className={link.active ? 'text-apex-text' : 'text-apex-on-surface-variant'} />
+            <span className="font-apex-sans text-sm">{link.name}</span>
           </Link>
         );
       })}
@@ -106,12 +108,12 @@ function NotificationDropdown() {
       {isOpen && (
         <div className="absolute top-10 right-0 w-80 bg-apex-surface-low border border-apex-outline-variant/30 rounded shadow-[0_0_20px_rgba(0,0,0,0.5)] z-50 overflow-hidden flex flex-col font-apex-sans">
           <div className="px-4 py-3 border-b border-apex-outline-variant/20 bg-apex-bg flex justify-between items-center">
-            <h3 className="text-apex-text font-bold text-xs uppercase tracking-widest">Recent Messages</h3>
-            {unreadCount > 0 && <span className="text-[9px] bg-apex-error/20 text-apex-error px-2 py-0.5 rounded font-apex-mono tracking-widest">{unreadCount} UNREAD</span>}
+            <h3 className="text-apex-text font-semibold text-sm">Recent Messages</h3>
+            {unreadCount > 0 && <span className="text-xs bg-apex-error-container text-apex-error px-2 py-0.5 rounded-full font-medium">{unreadCount} UNREAD</span>}
           </div>
           <div className="max-h-80 overflow-y-auto custom-scrollbar">
             {threads.length === 0 ? (
-              <div className="px-4 py-8 text-center text-apex-on-surface-variant/50 text-[10px] font-apex-mono uppercase tracking-widest">
+              <div className="px-4 py-8 text-center text-apex-on-surface-variant text-sm">
                 No active comms
               </div>
             ) : (
@@ -121,7 +123,7 @@ function NotificationDropdown() {
                     <span className={`text-xs ${thread.has_unread ? 'text-apex-text font-bold' : 'text-apex-on-surface-variant'}`}>
                       {thread.name || "Unknown Entity"}
                     </span>
-                    <span className="text-[9px] text-apex-secondary font-apex-mono opacity-60">
+                    <span className="text-xs text-apex-on-surface-variant">
                       {new Date(thread.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -135,7 +137,7 @@ function NotificationDropdown() {
           <div className="p-2 border-t border-apex-outline-variant/20 bg-apex-bg text-center">
             <button 
               onClick={() => setIsOpen(false)}
-              className="text-[9px] text-apex-primary hover:text-apex-text font-apex-mono uppercase tracking-widest transition-colors w-full py-1"
+              className="text-sm font-medium text-apex-primary hover:text-apex-primary/80 transition-colors w-full py-1"
             >
               Close Preview
             </button>
@@ -155,23 +157,29 @@ export default function AdminLayout({
   const userName = user?.email?.split('@')[0] || "Admin";
   const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
   
-  const [metrics, setMetrics] = useState({
-    loadPercent: "0.0%",
-    threadCount: 0
-  });
+  const [theme, setTheme] = useState("light");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    getSystemMetrics().then(m => setMetrics(m));
-    const interval = setInterval(() => {
-      getSystemMetrics().then(m => setMetrics(m));
-    }, 5000);
-    return () => clearInterval(interval);
+    const storedTheme = localStorage.getItem("adminTheme") || "light";
+    setTheme(storedTheme);
   }, []);
+
+  const toggleTheme = () => {
+    document.documentElement.classList.add('disable-transitions');
+    
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    localStorage.setItem("adminTheme", newTheme);
+
+    setTimeout(() => {
+      document.documentElement.classList.remove('disable-transitions');
+    }, 50);
+  };
   
   return (
     <ProtectedRoute reqRole="admin">
-      <div className="admin-workspace flex min-h-screen w-full bg-apex-bg text-apex-text font-apex-sans selection:bg-apex-secondary/30 relative">
+      <div className={`admin-workspace flex min-h-screen w-full bg-apex-bg text-apex-text font-apex-sans selection:bg-apex-secondary/30 relative ${theme === 'dark' ? 'dark' : ''}`}>
         
         {/* SideNavBar Shell */}
         {isMobileMenuOpen && (
@@ -180,11 +188,11 @@ export default function AdminLayout({
             onClick={() => setIsMobileMenuOpen(false)} 
           />
         )}
-        <aside className={`h-screen w-64 fixed left-0 top-0 bg-apex-bg border-r border-apex-outline-variant/30 flex flex-col py-8 z-50 transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
-          <div className="px-6 mb-8 flex justify-between items-start">
-            <div>
-              <h1 className="font-apex-sans text-3xl font-black text-apex-primary tracking-tighter leading-none uppercase">ifs</h1>
-              <p className="font-apex-mono text-[9px] text-apex-secondary tracking-widest mt-2 uppercase font-bold">V3.0 COMMAND CENTER</p>
+        <aside className={`h-screen w-64 fixed left-0 top-0 bg-apex-surface border-r border-apex-outline-variant/50 flex flex-col py-8 z-50 transform transition-transform duration-300 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
+          <div className="px-6 mb-8 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-apex-primary text-apex-bg flex items-center justify-center font-bold">A</div>
+              <h1 className="font-apex-sans text-xl font-bold text-apex-text">Admin</h1>
             </div>
             <button 
               className="lg:hidden text-apex-on-surface-variant hover:text-apex-text"
@@ -194,7 +202,7 @@ export default function AdminLayout({
             </button>
           </div>
           
-          <Suspense fallback={<div className="flex-1 w-full bg-white/5 animate-pulse" />}>
+          <Suspense fallback={<div className="flex-1 w-full bg-apex-surface-low animate-pulse" />}>
             <AdminSidebarNav />
           </Suspense>
 
@@ -202,7 +210,7 @@ export default function AdminLayout({
             
             <Link 
               href="/admin/exports" 
-              className="w-full bg-apex-primary text-apex-bg py-3 font-apex-sans font-bold text-sm rounded hover:brightness-110 active:scale-95 transition-all duration-150 text-center flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(192,193,255,0.2)]"
+              className="w-full bg-apex-primary text-apex-bg py-3 font-apex-sans font-bold text-sm rounded hover:opacity-90 active:scale-95 transition-all duration-150 text-center flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               Export Data
             </Link>
@@ -212,7 +220,7 @@ export default function AdminLayout({
         {/* Right Side Content Canvas Wrapper */}
         <div className="flex-1 flex flex-col pl-0 lg:pl-64 w-full min-h-screen relative z-10 transition-all duration-300">
           {/* TopNavBar Shell */}
-          <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-16rem)] h-[72px] bg-apex-bg/95 backdrop-blur-md border-b border-apex-outline-variant/20 flex justify-between items-center px-4 lg:px-8 z-40 transition-all duration-300">
+          <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-16rem)] h-[72px] bg-apex-bg border-b border-apex-outline-variant/50 flex justify-between items-center px-4 lg:px-8 z-40 transition-all duration-300">
             <div className="flex items-center gap-4 flex-1">
               <button 
                 className="lg:hidden text-apex-on-surface-variant hover:text-apex-text p-2 -ml-2"
@@ -225,8 +233,8 @@ export default function AdminLayout({
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </span>
                 <input 
-                  className="w-full bg-apex-surface-low border border-apex-outline-variant/20 rounded focus:ring-1 focus:ring-apex-secondary/50 text-apex-text font-apex-mono text-[10px] pl-10 pr-4 h-9 tracking-widest placeholder:opacity-40 focus:outline-none" 
-                  placeholder="QUERY REGISTRY..." 
+                  className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg focus:ring-1 focus:ring-apex-primary focus:border-apex-primary text-apex-text text-sm pl-10 pr-4 h-10 placeholder:text-apex-on-surface-variant focus:outline-none shadow-sm transition-all" 
+                  placeholder="Search..." 
                   type="text"
                 />
               </div>
@@ -234,16 +242,22 @@ export default function AdminLayout({
             
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-4 text-apex-on-surface-variant">
+                <button 
+                  onClick={toggleTheme} 
+                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-apex-outline-variant hover:bg-apex-surface-low hover:text-apex-text transition-colors bg-apex-surface"
+                >
+                  {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+                </button>
                 <NotificationDropdown />
               </div>
               
               <div className="flex items-center gap-4 ml-2 pl-6">
-                <div className="text-right">
-                  <p className="font-apex-sans text-xs font-bold leading-none text-apex-text uppercase tracking-wider">{displayName}</p>
-                  <p className="font-apex-mono text-[9px] text-apex-secondary tracking-widest mt-1 font-bold">LEVEL 4 CLEARANCE</p>
+                <div className="text-right hidden sm:block">
+                  <p className="font-apex-sans text-xs font-bold leading-none text-apex-text">{displayName}</p>
+                  <p className="text-[10px] text-apex-on-surface-variant mt-1 font-medium">Administrator</p>
                 </div>
                 <div 
-                  className="w-9 h-9 rounded bg-apex-surface-low overflow-hidden border border-apex-secondary/30 flex items-center justify-center text-apex-secondary shrink-0 cursor-pointer hover:border-apex-error/50 transition-colors"
+                  className="w-9 h-9 rounded-full bg-apex-surface-low overflow-hidden border border-apex-outline-variant flex items-center justify-center text-apex-secondary shrink-0 cursor-pointer hover:border-apex-primary transition-colors"
                   onClick={logout}
                   title="Logout"
                 >
@@ -257,28 +271,6 @@ export default function AdminLayout({
           <main className="flex-grow w-full relative pt-20 pb-16 min-h-screen">
             {children}
           </main>
-        </div>
-
-        {/* Global Visual Decoration (HUD Elements) */}
-        <div className="fixed top-0 left-0 w-full h-full pointer-events-none opacity-[0.03] z-0">
-          <div 
-            className="absolute top-0 left-0 w-full h-full" 
-            style={{ 
-              backgroundImage: 'radial-gradient(var(--color-apex-secondary) 1px, transparent 0)', 
-              backgroundSize: '40px 40px' 
-            }} 
-          />
-        </div>
-
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 font-apex-mono">
-          <div className="flex flex-row items-center justify-center gap-4">
-            <div className="apex-glass-panel px-3 py-1 text-[10px] font-apex-mono text-apex-secondary border border-apex-secondary/20 shadow-[0_0_10px_rgba(76,215,246,0.1)]">
-              SYSTEM_LOAD: {metrics.loadPercent}%
-            </div>
-            <div className="apex-glass-panel px-3 py-1 text-[10px] font-apex-mono text-apex-primary border border-apex-primary/20 shadow-[0_0_10px_rgba(192,193,255,0.1)]">
-              THREAD_COUNT: {metrics.threadCount}
-            </div>
-          </div>
         </div>
 
         <AdminChatSidebar />

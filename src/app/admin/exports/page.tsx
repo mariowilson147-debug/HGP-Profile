@@ -301,80 +301,79 @@ export default function ExportsHub() {
       {/* Header Section */}
       <div className="flex justify-between items-start pb-4">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-6 bg-apex-primary"></div>
-            <h2 className="font-apex-sans text-3xl font-black text-apex-text uppercase tracking-tight">REGISTRY: DATA EXPORTS</h2>
-          </div>
-          <p className="font-apex-mono text-[10px] text-apex-secondary mt-2 tracking-widest uppercase">
-            ARCHIVE_QUERY: [FILTER=CATALOGUE_ALL] | RECORDS_TOTAL: {historyLogs.length}
+          <h2 className="text-3xl font-bold text-apex-text tracking-tight">Data Exports</h2>
+          <p className="font-apex-sans text-sm text-apex-on-surface-variant mt-1">
+            Manage your catalog exports • {historyLogs.length} total
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
-            <Filter size={14} /> Refine View
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 bg-apex-surface border border-apex-outline-variant text-apex-text hover:bg-apex-surface-low px-4 py-2 font-apex-sans text-sm font-medium transition-colors rounded-lg shadow-sm">
+            <Filter size={16} /> Filter
           </button>
           <button 
             onClick={() => setShowModal(true)}
-            className="bg-apex-primary hover:brightness-110 text-apex-bg font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(192,193,255,0.3)] transition-all flex items-center gap-2 cursor-pointer"
+            className="bg-apex-primary hover:bg-apex-primary/90 text-apex-bg font-apex-sans text-sm font-medium px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer"
           >
-            <Plus size={14} /> Export Data
+            <Plus size={16} /> Export Data
           </button>
         </div>
       </div>
 
       {/* Main Table Panel */}
-      <div className="bg-apex-surface-low border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
+      <div className="bg-apex-surface border border-apex-outline-variant rounded-xl flex flex-col relative overflow-hidden shadow-sm">
         
         {/* Table Canvas */}
         <div className="overflow-x-auto min-h-64">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-apex-surface/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
-                <th className="py-4 px-6 font-bold w-24">FORMAT</th>
-                <th className="py-4 px-6 font-bold">EXPORT TARGET</th>
-                <th className="py-4 px-6 font-bold">FILE TYPE</th>
-                <th className="py-4 px-6 font-bold text-center">STATUS</th>
-                <th className="py-4 px-6 font-bold text-center">ACTION</th>
+              <tr className="bg-apex-surface-lowest border-b border-apex-outline-variant font-apex-sans text-xs text-apex-on-surface-variant uppercase tracking-wider font-medium">
+                <th className="py-4 px-6 w-24">Format</th>
+                <th className="py-4 px-6">Export Target</th>
+                <th className="py-4 px-6">File Type</th>
+                <th className="py-4 px-6 text-center">Status</th>
+                <th className="py-4 px-6 text-center">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-apex-outline-variant/10 text-apex-text">
+            <tbody className="divide-y divide-apex-outline-variant text-apex-text">
               {historyLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center flex-col items-center justify-center text-apex-on-surface-variant/40 font-apex-mono">
+                  <td colSpan={5} className="py-20 text-center flex-col items-center justify-center text-apex-on-surface-variant/40">
                     <Database size={48} className="mb-4 text-apex-outline/20 mx-auto" strokeWidth={1} />
-                    <p className="font-bold text-xs uppercase tracking-widest">NO EXPORT REGISTRIES DETECTED</p>
+                    <p className="font-medium text-sm">No Export History</p>
                   </td>
                 </tr>
               ) : (
                 visibleLogs.map((log) => {
                   return (
-                    <tr key={log.id} className="hover:bg-apex-surface/40 transition-colors group">
+                    <tr key={log.id} className="hover:bg-apex-surface-lowest transition-colors group">
                       {/* FORMAT VISUAL */}
                       <td className="py-3 px-6">
-                        <div className={`w-12 h-10 bg-apex-surface-lowest border flex items-center justify-center shrink-0 group-hover:border-apex-primary/50 transition-colors ${log.status === "COMPLETED" ? "border-apex-primary/30 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]" : "border-apex-outline-variant/30 text-apex-on-surface-variant group-hover:text-apex-primary/80"}`}>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${log.status === "COMPLETED" ? "bg-apex-primary/10 text-apex-primary" : "bg-apex-surface-highest text-apex-on-surface-variant group-hover:text-apex-text"}`}>
                           {log.format === ".XLSX" ? <FileSpreadsheet size={16} /> : log.format === "LINK" ? <Share2 size={16} /> : <FileText size={16} />}
                         </div>
                       </td>
                       
                       {/* EXPORT TARGET */}
                       <td className="py-3 px-6">
-                        <p className="font-apex-sans font-bold text-sm tracking-wide text-apex-text">{log.target}</p>
-                        <p className="font-apex-mono text-[9px] text-apex-secondary tracking-widest uppercase mt-0.5">SIZE: {log.size} {"//"} {log.date}</p>
+                        <p className="font-apex-sans font-medium text-sm text-apex-text">{log.target}</p>
+                        <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-0.5">{log.size} • {log.date}</p>
                       </td>
 
                       {/* FILE TYPE */}
-                      <td className="py-3 px-6 font-apex-mono text-xs text-apex-on-surface-variant tracking-wider uppercase">
-                        {log.format}
+                      <td className="py-3 px-6 font-apex-sans text-sm text-apex-on-surface-variant">
+                        {log.format === "LINK" ? "Link Share" : log.format === ".XLSX" ? "Excel Document" : "PDF Document"}
                       </td>
 
                       {/* STATUS */}
                       <td className="py-3 px-6 text-center">
-                        <span className={`inline-block px-2 py-0.5 border font-apex-mono text-[9px] font-bold tracking-widest uppercase ${
+                        <span className={`inline-block px-3 py-1 rounded-full font-apex-sans text-xs font-medium transition-colors ${
                           log.status === "FAILED"
-                            ? "bg-apex-surface-lowest border-apex-outline-variant/30 text-apex-on-surface-variant"
-                            : "border-apex-primary/30 bg-apex-primary/10 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]"
+                            ? "bg-apex-error-container text-apex-error"
+                            : log.status === "PENDING"
+                            ? "bg-apex-secondary-container text-apex-secondary"
+                            : "bg-apex-tertiary-container text-apex-tertiary"
                         }`}>
-                          {log.status}
+                          {log.status === "FAILED" ? "Failed" : log.status === "PENDING" ? "Processing" : "Ready"}
                         </span>
                       </td>
 
@@ -382,7 +381,7 @@ export default function ExportsHub() {
                       <td className="py-3 px-6 text-center">
                         {log.status === "COMPLETED" ? (
                           <button 
-                            className="bg-apex-primary/20 text-apex-primary border border-apex-primary/50 px-3 py-1.5 font-apex-mono text-[9px] font-bold uppercase rounded tracking-widest hover:bg-apex-primary/30 transition-colors shadow-[0_0_10px_rgba(192,193,255,0.2)] flex items-center gap-2 mx-auto"
+                            className="bg-apex-primary text-apex-bg px-4 py-2 font-apex-sans text-xs font-medium rounded-lg hover:bg-apex-primary/90 transition-colors shadow-sm flex items-center gap-2 mx-auto"
                             onClick={() => {
                               if (log.format === "LINK") {
                                 alert("Share link already generated!");
@@ -390,16 +389,16 @@ export default function ExportsHub() {
                             }}
                           >
                             {log.format === "LINK" ? (
-                              <><Share2 size={12} /> COPIED</>
+                              <><Share2 size={14} /> Shared</>
                             ) : (
-                              <><Download size={12} /> DOWNLOAD</>
+                              <><Download size={14} /> Download</>
                             )}
                           </button>
                         ) : (
                           <button 
-                            className="text-apex-on-surface-variant/50 hover:text-apex-text transition-colors p-2 flex items-center gap-2 mx-auto font-apex-mono text-[9px] uppercase tracking-widest"
+                            className="text-apex-on-surface-variant hover:text-apex-text transition-colors p-2 flex items-center gap-2 mx-auto font-apex-sans text-xs font-medium"
                           >
-                            <RefreshCcw size={12} /> RETRY
+                            <RefreshCcw size={14} /> Retry
                           </button>
                         )}
                       </td>
@@ -412,12 +411,9 @@ export default function ExportsHub() {
         </div>
         
         {/* Registry Footer Pagination */}
-        <div className="px-6 py-4 bg-apex-bg border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
+        <div className="px-6 py-4 bg-apex-surface-lowest border-t border-apex-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-sans text-sm text-apex-on-surface-variant">
           <div className="flex items-center gap-4">
-            <span>SHOWING ENTRY {historyLogs.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + itemsPerPage, historyLogs.length)} OF {historyLogs.length}</span>
-            <div className="w-24 h-1 bg-apex-surface rounded-full overflow-hidden flex">
-              <div className="h-full bg-apex-primary" style={{ width: `${historyLogs.length ? ((Math.min(startIndex + itemsPerPage, historyLogs.length)) / historyLogs.length) * 100 : 0}%` }}></div>
-            </div>
+            <span>Showing {historyLogs.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + itemsPerPage, historyLogs.length)} of {historyLogs.length}</span>
           </div>
           <div className="flex gap-1.5 text-xs text-apex-text select-none">
             <button 
@@ -442,45 +438,45 @@ export default function ExportsHub() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-apex-sans">
           <div
-            className="absolute inset-0 bg-apex-bg/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-apex-bg p-8 w-full max-w-2xl shadow-[0_0_30px_rgba(192,193,255,0.1)] rounded border border-apex-primary/30 text-apex-text apex-scanline-effect">
+          <div className="relative bg-apex-bg p-8 w-full max-w-2xl shadow-xl rounded-xl border border-apex-outline-variant text-apex-text">
             
-            <div className="flex justify-between items-start mb-6 pb-4 border-b border-apex-outline-variant/30">
-              <h2 className="text-xl font-apex-sans font-black text-apex-text uppercase">
-                EXPORT CONFIGURATION
+            <div className="flex justify-between items-start mb-6 pb-4 border-b border-apex-outline-variant">
+              <h2 className="text-xl font-apex-sans font-bold text-apex-text">
+                Export Data
               </h2>
-              <div className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 p-1 rounded font-apex-mono text-xs">
+              <div className="flex items-center gap-1 bg-apex-surface border border-apex-outline-variant p-1 rounded-lg font-apex-sans text-sm">
                 <button 
                   onClick={() => setSelectedFormat("pdf")}
-                  className={`px-4 py-1.5 rounded transition-all duration-250 ${
+                  className={`px-4 py-1.5 rounded-md transition-all duration-200 ${
                     selectedFormat === "pdf"
-                      ? "bg-apex-primary text-apex-bg font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
-                      : "text-apex-on-surface-variant hover:text-apex-primary"
+                      ? "bg-apex-primary text-apex-bg font-medium shadow-sm" 
+                      : "text-apex-on-surface-variant hover:text-apex-text"
                   }`}
                 >
                   PDF
                 </button>
                 <button 
                   onClick={() => setSelectedFormat("excel")}
-                  className={`px-4 py-1.5 rounded transition-all duration-250 ${
+                  className={`px-4 py-1.5 rounded-md transition-all duration-200 ${
                     selectedFormat === "excel"
-                      ? "bg-apex-primary text-apex-bg font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
-                      : "text-apex-on-surface-variant hover:text-apex-primary"
+                      ? "bg-apex-primary text-apex-bg font-medium shadow-sm" 
+                      : "text-apex-on-surface-variant hover:text-apex-text"
                   }`}
                 >
-                  EXCEL
+                  Excel
                 </button>
                 <button 
                   onClick={() => setSelectedFormat("link")}
-                  className={`px-4 py-1.5 rounded transition-all duration-250 ${
+                  className={`px-4 py-1.5 rounded-md transition-all duration-200 ${
                     selectedFormat === "link"
-                      ? "bg-apex-primary text-apex-bg font-bold shadow-[0_0_10px_rgba(192,193,255,0.2)]" 
-                      : "text-apex-on-surface-variant hover:text-apex-primary"
+                      ? "bg-apex-primary text-apex-bg font-medium shadow-sm" 
+                      : "text-apex-on-surface-variant hover:text-apex-text"
                   }`}
                 >
-                  SHARE LINK
+                  Share Link
                 </button>
               </div>
             </div>
@@ -488,59 +484,63 @@ export default function ExportsHub() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Category Filter checklist */}
               <div>
-                <label className="font-apex-mono text-[10px] text-apex-primary block mb-3 uppercase tracking-widest">
-                  Target Sectors
+                <label className="font-apex-sans text-sm font-medium text-apex-text block mb-3">
+                  Categories to Export
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {categories.map(cat => (
-                    <label key={cat} className="flex items-center gap-3 p-2.5 bg-apex-surface-low border border-apex-outline-variant/10 rounded cursor-pointer hover:border-apex-primary/30 transition-colors select-none">
+                    <label key={cat} className="flex items-center gap-3 p-3 bg-apex-surface border border-apex-outline-variant rounded-lg cursor-pointer hover:bg-apex-surface-low transition-colors select-none">
                       <input 
                         type="checkbox" 
                         checked={selectedCategories.includes(cat)}
                         onChange={() => handleCategoryToggle(cat)}
-                        className="rounded text-apex-primary focus:ring-apex-primary bg-apex-bg border-apex-outline-variant"
+                        className="rounded text-apex-primary focus:ring-apex-primary/30 bg-apex-bg border-apex-outline-variant"
                       />
-                      <span className="font-apex-sans text-xs text-apex-text font-semibold">{cat}</span>
+                      <span className="font-apex-sans text-sm text-apex-text">{cat}</span>
                     </label>
                   ))}
-                  {categories.length === 0 && <span className="font-apex-mono text-xs text-apex-on-surface-variant/40">Loading sectors...</span>}
+                  {categories.length === 0 && <span className="font-apex-sans text-sm text-apex-on-surface-variant">Loading categories...</span>}
                 </div>
               </div>
 
               {/* Schema filters selection */}
               <div>
-                <label className="font-apex-mono text-[10px] text-apex-primary block mb-3 uppercase tracking-widest">
-                  Schema Column Filters
+                <label className="font-apex-sans text-sm font-medium text-apex-text block mb-3">
+                  Include Columns
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {["SKU_ID", "VAL_UNIT", "TIMESTAMP", "GEO_TAG", "STATUS_FLG", "OPER_ID", "PRIORITY", "METADATA"].map((col, idx) => (
-                    <label key={idx} className="flex items-center gap-2 p-2 bg-apex-surface-low border border-apex-outline-variant/10 rounded cursor-pointer select-none">
+                  {["S/No", "Image", "Item Name", "Wholesale Price", "Retail Price"].map((col, idx) => (
+                    <label key={idx} className="flex items-center gap-3 p-2 bg-apex-surface border border-apex-outline-variant rounded-lg cursor-pointer select-none">
                       <input 
                         type="checkbox" 
-                        defaultChecked={idx !== 3 && idx !== 5 && idx !== 7}
-                        className="rounded text-apex-primary focus:ring-apex-primary bg-apex-bg border-apex-outline-variant"
+                        defaultChecked={true}
+                        disabled={true}
+                        className="rounded text-apex-primary bg-apex-bg border-apex-outline-variant opacity-50 cursor-not-allowed"
                       />
-                      <span className="font-apex-mono text-[11px] text-apex-on-surface-variant/80">{col}</span>
+                      <span className="font-apex-sans text-xs text-apex-on-surface-variant">{col}</span>
                     </label>
                   ))}
                 </div>
+                <p className="text-xs text-apex-on-surface-variant mt-4">
+                  Note: The preset columns shown above will be included in the export.
+                </p>
               </div>
             </div>
 
-            <div className="flex gap-3 pt-8 mt-4 border-t border-apex-outline-variant/30">
+            <div className="flex gap-3 pt-8 mt-4 border-t border-apex-outline-variant">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 py-2.5 bg-apex-surface-low hover:bg-apex-surface border border-apex-outline-variant/30 text-apex-text text-xs font-apex-mono uppercase tracking-wider rounded transition-colors cursor-pointer"
+                className="flex-1 py-2.5 bg-apex-surface hover:bg-apex-surface-low border border-apex-outline-variant text-apex-text text-sm font-medium rounded-lg transition-colors cursor-pointer"
               >
-                ABORT
+                Cancel
               </button>
               <button
                 onClick={handleInitializeExport}
                 disabled={exporting}
-                className="flex-1 py-2.5 bg-apex-primary hover:brightness-110 text-apex-bg text-xs font-apex-sans font-bold uppercase tracking-wider rounded disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(192,193,255,0.2)]"
+                className="flex-1 py-2.5 bg-apex-primary hover:bg-apex-primary/90 text-apex-bg text-sm font-medium rounded-lg disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-sm"
               >
                 {exporting && <RefreshCw size={14} className="animate-spin" />}
-                {exporting ? "INITIALIZING EXPORT..." : "AUTHORIZE EXPORT"}
+                {exporting ? "Generating Export..." : "Confirm Export"}
               </button>
             </div>
           </div>

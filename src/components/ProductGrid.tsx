@@ -114,7 +114,7 @@ function ProductGridContent({ products }: { products: Product[] }) {
           <AnimatePresence>
             {paginatedProducts.map((product) => {
               const images = getProductImages(product);
-              const isFlowerArrangement = product.category === "Flowers" &&
+              const isFlowerArrangement = product.category === "Flowers & Vases" &&
                 product.attributes?.component_type === "arrangement";
               const compatibleVaseCount = isFlowerArrangement &&
                 Array.isArray(product.attributes?.compatible_vase_ids)

@@ -36,6 +36,8 @@
   --color-apex-tertiary-container: var(--color-brand-accent-glow);
   --color-apex-error: #ef4444;
   --color-apex-error-container: #fee2e2;
+  --color-apex-warning: #d97706;
+  --color-apex-warning-container: #fef3c7;
   
   --font-apex-sans: "Geist", var(--font-sans);
   --font-apex-mono: "JetBrains Mono", monospace;
@@ -100,111 +102,121 @@
   }
   
   .apex-glow-accent {
-    animation: pulse-glow 3s infinite ease-in-out;
+    /* Removed pulse animation */
   }
   
   .apex-scanline-effect {
-    position: relative;
-  }
-  
-  .apex-scanline-effect::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(to bottom, transparent 0%, rgba(76, 215, 246, 0.04) 50%, transparent 100%);
-    animation: scanline 8s linear infinite;
-    pointer-events: none;
-    z-index: 10;
+    /* Removed scanline */
   }
 }
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-}
-
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
-}
-
-/* ─── Admin Dark Theme: Full Scoped Dark Palette ─────────────────────────────
-   Override ALL apex color tokens inside .admin-workspace so every Tailwind
-   utility (bg-apex-bg, text-apex-text, border-apex-outline-variant, etc.)
-   resolves to the dark cyberpunk palette without touching the public site. */
+/* ─── Admin Theme: Clean Light/Dark Palette ─────────────────────────────
+   Light mode default, dark mode supported via .dark class. */
 
 .admin-workspace {
-  /* Core backgrounds */
-  --color-apex-bg:               #080f1e;
-  --color-apex-surface:          #0d1628;
-  --color-apex-surface-low:      #131b2e;
-  --color-apex-surface-high:     #1a2540;
-  --color-apex-surface-highest:  #1f2d4a;
-  --color-apex-surface-lowest:   #060e20;
+  /* Core backgrounds - Light */
+  --color-apex-bg:               #f3f4f6;
+  --color-apex-surface:          #ffffff;
+  --color-apex-surface-low:      #ffffff;
+  --color-apex-surface-high:     #ffffff;
+  --color-apex-surface-highest:  #f9fafb;
+  --color-apex-surface-lowest:   #f9fafb;
 
-  /* Text */
-  --color-apex-text:             #dae2fd;
-  --color-apex-on-surface-variant: #7a8cb0;
+  /* Text - Light */
+  --color-apex-text:             #111827;
+  --color-apex-on-surface-variant: #6b7280;
 
   /* Accent colours */
-  --color-apex-primary:          #c0c1ff;
-  --color-apex-primary-container:rgba(192,193,255,0.12);
-  --color-apex-secondary:        #4cd7f6;
-  --color-apex-tertiary:         #a8edea;
-  --color-apex-tertiary-container:rgba(168,237,234,0.12);
+  --color-apex-primary:          #111115;
+  --color-apex-primary-container:rgba(17,17,21,0.05);
+  --color-apex-secondary:        #4f46e5;
+  --color-apex-tertiary:         #10b981;
+  --color-apex-tertiary-container:rgba(16,185,129,0.12);
 
   /* Borders */
-  --color-apex-outline:          #2a3a5c;
-  --color-apex-outline-variant:  #2a3a5c;
+  --color-apex-outline:          #e5e7eb;
+  --color-apex-outline-variant:  #e5e7eb;
 
   /* Danger */
-  --color-apex-error:            #ffb4ab;
-  --color-apex-error-container:  #93000a;
+  --color-apex-error:            #ef4444;
+  --color-apex-error-container:  #fee2e2;
 
-  /* Force dark scrollbars */
-  color-scheme: dark;
+  /* Warning */
+  --color-apex-warning:          #d97706;
+  --color-apex-warning-container:#fef3c7;
+
+  color-scheme: light;
 
   background-color: var(--color-apex-bg);
   color: var(--color-apex-text);
 }
 
+.admin-workspace.dark {
+  /* Core backgrounds - Dark */
+  --color-apex-bg:               #09090b;
+  --color-apex-surface:          #111115;
+  --color-apex-surface-low:      #18181b;
+  --color-apex-surface-high:     #27272a;
+  --color-apex-surface-highest:  #3f3f46;
+  --color-apex-surface-lowest:   #18181b;
+
+  /* Text - Dark */
+  --color-apex-text:             #f8fafc;
+  --color-apex-on-surface-variant: #a1a1aa;
+
+  /* Accent colours */
+  --color-apex-primary:          #ffffff;
+  --color-apex-primary-container:rgba(255,255,255,0.1);
+  --color-apex-secondary:        #818cf8;
+  --color-apex-outline:          #27272a;
+  --color-apex-outline-variant:  #27272a;
+
+  /* Warning - dark */
+  --color-apex-warning:          #fbbf24;
+  --color-apex-warning-container:#451a03;
+
+  color-scheme: dark;
+}
+
+.disable-transitions * {
+  transition: none !important;
+}
+
 .admin-workspace input,
 .admin-workspace select,
 .admin-workspace textarea {
-  color: #e2e8f0 !important;
-  caret-color: #c0c1ff;
+  color: var(--color-apex-text);
+  background-color: var(--color-apex-surface);
 }
 
 .admin-workspace input::placeholder,
 .admin-workspace textarea::placeholder {
-  color: rgba(148, 163, 184, 0.35) !important;
+  color: var(--color-apex-on-surface-variant);
+  opacity: 0.5;
 }
 
 .admin-workspace select option {
-  background-color: #131b2e;
-  color: #e2e8f0;
+  background-color: var(--color-apex-surface);
+  color: var(--color-apex-text);
 }
 
 /* ─── Admin Card Grid ─────────────────────────────────────────────────────────
    Utility classes for the product card grid in the admin registry view. */
 .admin-product-card {
-  background: #131b2e;
-  border: 1px solid rgba(42,58,92,0.7);
-  border-radius: 8px;
+  background: var(--color-apex-surface);
+  border: 1px solid var(--color-apex-outline-variant);
+  border-radius: 12px;
   overflow: hidden;
   transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 .admin-product-card:hover {
-  border-color: rgba(76,215,246,0.4);
-  box-shadow: 0 0 20px rgba(76,215,246,0.08);
+  border-color: var(--color-apex-on-surface-variant);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   transform: translateY(-2px);
 }
 
 /* Scrollbar */
-.admin-workspace ::-webkit-scrollbar { width: 4px; height: 4px; }
-.admin-workspace ::-webkit-scrollbar-track { background: #080f1e; }
-.admin-workspace ::-webkit-scrollbar-thumb { background: #2a3a5c; border-radius: 2px; }
-.admin-workspace ::-webkit-scrollbar-thumb:hover { background: #4cd7f6; }
+.admin-workspace ::-webkit-scrollbar { width: 6px; height: 6px; }
+.admin-workspace ::-webkit-scrollbar-track { background: var(--color-apex-bg); }
+.admin-workspace ::-webkit-scrollbar-thumb { background: var(--color-apex-outline-variant); border-radius: 3px; }
+.admin-workspace ::-webkit-scrollbar-thumb:hover { background: var(--color-apex-on-surface-variant); }

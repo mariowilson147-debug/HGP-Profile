@@ -38,11 +38,11 @@ export default function ProductModal({ product, isOpen, onClose, user, allProduc
   const images = product ? getProductImages(product) : [];
 
   const isFlowerArrangement =
-    product?.category === "Flowers" &&
+    product?.category === "Flowers & Vases" &&
     product?.attributes?.component_type === "arrangement";
 
   const isVase =
-    product?.category === "Flowers" &&
+    product?.category === "Flowers & Vases" &&
     product?.attributes?.component_type === "vase";
 
   // Find compatible vases from allProducts
@@ -59,7 +59,7 @@ export default function ProductModal({ product, isOpen, onClose, user, allProduc
     if (!isVase || !product) return 0;
     return allProducts.filter(
       p =>
-        p.category === "Flowers" &&
+        p.category === "Flowers & Vases" &&
         p.attributes?.component_type === "arrangement" &&
         Array.isArray(p.attributes?.compatible_vase_ids) &&
         (p.attributes.compatible_vase_ids as string[]).includes(product.id)

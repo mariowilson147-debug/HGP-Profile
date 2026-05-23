@@ -107,7 +107,7 @@ function ImageDropZone({
   return (
     <div
       className={`relative rounded border transition-all duration-200 overflow-hidden flex flex-col items-center justify-center min-h-[220px] cursor-pointer
-        ${dragging ? "border-apex-primary bg-apex-primary/10" : "border-dashed border-apex-outline-variant/30 bg-[#060e20] hover:border-apex-primary/50 hover:bg-[#060e20]/80"}`}
+        ${dragging ? "border-apex-primary bg-apex-primary/10" : "border-dashed border-apex-outline-variant bg-apex-surface hover:border-apex-primary/50 hover:bg-apex-surface-low"}`}
       onDragOver={e => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
@@ -129,8 +129,8 @@ function ImageDropZone({
             alt="preview"
             className="w-full h-full object-cover max-h-[260px]"
           />
-          <div className="absolute inset-0 bg-[#0b1326]/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-            <span className="text-apex-primary border border-apex-primary bg-apex-primary/10 font-apex-mono text-[10px] tracking-widest uppercase font-bold px-4 py-2 rounded shadow-[0_0_10px_rgba(192,193,255,0.2)]">
+          <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+            <span className="text-white bg-black/50 backdrop-blur font-medium text-xs px-4 py-2 rounded-full">
               REPLACE VISUAL ASSET
             </span>
           </div>
@@ -139,28 +139,28 @@ function ImageDropZone({
         <div className="flex flex-col items-center gap-3 p-6 text-center select-none">
           <UploadCloud size={32} className={`transition-colors ${dragging ? "text-apex-primary" : "text-apex-outline-variant/50"}`} />
           <div>
-            <p className="text-[11px] font-bold text-apex-text uppercase tracking-widest font-apex-mono">DROP PRIMARY IMAGE HERE</p>
-            <p className="text-[9px] text-apex-on-surface-variant/50 font-apex-mono mt-1 uppercase tracking-widest">OR CLICK TO BROWSE</p>
+            <p className="text-sm font-medium text-apex-text">Drop primary image here</p>
+            <p className="text-xs text-apex-on-surface-variant mt-1">or click to browse</p>
           </div>
         </div>
       )}
 
       {item.status === "uploading" && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#0b1326]">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-apex-surface-highest">
           <div
-            className="h-full bg-apex-primary transition-all duration-300 shadow-[0_0_8px_rgba(192,193,255,0.8)]"
+            className="h-full bg-apex-primary transition-all duration-300 "
             style={{ width: `${item.uploadProgress}%` }}
           />
         </div>
       )}
 
       {item.status === "done" && (
-        <div className="absolute top-2 right-2 bg-apex-secondary/20 text-apex-secondary border border-apex-secondary rounded-sm p-1 shadow-[0_0_8px_rgba(76,215,246,0.3)]">
+        <div className="absolute top-2 right-2 bg-apex-secondary text-apex-bg rounded-full p-1 shadow-sm">
           <CheckCircle2 size={12} />
         </div>
       )}
       {item.status === "error" && (
-        <div className="absolute top-2 right-2 bg-apex-error/20 text-apex-error border border-apex-error rounded-sm p-1 shadow-[0_0_8px_rgba(255,180,171,0.3)]">
+        <div className="absolute top-2 right-2 bg-apex-error text-apex-bg rounded-full p-1 shadow-sm">
           <AlertCircle size={12} />
         </div>
       )}
@@ -185,7 +185,7 @@ function ExtraImageSlot({
   return (
     <div
       className={`relative rounded border overflow-hidden flex flex-col items-center justify-center aspect-square cursor-pointer transition-all duration-200
-        ${hasImage ? "border-apex-outline-variant/30" : "border-dashed border-apex-outline-variant/20 bg-[#060e20] hover:border-apex-primary/40"}`}
+        ${hasImage ? "border-apex-outline-variant/30" : "border-dashed border-apex-outline-variant bg-apex-surface hover:border-apex-primary/40"}`}
       onClick={() => !hasImage && inputRef.current?.click()}
     >
       <input
@@ -203,7 +203,7 @@ function ExtraImageSlot({
             <button
               type="button"
               onClick={e => { e.stopPropagation(); inputRef.current?.click(); }}
-              className="p-1 bg-white/80 rounded text-slate-800 hover:bg-white transition-colors"
+              className="p-1 bg-apex-surface/80 rounded text-slate-800 hover:bg-apex-surface transition-colors"
               title="Replace image"
             >
               <ImageIcon size={12} />
@@ -211,7 +211,7 @@ function ExtraImageSlot({
             <button
               type="button"
               onClick={e => { e.stopPropagation(); onRemove(image.id); }}
-              className="p-1 bg-red-500/80 rounded text-white hover:bg-red-500 transition-colors"
+              className="p-1 bg-apex-error/80 rounded text-apex-bg hover:bg-apex-error transition-colors"
               title="Remove image"
             >
               <X size={12} />
@@ -221,7 +221,7 @@ function ExtraImageSlot({
       ) : (
         <div className="flex flex-col items-center gap-1 p-2 text-center">
           <Plus size={16} className="text-apex-outline-variant/40" />
-          <span className="text-[8px] text-apex-outline-variant/40 font-apex-mono uppercase tracking-wider">ADD</span>
+          <span className="text-xs font-medium text-apex-on-surface-variant">Add</span>
         </div>
       )}
     </div>
@@ -262,16 +262,16 @@ function MultiImageSection({
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono">
-          VARIATION IMAGES ({item.extraImages.filter(i => i.preview || i.url).length + (item.imagePreview || item.image_url ? 1 : 0)}/5)
+        <label className="block text-sm font-medium text-apex-text">
+          Variation Images ({item.extraImages.filter(i => i.preview || i.url).length + (item.imagePreview || item.image_url ? 1 : 0)}/5)
         </label>
         {item.extraImages.length < MAX_EXTRA && (
           <button
             type="button"
             onClick={addExtraSlot}
-            className="text-[9px] font-bold text-apex-primary hover:text-apex-secondary transition-colors font-apex-mono uppercase tracking-widest flex items-center gap-1"
+            className="text-sm font-medium text-apex-primary hover:text-apex-primary/80 transition-colors flex items-center gap-1"
           >
-            <Plus size={10} /> ADD VARIATION
+            <Plus size={10} /> Add Variation
           </button>
         )}
       </div>
@@ -321,13 +321,13 @@ function FlowerConfigSection({
     <div className="border border-pink-500/30 bg-pink-500/5 rounded p-4 mt-2">
       <div className="flex items-center gap-2 mb-4">
         <Flower2 size={14} className="text-pink-400" />
-        <span className="text-[10px] font-bold text-pink-400 uppercase tracking-widest font-apex-mono">FLOWER CONFIGURATION</span>
+        <span className="text-sm font-medium text-pink-600">Flower Configuration</span>
       </div>
 
       {/* Component Type */}
       <div className="mb-4">
-        <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">
-          COMPONENT_TYPE *
+        <label className="block text-sm font-medium text-apex-text mb-2">
+          Component Type *
         </label>
         <div className="flex gap-3">
           {(['arrangement', 'vase'] as const).map(type => (
@@ -339,7 +339,7 @@ function FlowerConfigSection({
                 compatibleVaseIds: type === 'vase' ? [] : item.compatibleVaseIds,
                 stemPrice: type === 'vase' ? '' : item.stemPrice,
               })}
-              className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest font-apex-mono rounded border transition-all
+              className={`flex-1 py-2 text-sm font-medium rounded border transition-all
                 ${item.componentType === type
                   ? "border-pink-400 bg-pink-400/10 text-pink-400"
                   : "border-apex-outline-variant/30 text-apex-on-surface-variant/60 hover:border-pink-400/50"
@@ -361,18 +361,18 @@ function FlowerConfigSection({
         <>
           {/* Stem price */}
           <div className="mb-4">
-            <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">
-              STEM_ONLY_PRICE (flower without vase)
+            <label className="block text-sm font-medium text-apex-text mb-2">
+              Stem Only Price (flower without vase)
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-apex-on-surface-variant/40 font-apex-mono">KES</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-apex-on-surface-variant/50">KES</span>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 value={item.stemPrice}
                 onChange={e => onChange(item.id, { stemPrice: e.target.value })}
-                className="w-full bg-[#060e20] border border-apex-outline-variant/30 rounded pl-9 pr-3 py-2.5 text-xs font-apex-mono text-apex-text focus:outline-none focus:border-pink-400/50 focus:ring-1 focus:ring-pink-400/30 transition-all placeholder:text-apex-on-surface-variant/20"
+                className="w-full bg-apex-surface border border-apex-outline-variant rounded pl-9 pr-3 py-2.5 text-sm text-apex-text focus:outline-none focus:border-pink-400/50 focus:ring-1 focus:ring-pink-400/30 transition-all placeholder:text-apex-on-surface-variant/20"
                 placeholder="0.00"
               />
             </div>
@@ -383,8 +383,8 @@ function FlowerConfigSection({
 
           {/* Compatible vases */}
           <div>
-            <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">
-              COMPATIBLE_VASES ({item.compatibleVaseIds.length} selected)
+            <label className="block text-sm font-medium text-apex-text mb-2">
+              Compatible Vases ({item.compatibleVaseIds.length} selected)
             </label>
             {vaseProducts.length === 0 ? (
               <div className="border border-dashed border-apex-outline-variant/20 rounded p-3 text-center">
@@ -405,7 +405,7 @@ function FlowerConfigSection({
                       className={`flex items-center gap-2 p-2 rounded border text-left transition-all
                         ${selected
                           ? "border-pink-400 bg-pink-400/10"
-                          : "border-apex-outline-variant/20 bg-[#060e20] hover:border-pink-400/40"
+                          : "border-apex-outline-variant/20 bg-apex-surface hover:border-pink-400/40"
                         }`}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -434,7 +434,7 @@ function FlowerConfigSection({
 
       {/* Vase-only info */}
       {item.componentType === 'vase' && (
-        <div className="text-[9px] text-apex-on-surface-variant/50 font-apex-mono uppercase tracking-widest bg-[#060e20] border border-apex-outline-variant/10 rounded p-3">
+        <div className="text-[9px] text-apex-on-surface-variant/50 font-apex-mono uppercase tracking-widest bg-apex-surface border border-apex-outline-variant/10 rounded p-3">
           This vase will appear as a compatible option when clients browse flower arrangements.
           Set its price in the Financial Metrics section above.
         </div>
@@ -460,160 +460,182 @@ function QueueCard({
     ? Math.round(((+item.prices.retail_price - +item.prices.buying_price) / +item.prices.retail_price) * 100)
     : null;
 
-  const isFlower = item.category === "Flowers";
-  const retailLabel = isFlower && item.componentType === 'arrangement' ? "FULL_ARRANGEMENT_PRICE" : "RETAIL_VAL";
+  const isFlower = item.category === "Flowers & Vases";
+  const retailLabel = isFlower && item.componentType === 'arrangement' ? "Full Arrangement Price" : "Retail Price";
 
   return (
-    <div className={`bg-[#131b2e] rounded border transition-all duration-200 apex-glass-panel relative overflow-hidden
+    <div className={`bg-apex-surface rounded-2xl border transition-all duration-200 relative overflow-hidden shadow-sm
       ${item.status === "done" ? "border-apex-secondary/30" : item.status === "error" ? "border-apex-error/30" : "border-apex-outline-variant/20"}`}>
 
       {item.status === "done" && <div className="absolute top-0 left-0 w-1 h-full bg-apex-secondary"></div>}
       {item.status === "error" && <div className="absolute top-0 left-0 w-1 h-full bg-apex-error"></div>}
 
       {/* Card header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-apex-outline-variant/20 bg-apex-surface-low">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-apex-outline-variant bg-apex-surface-lowest">
         <div className="flex items-center gap-3">
           {item.status === "uploading" && <Loader2 size={14} className="animate-spin text-apex-primary" />}
           {item.status === "done" && <CheckCircle2 size={14} className="text-apex-secondary" />}
           {item.status === "error" && <AlertCircle size={14} className="text-apex-error" />}
-          <span className="text-[10px] font-bold text-apex-primary uppercase tracking-widest font-apex-mono">
-            ENTRY_NODE_0{index + 1}
+          <span className="text-sm font-medium text-apex-primary">
+            Item {index + 1}
           </span>
-          {item.name && <span className="text-xs text-apex-on-surface-variant font-apex-mono tracking-wider truncate max-w-[200px]">{"//"} {item.name}</span>}
-          {isFlower && <span className="text-[9px] text-pink-400 font-apex-mono uppercase tracking-widest">🌸 FLOWERS</span>}
+          {item.name && <span className="text-sm text-apex-on-surface-variant truncate max-w-[200px]">{"//"} {item.name}</span>}
+          {isFlower && <span className="text-xs text-pink-600 font-medium bg-pink-50 px-2 py-0.5 rounded-full">Flowers & Vases</span>}
         </div>
         {total > 1 && (
-          <button onClick={() => onRemove(item.id)} className="p-1.5 rounded bg-apex-error/10 border border-apex-error/30 text-apex-error hover:bg-apex-error/20 transition-colors shadow-[0_0_10px_rgba(255,180,171,0.1)]">
+          <button onClick={() => onRemove(item.id)} className="p-1.5 rounded-lg text-apex-error hover:bg-apex-error/10 transition-colors">
             <Trash2 size={14} />
           </button>
         )}
       </div>
 
-      <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left: Image */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          <div>
-            <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">PRIMARY IMAGE *</label>
-            <ImageDropZone item={item} onFile={file => {
-              const preview = URL.createObjectURL(file);
-              onChange(item.id, { imageFile: file, imagePreview: preview, status: "idle", errorMsg: "" });
-            }} />
+      <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-apex-surface-lowest/50">
+        {/* Left Column: General, Media, Configuration */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          
+          {/* Card: General Information */}
+          <div className="bg-apex-surface rounded-xl border border-apex-outline-variant/30 p-5 shadow-sm">
+            <h3 className="text-sm font-semibold text-apex-text mb-4">General Information</h3>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Product Name *</label>
+                <input
+                  type="text"
+                  value={item.name}
+                  onChange={e => onChange(item.id, { name: e.target.value })}
+                  className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg px-4 py-2.5 text-sm text-apex-text focus:outline-none focus:border-apex-primary focus:ring-1 focus:ring-apex-primary transition-all placeholder:text-apex-on-surface-variant/30"
+                  placeholder="e.g. Sunset Bouquet"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Category</label>
+                  <select
+                    value={item.category}
+                    onChange={e => onChange(item.id, { category: e.target.value, componentType: '', stemPrice: '', compatibleVaseIds: [] })}
+                    className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg px-4 py-2.5 text-sm text-apex-text focus:outline-none focus:border-apex-primary focus:ring-1 focus:ring-apex-primary transition-all"
+                  >
+                    {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Tags</label>
+                  <input
+                    type="text"
+                    value={item.tags}
+                    onChange={e => onChange(item.id, { tags: e.target.value })}
+                    className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg px-4 py-2.5 text-sm text-apex-text focus:outline-none focus:border-apex-primary focus:ring-1 focus:ring-apex-primary transition-all placeholder:text-apex-on-surface-variant/30"
+                    placeholder="e.g. promo, new, featured"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Multi-image section */}
-          <MultiImageSection item={item} onChange={onChange} />
+          {/* Card: Media */}
+          <div className="bg-apex-surface rounded-xl border border-apex-outline-variant/30 p-5 shadow-sm">
+            <h3 className="text-sm font-semibold text-apex-text mb-4">Media</h3>
+            <div className="flex flex-col gap-6">
+              <div>
+                <label className="block text-xs font-medium text-apex-on-surface-variant mb-2">Primary Image *</label>
+                <ImageDropZone item={item} onFile={file => {
+                  const preview = URL.createObjectURL(file);
+                  onChange(item.id, { imageFile: file, imagePreview: preview, status: "idle", errorMsg: "" });
+                }} />
+              </div>
+              <MultiImageSection item={item} onChange={onChange} />
+            </div>
+          </div>
+
+          {/* Card: Flower Configuration */}
+          {isFlower && (
+            <div className="bg-apex-surface rounded-xl border border-pink-200 p-0 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-pink-400"></div>
+              <div className="p-1 pl-2">
+                <FlowerConfigSection item={item} vaseProducts={vaseProducts} onChange={onChange} />
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Right: Fields */}
-        <div className="lg:col-span-8 flex flex-col gap-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">IDENTIFIER_STRING *</label>
-              <input
-                type="text"
-                value={item.name}
-                onChange={e => onChange(item.id, { name: e.target.value })}
-                className="w-full bg-[#060e20] border border-apex-outline-variant/30 rounded px-4 py-2.5 text-xs text-apex-text font-apex-mono tracking-wider focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all placeholder:text-apex-on-surface-variant/30"
-                placeholder="PRODUCT_NAME_01"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">CORE_CATEGORY</label>
-              <select
-                value={item.category}
-                onChange={e => onChange(item.id, { category: e.target.value, componentType: '', stemPrice: '', compatibleVaseIds: [] })}
-                className="w-full bg-[#060e20] border border-apex-outline-variant/30 rounded px-4 py-2.5 text-xs text-apex-text font-apex-mono tracking-wider focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all"
-              >
-                {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-              </select>
+        {/* Right Column: Pricing & Status */}
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          
+          {/* Card: Status */}
+          <div className="bg-apex-surface rounded-xl border border-apex-outline-variant/30 p-5 shadow-sm">
+            <h3 className="text-sm font-semibold text-apex-text mb-4">Status & Visibility</h3>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Visibility</label>
+                <select
+                  value={item.visibility}
+                  onChange={e => onChange(item.id, { visibility: e.target.value as 'visible' | 'hidden' | 'archived' })}
+                  className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg px-3 py-2 text-sm text-apex-text focus:outline-none focus:border-apex-primary focus:ring-1 focus:ring-apex-primary transition-all"
+                >
+                  <option value="visible">Public (Visible)</option>
+                  <option value="hidden">Hidden (Admin Only)</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Availability</label>
+                <select
+                  value={item.availability}
+                  onChange={e => onChange(item.id, { availability: e.target.value as 'in_stock' | 'out_of_stock' | 'coming_soon' })}
+                  className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg px-3 py-2 text-sm text-apex-text focus:outline-none focus:border-apex-primary focus:ring-1 focus:ring-apex-primary transition-all"
+                >
+                  <option value="in_stock">In Stock</option>
+                  <option value="out_of_stock">Out of Stock</option>
+                  <option value="coming_soon">Coming Soon</option>
+                </select>
+              </div>
+              
+              <div className="pt-2">
+                <label className="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-apex-surface-low transition-colors -ml-2">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={item.is_featured}
+                      onChange={e => onChange(item.id, { is_featured: e.target.checked })}
+                      className="sr-only"
+                    />
+                    <div className={`w-9 h-5 bg-apex-surface border border-apex-outline-variant rounded-full transition-colors ${item.is_featured ? 'bg-apex-secondary/20 border-apex-secondary/50' : ''}`}></div>
+                    <div className={`absolute left-0.5 top-0.5 w-4 h-4 bg-apex-on-surface-variant/40 rounded-full transition-transform duration-200 ${item.is_featured ? 'translate-x-4 bg-apex-secondary' : ''}`}></div>
+                  </div>
+                  <span className="text-sm font-medium text-apex-text group-hover:text-apex-primary transition-colors">
+                    Featured Product
+                  </span>
+                </label>
+              </div>
             </div>
           </div>
 
-          {/* Prices */}
-          <div>
-            <label className="block text-[10px] font-bold text-apex-secondary uppercase tracking-widest font-apex-mono mb-3 pt-2 border-t border-apex-outline-variant/10">FINANCIAL METRICS</label>
-            <div className="grid grid-cols-3 gap-4">
+          {/* Card: Pricing */}
+          <div className="bg-apex-surface rounded-xl border border-apex-outline-variant/30 p-5 shadow-sm">
+            <h3 className="text-sm font-semibold text-apex-text mb-4">Pricing</h3>
+            <div className="flex flex-col gap-4">
               {(["buying_price", "wholesale_price", "retail_price"] as const).map((field, i) => (
                 <div key={field}>
-                  <label className="block text-[9px] font-bold text-apex-on-surface-variant/50 uppercase tracking-widest font-apex-mono mb-1.5">
-                    {["COST_VAL", "WHOLESALE_VAL", i === 2 ? retailLabel : "RETAIL_VAL"][i]}
+                  <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">
+                    {["Cost Price", "Wholesale Price", i === 2 ? retailLabel : "Retail Price"][i]}
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-apex-on-surface-variant/40 font-apex-mono">KES</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-apex-on-surface-variant/50">KES</span>
                     <input
                       type="number" step="0.01" min="0"
                       value={item.prices[field]}
                       onChange={e => onChange(item.id, { prices: { ...item.prices, [field]: e.target.value } })}
-                      className="w-full bg-[#060e20] border border-apex-outline-variant/30 rounded pl-9 pr-3 py-2.5 text-xs font-apex-mono text-apex-text focus:outline-none focus:border-apex-secondary/50 focus:ring-1 focus:ring-apex-secondary/30 transition-all placeholder:text-apex-on-surface-variant/20"
+                      className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg pl-9 pr-3 py-2 text-sm text-apex-text focus:outline-none focus:border-apex-secondary focus:ring-1 focus:ring-apex-secondary transition-all placeholder:text-apex-on-surface-variant/20"
                       placeholder="0.00"
                     />
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-5 pt-3 border-t border-apex-outline-variant/10">
-            <div>
-              <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">SYSTEM_VISIBILITY</label>
-              <select
-                value={item.visibility}
-                onChange={e => onChange(item.id, { visibility: e.target.value as 'visible' | 'hidden' | 'archived' })}
-                className="w-full bg-[#060e20] border border-apex-outline-variant/30 rounded px-4 py-2.5 text-xs text-apex-text font-apex-mono tracking-wider focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all"
-              >
-                <option value="visible">PUBLIC_VISIBLE</option>
-                <option value="hidden">ADMIN_ONLY</option>
-                <option value="archived">ARCHIVED_DISABLED</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">INVENTORY_STATUS</label>
-              <select
-                value={item.availability}
-                onChange={e => onChange(item.id, { availability: e.target.value as 'in_stock' | 'out_of_stock' | 'coming_soon' })}
-                className="w-full bg-[#060e20] border border-apex-outline-variant/30 rounded px-4 py-2.5 text-xs text-apex-text font-apex-mono tracking-wider focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all"
-              >
-                <option value="in_stock">IN_STOCK</option>
-                <option value="out_of_stock">DEPLETED</option>
-                <option value="coming_soon">INBOUND</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 pt-1">
-            <div>
-              <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">METADATA_TAGS [CSV]</label>
-              <input
-                type="text"
-                value={item.tags}
-                onChange={e => onChange(item.id, { tags: e.target.value })}
-                className="w-full bg-[#060e20] border border-apex-outline-variant/30 rounded px-4 py-2.5 text-xs text-apex-text font-apex-mono tracking-wider focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all placeholder:text-apex-on-surface-variant/30"
-                placeholder="PROMO, NEW_ARRIVAL, CLEARANCE"
-              />
-            </div>
-
-            <div className="flex items-center justify-between mt-2">
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={item.is_featured}
-                    onChange={e => onChange(item.id, { is_featured: e.target.checked })}
-                    className="sr-only"
-                  />
-                  <div className={`w-10 h-5 bg-[#060e20] border border-apex-outline-variant/30 rounded-full transition-colors ${item.is_featured ? 'bg-apex-secondary/20 border-apex-secondary/50' : ''}`}></div>
-                  <div className={`absolute left-1 top-1 w-3 h-3 bg-apex-on-surface-variant/50 rounded-full transition-transform duration-200 ${item.is_featured ? 'translate-x-5 bg-apex-secondary shadow-[0_0_8px_rgba(76,215,246,0.8)]' : ''}`}></div>
-                </div>
-                <span className="text-[10px] font-bold text-apex-text uppercase tracking-widest font-apex-mono group-hover:text-apex-secondary transition-colors">
-                  MARK_AS_FEATURED_ASSET
-                </span>
-              </label>
 
               {margin !== null && (
-                <div className="flex items-center gap-3 text-[10px] bg-[#060e20] border border-apex-outline-variant/20 rounded px-3 py-1.5 font-apex-mono tracking-widest uppercase">
-                  <span className="text-apex-on-surface-variant/60">PROFIT_MARGIN</span>
-                  <span className={`font-bold ${margin >= 20 ? "text-apex-secondary shadow-[0_0_10px_rgba(76,215,246,0.1)]" : margin >= 10 ? "text-amber-500" : "text-apex-error shadow-[0_0_10px_rgba(255,180,171,0.1)]"}`}>
+                <div className="mt-2 flex items-center justify-between bg-apex-surface-lowest rounded-lg px-3 py-2 border border-apex-outline-variant/20">
+                  <span className="text-xs font-medium text-apex-on-surface-variant">Profit Margin</span>
+                  <span className={`text-sm font-bold ${margin >= 20 ? "text-green-600" : margin >= 10 ? "text-amber-500" : "text-red-500"}`}>
                     {margin}%
                   </span>
                 </div>
@@ -621,14 +643,10 @@ function QueueCard({
             </div>
           </div>
 
-          {/* Flower Configuration */}
-          {isFlower && (
-            <FlowerConfigSection item={item} vaseProducts={vaseProducts} onChange={onChange} />
-          )}
-
           {item.errorMsg && (
-            <div className="mt-2 text-[10px] text-apex-error bg-apex-error/10 border border-apex-error/30 rounded px-3 py-2 flex items-center gap-2 font-apex-mono tracking-widest uppercase">
-              <AlertCircle size={14} /> [ERROR]: {item.errorMsg}
+            <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-3 flex items-start gap-2">
+              <AlertCircle size={14} className="mt-0.5 shrink-0" /> 
+              <span>{item.errorMsg}</span>
             </div>
           )}
         </div>
@@ -650,11 +668,11 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
   // accessible even before the admin has explicitly created the category.
   const categoriesWithFlowers = useMemo(() => {
     const cats = settings.categories;
-    const hasFlowers = cats.some(c => c.name === 'Flowers');
+    const hasFlowers = cats.some(c => c.name === 'Flowers & Vases');
     if (hasFlowers) return cats;
     const flowerEntry = {
       id: '__flowers_virtual__',
-      name: 'Flowers',
+      name: 'Flowers & Vases',
       sku_prefix: 'FLW',
       icon_name: 'Flower2',
       parent_id: null,
@@ -771,7 +789,7 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
       else if (Array.isArray(v)) attrs[k] = v.map(String);
     }
     attrs.image_urls = extraUrls;
-    if (item.category === 'Flowers') {
+    if (item.category === 'Flowers & Vases') {
       attrs.component_type = item.componentType;
       if (item.componentType === 'arrangement') {
         attrs.stem_price = item.stemPrice || '0';
@@ -786,11 +804,11 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
     if (e) e.preventDefault();
     if (!editItem.name.trim()) { addToast("IDENTIFIER_STRING is required.", "error"); return; }
     if (!editItem.imageFile && !editItem.image_url) { addToast("PRIMARY IMAGE is required.", "error"); return; }
-    if (editItem.category === 'Flowers' && !editItem.componentType) { addToast("Select a Flower Component Type.", "error"); return; }
+    if (editItem.category === 'Flowers & Vases' && !editItem.componentType) { addToast("Select a Flower Component Type.", "error"); return; }
     setSubmitting(true);
 
     // Ensure Flowers category exists in DB
-    if (editItem.category === 'Flowers') await ensureFlowersCategory();
+    if (editItem.category === 'Flowers & Vases') await ensureFlowersCategory();
 
     try {
       const { primaryUrl, extraUrls } = await uploadAllImages(editItem);
@@ -821,14 +839,14 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
   // ── Bulk add submit ──
   const handleBulkSubmit = async () => {
     for (const item of queue) {
-      if (!item.name.trim()) { addToast(`ENTRY_NODE_0${queue.indexOf(item) + 1}: IDENTIFIER_STRING is required.`, "error"); return; }
-      if (!item.imageFile && !item.image_url) { addToast(`ENTRY_NODE_0${queue.indexOf(item) + 1}: PRIMARY IMAGE is required.`, "error"); return; }
-      if (item.category === 'Flowers' && !item.componentType) { addToast(`ENTRY_NODE_0${queue.indexOf(item) + 1}: Select Flower Component Type.`, "error"); return; }
+      if (!item.name.trim()) { addToast(`Item ${queue.indexOf(item) + 1}: IDENTIFIER_STRING is required.`, "error"); return; }
+      if (!item.imageFile && !item.image_url) { addToast(`Item ${queue.indexOf(item) + 1}: PRIMARY IMAGE is required.`, "error"); return; }
+      if (item.category === 'Flowers & Vases' && !item.componentType) { addToast(`Item ${queue.indexOf(item) + 1}: Select Flower Component Type.`, "error"); return; }
     }
     setSubmitting(true);
 
     // Ensure Flowers category if any item uses it
-    if (queue.some(i => i.category === 'Flowers')) await ensureFlowersCategory();
+    if (queue.some(i => i.category === 'Flowers & Vases')) await ensureFlowersCategory();
 
     const results: { item: QueueItem; primaryUrl: string; extraUrls: string[] }[] = [];
     for (const item of queue) {
@@ -875,13 +893,13 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
   // ─── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full min-h-screen bg-transparent font-apex-sans">
+    <div className="w-full min-h-screen bg-transparent font-sans">
 
       {/* Toast container */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
         {toasts.map(t => (
-          <div key={t.id} className={`flex items-center gap-3 px-5 py-3 rounded shadow-[0_0_20px_rgba(0,0,0,0.5)] font-apex-mono text-[10px] font-bold tracking-widest uppercase border backdrop-blur pointer-events-auto animate-fade-in
-            ${t.type === "success" ? "bg-apex-secondary/10 border-apex-secondary/50 text-apex-secondary" : t.type === "error" ? "bg-apex-error/10 border-apex-error/50 text-apex-error" : "bg-apex-surface-highest/80 border-apex-outline-variant/30 text-apex-text"}`}>
+          <div key={t.id} className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium border backdrop-blur pointer-events-auto animate-fade-in
+            ${t.type === "success" ? "bg-green-50 border-green-200 text-green-700" : t.type === "error" ? "bg-red-50 border-red-200 text-red-700" : "bg-apex-surface border-apex-outline-variant/30 text-apex-text"}`}>
             {t.type === "success" && <CheckCircle2 size={16} />}
             {t.type === "error" && <AlertCircle size={16} />}
             {t.msg}
@@ -896,18 +914,17 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
           <div>
             <button
               onClick={() => router.push("/admin/products")}
-              className="flex items-center gap-1.5 text-apex-on-surface-variant hover:text-apex-secondary text-[10px] font-apex-mono font-bold uppercase tracking-widest mb-4 transition-colors w-fit"
+              className="flex items-center gap-1.5 text-apex-on-surface-variant hover:text-apex-text text-sm font-medium mb-4 transition-colors w-fit"
             >
-              <ArrowLeft size={14} /> ABORT TO DIRECTORY
+              <ArrowLeft size={16} /> Back to Products
             </button>
             <div className="flex items-center gap-3">
-              <div className="w-2 h-6 bg-apex-primary"></div>
-              <h1 className="text-3xl font-black text-apex-text tracking-tight uppercase">
-                {isEdit ? `EDIT REGISTRY: ${initialData.name}` : "REGISTRY: ADD PRODUCTS"}
+              <h1 className="text-3xl font-bold text-apex-text tracking-tight">
+                {isEdit ? `Edit Product: ${initialData.name}` : "Add New Products"}
               </h1>
             </div>
-            <p className="font-apex-mono text-[10px] text-apex-secondary mt-2 tracking-widest uppercase">
-              {isEdit ? "DATABASE_OPERATION: UPDATE_RECORD" : "DATABASE_OPERATION: INSERT_RECORDS"}
+            <p className="text-sm text-apex-on-surface-variant mt-2">
+              {isEdit ? "Update product details, pricing, and media assets." : "Upload new products to your catalog."}
             </p>
           </div>
 
@@ -916,18 +933,18 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
               <button
                 onClick={addToQueue}
                 disabled={submitting}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#131b2e] border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text rounded text-[11px] font-apex-sans font-bold tracking-widest uppercase transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-apex-surface border border-apex-outline-variant/30 text-apex-text hover:bg-apex-surface-low rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
               >
-                <Plus size={14} /> NEW ENTRY
+                <Plus size={16} /> Add Another
               </button>
             )}
             <button
               onClick={isEdit ? handleEditSubmit : handleBulkSubmit}
               disabled={submitting}
-              className="flex items-center gap-2 px-6 py-2.5 bg-apex-primary text-[#0b1326] rounded text-[11px] font-apex-sans font-bold tracking-widest uppercase hover:brightness-110 transition-all shadow-[0_0_15px_rgba(192,193,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-2 bg-apex-primary text-apex-bg rounded-lg text-sm font-semibold hover:bg-apex-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? <Loader2 size={14} className="animate-spin" /> : isEdit ? <Save size={14} /> : <PackagePlus size={14} />}
-              {submitting ? "UPLOADING..." : isEdit ? "COMMIT UPDATE" : "INITIALIZE REGISTRIES"}
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {submitting ? "Saving..." : isEdit ? "Save Changes" : "Save Products"}
             </button>
           </div>
         </div>
@@ -966,12 +983,12 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
             <button
               onClick={addToQueue}
               disabled={submitting}
-              className="flex items-center gap-2 text-[10px] text-apex-primary font-bold hover:text-apex-secondary transition-colors disabled:opacity-50 tracking-widest font-apex-mono uppercase"
+              className="flex items-center gap-2 text-sm font-medium text-apex-primary hover:text-apex-primary/80 transition-colors disabled:opacity-50"
             >
-              <Plus size={14} /> APPEND NEW ENTRY TO QUEUE
+              <Plus size={16} /> Add another item
             </button>
-            <p className="text-[10px] font-apex-mono tracking-widest uppercase text-apex-on-surface-variant/50">
-              QUEUE_SIZE: {queue.length} BLOCK{queue.length !== 1 ? "S" : ""}
+            <p className="text-sm font-medium text-apex-on-surface-variant/70">
+              Total Items: {queue.length}
             </p>
           </div>
         )}

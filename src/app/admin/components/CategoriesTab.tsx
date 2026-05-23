@@ -97,51 +97,48 @@ export default function CategoriesTab() {
       {/* Header Section */}
       <div className="flex justify-between items-start pb-4">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-6 bg-apex-secondary"></div>
-            <h2 className="font-apex-sans text-3xl font-black text-apex-text uppercase tracking-tight">REGISTRY: CATEGORIES</h2>
-          </div>
-          <p className="font-apex-mono text-[10px] text-apex-secondary mt-2 tracking-widest uppercase">
-            ARCHIVE_QUERY: [FILTER=CATALOGUE_ALL] | RECORDS_TOTAL: {localCategories.length}
+          <h2 className="text-3xl font-bold text-apex-text tracking-tight">Categories</h2>
+          <p className="font-apex-sans text-sm text-apex-on-surface-variant mt-1">
+            Manage product categories • {localCategories.length} total
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button 
             onClick={handleSync}
             disabled={loading}
-            className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded disabled:opacity-50"
+            className="flex items-center gap-2 bg-apex-surface border border-apex-outline-variant text-apex-text hover:bg-apex-surface-low px-4 py-2 font-apex-sans text-sm font-medium transition-colors rounded-lg disabled:opacity-50 shadow-sm"
           >
-            <CloudLightning size={14} /> Sync Core
+            <CloudLightning size={16} /> Sync
           </button>
-          <button className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
-            <Filter size={14} /> Refine View
+          <button className="flex items-center gap-2 bg-apex-surface border border-apex-outline-variant text-apex-text hover:bg-apex-surface-low px-4 py-2 font-apex-sans text-sm font-medium transition-colors rounded-lg shadow-sm">
+            <Filter size={16} /> Filter
           </button>
           <button 
             onClick={handleAdd}
             disabled={loading}
-            className="bg-apex-text hover:bg-white text-apex-bg font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(218,226,253,0.3)] transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="bg-apex-primary hover:bg-apex-primary/90 text-apex-bg font-apex-sans text-sm font-medium px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            <Plus size={14} /> Initialize New Category
+            <Plus size={16} /> New Category
           </button>
         </div>
       </div>
 
       {/* Main Table Panel */}
-      <div className="bg-apex-surface-low border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
+      <div className="bg-apex-surface border border-apex-outline-variant rounded-xl flex flex-col relative overflow-hidden shadow-sm">
         
         {/* Table Canvas */}
         <div className="overflow-x-auto min-h-64">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-apex-surface/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
-                <th className="py-4 px-6 font-bold w-24">CAT_VISUAL</th>
-                <th className="py-4 px-6 font-bold">IDENTIFIER_STRING</th>
-                <th className="py-4 px-6 font-bold">CORE_PREFIX_SLUG</th>
-                <th className="py-4 px-6 font-bold text-center">STATUS</th>
-                <th className="py-4 px-6 font-bold text-center">PROTOCOL</th>
+              <tr className="bg-apex-surface-lowest border-b border-apex-outline-variant font-apex-sans text-xs text-apex-on-surface-variant uppercase tracking-wider font-medium">
+                <th className="py-4 px-6 w-24">Icon</th>
+                <th className="py-4 px-6">Name</th>
+                <th className="py-4 px-6">Slug</th>
+                <th className="py-4 px-6 text-center">Status</th>
+                <th className="py-4 px-6 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-apex-outline-variant/10 text-apex-text">
+            <tbody className="divide-y divide-apex-outline-variant text-apex-text">
               {localCategories.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-20 text-center flex-col items-center justify-center text-apex-on-surface-variant/40 font-apex-mono">
@@ -155,10 +152,10 @@ export default function CategoriesTab() {
                   const isDeleting = deletingId === cat.id;
                   
                   return (
-                    <tr key={cat.id} className="hover:bg-apex-surface/40 transition-colors group">
-                      {/* CAT_VISUAL */}
+                    <tr key={cat.id} className="hover:bg-apex-surface-lowest transition-colors group">
+                      {/* Icon */}
                       <td className="py-3 px-6">
-                        <div className="w-16 h-10 bg-apex-surface-lowest border border-apex-outline-variant/30 flex items-center justify-center shrink-0 group-hover:border-apex-secondary/50 transition-colors relative overflow-hidden text-apex-secondary/80 group-hover:text-apex-secondary group-hover:bg-apex-secondary/10">
+                        <div className="w-12 h-12 bg-apex-surface-low border border-apex-outline-variant rounded-lg flex items-center justify-center shrink-0 group-hover:border-apex-primary/50 transition-colors relative overflow-hidden text-apex-text group-hover:text-apex-primary">
                           <select
                             className="absolute inset-0 opacity-0 cursor-pointer"
                             value={cat.icon_name || "Package"}
@@ -169,37 +166,36 @@ export default function CategoriesTab() {
                           >
                             {AVAILABLE_ICONS.map(i => <option key={i} className="bg-apex-surface text-apex-text" value={i}>{i}</option>)}
                           </select>
-                          <CatIcon size={20} className={cat.is_visible ? "apex-glow-accent" : ""} />
+                          <CatIcon size={20} className={cat.is_visible ? "text-apex-primary" : "text-apex-on-surface-variant"} />
                         </div>
                       </td>
                       
-                      {/* IDENTIFIER_STRING */}
+                      {/* Name */}
                       <td className="py-3 px-6">
                         <input 
                           type="text" 
                           value={cat.name}
                           onChange={(e) => handleUpdate(cat.id, 'name', e.target.value)}
                           onBlur={() => handleSave(cat.id)}
-                          className="w-full bg-transparent border-none font-apex-sans font-bold text-sm tracking-wide text-apex-text focus:ring-0 focus:outline-none placeholder-apex-on-surface-variant/30 p-0"
-                          placeholder="CATEGORY_NAME"
+                          className="w-full bg-transparent border border-transparent hover:border-apex-outline-variant focus:border-apex-primary focus:bg-apex-surface rounded px-3 py-1.5 font-apex-sans font-medium text-sm text-apex-text focus:outline-none focus:ring-1 focus:ring-apex-primary/30 transition-all"
+                          placeholder="Category Name"
                         />
-                        <p className="font-apex-mono text-[9px] text-apex-secondary tracking-widest uppercase mt-0.5">SUBCAT_COUNT_0</p>
                       </td>
 
-                      {/* CORE_PREFIX_SLUG */}
+                      {/* Slug */}
                       <td className="py-3 px-6">
                         <input 
                           type="text" 
                           value={cat.sku_prefix}
                           onChange={(e) => handleUpdate(cat.id, 'sku_prefix', e.target.value)}
                           onBlur={() => handleSave(cat.id)}
-                          className="w-32 bg-transparent border-none text-apex-on-surface-variant font-apex-mono text-xs focus:ring-0 focus:outline-none uppercase p-0 tracking-wider"
+                          className="w-32 bg-transparent border border-transparent hover:border-apex-outline-variant focus:border-apex-primary focus:bg-apex-surface rounded px-3 py-1.5 font-apex-sans text-xs text-apex-on-surface-variant focus:outline-none focus:ring-1 focus:ring-apex-primary/30 uppercase transition-all"
                           placeholder="SLUG"
                           maxLength={5}
                         />
                       </td>
 
-                      {/* STATUS */}
+                      {/* Status */}
                       <td className="py-3 px-6 text-center">
                         <label className="relative inline-flex items-center cursor-pointer select-none">
                           <input 
@@ -211,34 +207,34 @@ export default function CategoriesTab() {
                               handleSave(cat.id);
                             }}
                           />
-                          <span className={`inline-block px-3 py-1 border font-apex-mono text-[9px] font-bold tracking-widest uppercase transition-colors ${
+                          <span className={`inline-block px-3 py-1 rounded-full font-apex-sans text-xs font-medium transition-colors ${
                             cat.is_visible 
-                              ? 'border-apex-secondary/50 bg-apex-secondary/10 text-apex-secondary shadow-[0_0_10px_rgba(76,215,246,0.1)]' 
-                              : 'border-apex-outline-variant/30 bg-apex-surface-lowest text-apex-on-surface-variant'
+                              ? 'bg-apex-tertiary-container text-apex-tertiary' 
+                              : 'bg-apex-surface-low text-apex-on-surface-variant border border-apex-outline-variant'
                           }`}>
-                            {cat.is_visible ? 'ACTIVE' : 'IDLE'}
+                            {cat.is_visible ? 'Active' : 'Hidden'}
                           </span>
                         </label>
                       </td>
 
-                      {/* PROTOCOL */}
+                      {/* Actions */}
                       <td className="py-3 px-6 text-center">
                         {isDeleting ? (
                           <button 
                             onClick={(e) => { e.preventDefault(); handleDelete(cat.id); }}
                             disabled={loading}
-                            className="bg-apex-error/20 text-apex-error border border-apex-error/50 px-2 py-1 font-apex-mono text-[9px] font-bold uppercase rounded tracking-widest shadow-[0_0_10px_rgba(255,180,171,0.2)] animate-pulse"
+                            className="bg-apex-error-container text-apex-error px-3 py-1.5 font-apex-sans text-xs font-medium rounded-lg"
                           >
-                            CONFIRM
+                            Confirm?
                           </button>
                         ) : (
                           <button 
                             onClick={(e) => { e.preventDefault(); handleDelete(cat.id); }}
                             disabled={loading}
-                            className="text-apex-on-surface-variant/50 hover:text-apex-error transition-colors p-2 disabled:opacity-50"
+                            className="text-apex-on-surface-variant hover:text-apex-error hover:bg-apex-error/10 transition-colors px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-medium disabled:opacity-50 mx-auto"
                             title="Delete Registry"
                           >
-                            <MoreVertical size={16} />
+                            <Trash2 size={16} /> Delete
                           </button>
                         )}
                       </td>
@@ -251,12 +247,9 @@ export default function CategoriesTab() {
         </div>
         
         {/* Registry Footer Pagination */}
-        <div className="px-6 py-4 bg-apex-bg border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
+        <div className="px-6 py-4 bg-apex-surface-lowest border-t border-apex-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-sans text-sm text-apex-on-surface-variant">
           <div className="flex items-center gap-4">
-            <span>SHOWING ENTRY {localCategories.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + itemsPerPage, localCategories.length)} OF {localCategories.length}</span>
-            <div className="w-24 h-1 bg-apex-surface rounded-full overflow-hidden flex">
-              <div className="h-full bg-apex-secondary" style={{ width: `${localCategories.length ? ((Math.min(startIndex + itemsPerPage, localCategories.length)) / localCategories.length) * 100 : 0}%` }}></div>
-            </div>
+            <span>Showing {localCategories.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + itemsPerPage, localCategories.length)} of {localCategories.length}</span>
           </div>
           <div className="flex gap-1.5 text-xs text-apex-text select-none">
             <button 

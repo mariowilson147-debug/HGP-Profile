@@ -154,23 +154,20 @@ export default function UsersManagement() {
       {/* Header Section */}
       <div className="flex justify-between items-start pb-4">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-6 bg-apex-primary"></div>
-            <h2 className="font-apex-sans text-3xl font-black text-apex-text uppercase tracking-tight">REGISTRY: NODES</h2>
-          </div>
-          <p className="font-apex-mono text-[10px] text-apex-secondary mt-2 tracking-widest uppercase">
-            ARCHIVE_QUERY: [FILTER=CATALOGUE_ALL] | RECORDS_TOTAL: {users.length}
+          <h2 className="text-3xl font-bold text-apex-text tracking-tight">Staff Users</h2>
+          <p className="font-apex-sans text-sm text-apex-on-surface-variant mt-1">
+            Manage administrative access • {users.length} total
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 bg-apex-surface-low border border-apex-outline-variant/30 text-apex-on-surface-variant hover:text-apex-text px-4 py-2.5 font-apex-sans font-bold text-[11px] tracking-wider uppercase transition-colors rounded">
-            <Filter size={14} /> Refine View
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 bg-apex-surface border border-apex-outline-variant text-apex-text hover:bg-apex-surface-low px-4 py-2 font-apex-sans text-sm font-medium transition-colors rounded-lg shadow-sm">
+            <Filter size={16} /> Filter
           </button>
           <button 
             onClick={() => handleOpenModal()}
-            className="bg-apex-primary hover:brightness-110 text-apex-bg font-apex-sans font-bold text-[11px] tracking-widest uppercase px-5 py-2.5 rounded shadow-[0_0_15px_rgba(192,193,255,0.3)] transition-all flex items-center gap-2 cursor-pointer"
+            className="bg-apex-primary hover:bg-apex-primary/90 text-apex-bg font-apex-sans text-sm font-medium px-4 py-2 rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer"
           >
-            <Plus size={14} /> Initialize New Node
+            <Plus size={16} /> New User
           </button>
         </div>
       </div>
@@ -186,7 +183,7 @@ export default function UsersManagement() {
 
       {/* Main Table Panel */}
       {!error && (
-        <div className="bg-apex-surface-low border border-apex-outline-variant/20 rounded flex flex-col relative overflow-hidden">
+        <div className="bg-apex-surface border border-apex-outline-variant rounded-xl flex flex-col relative overflow-hidden shadow-sm">
           
           <div className="absolute top-0 right-0 p-4 w-64 opacity-0 pointer-events-none">
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -195,16 +192,16 @@ export default function UsersManagement() {
           <div className="overflow-x-auto min-h-64">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-apex-surface/80 border-b border-apex-outline-variant/20 font-apex-sans font-bold text-[10px] text-apex-on-surface-variant/80 uppercase tracking-widest">
-                  <th className="py-4 px-6 font-bold w-24">NODE_VISUAL</th>
-                  <th className="py-4 px-6 font-bold">IDENTIFIER_STRING</th>
-                  <th className="py-4 px-6 font-bold">CORE_PREFIX_SLUG</th>
-                  <th className="py-4 px-6 font-bold">CLEARANCE_DATE</th>
-                  <th className="py-4 px-6 font-bold text-center">STATUS</th>
-                  <th className="py-4 px-6 font-bold text-center">PROTOCOL</th>
+                <tr className="bg-apex-surface-lowest border-b border-apex-outline-variant font-apex-sans text-xs text-apex-on-surface-variant uppercase tracking-wider font-medium">
+                  <th className="py-4 px-6 w-24">Role</th>
+                  <th className="py-4 px-6">Email</th>
+                  <th className="py-4 px-6">Type</th>
+                  <th className="py-4 px-6">Added On</th>
+                  <th className="py-4 px-6 text-center">Status</th>
+                  <th className="py-4 px-6 text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-apex-outline-variant/10 text-apex-text">
+              <tbody className="divide-y divide-apex-outline-variant text-apex-text">
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="py-24 text-center">
@@ -226,28 +223,28 @@ export default function UsersManagement() {
                     const isPending = pendingBanId === u.id;
                     
                     return (
-                      <tr key={u.id} className="hover:bg-apex-surface/40 transition-colors group">
-                        {/* NODE_VISUAL */}
+                      <tr key={u.id} className="hover:bg-apex-surface-lowest transition-colors group">
+                        {/* ROLE VISUAL */}
                         <td className="py-3 px-6">
-                          <div className={`w-12 h-10 bg-apex-surface-lowest border flex items-center justify-center shrink-0 group-hover:border-apex-primary/50 transition-colors ${isAdmin ? "border-apex-primary/30 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]" : "border-apex-outline-variant/30 text-apex-on-surface-variant group-hover:text-apex-primary/80"}`}>
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isAdmin ? "bg-apex-primary text-apex-bg" : "bg-apex-surface-highest text-apex-on-surface-variant group-hover:text-apex-text"}`}>
                             {isAdmin ? <Shield size={16} /> : <Users size={16} />}
                           </div>
                         </td>
                         
-                        {/* IDENTIFIER_STRING */}
+                        {/* EMAIL */}
                         <td className="py-3 px-6">
-                          <p className="font-apex-sans font-bold text-sm tracking-wide text-apex-text">{u.email}</p>
-                          <p className="font-apex-mono text-[9px] text-apex-secondary tracking-widest uppercase mt-0.5">ACCESS_LEVEL_{isAdmin ? "5" : "3"}</p>
+                          <p className="font-apex-sans font-medium text-sm text-apex-text">{u.email}</p>
+                          <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-0.5">{isAdmin ? "Full Access" : "Standard Access"}</p>
                         </td>
 
-                        {/* CORE_PREFIX_SLUG */}
-                        <td className="py-3 px-6 font-apex-mono text-xs text-apex-on-surface-variant tracking-wider uppercase">
-                          {isAdmin ? "CATALOG_ADMIN" : "WHOLESALE_STAFF"}
+                        {/* TYPE */}
+                        <td className="py-3 px-6 font-apex-sans text-sm text-apex-on-surface-variant">
+                          {isAdmin ? "Administrator" : "Staff"}
                         </td>
 
-                        {/* CLEARANCE_DATE */}
-                        <td className="py-3 px-6 font-apex-mono text-xs text-apex-on-surface-variant tracking-wider">
-                          {new Date(u.created_at).toLocaleDateString("en-GB", { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
+                        {/* ADDED ON */}
+                        <td className="py-3 px-6 font-apex-sans text-sm text-apex-on-surface-variant">
+                          {new Date(u.created_at).toLocaleDateString()}
                         </td>
 
                         {/* STATUS */}
@@ -255,12 +252,12 @@ export default function UsersManagement() {
                           {isPending ? (
                             <Loader2 size={16} className="animate-spin text-apex-on-surface-variant/40 mx-auto" />
                           ) : (
-                            <span className={`inline-block px-2 py-0.5 border font-apex-mono text-[9px] font-bold tracking-widest uppercase ${
+                            <span className={`inline-block px-3 py-1 rounded-full font-apex-sans text-xs font-medium transition-colors ${
                               u.is_banned
-                                ? "bg-apex-surface-lowest border-apex-outline-variant/30 text-apex-on-surface-variant"
-                                : "border-apex-primary/30 bg-apex-primary/10 text-apex-primary shadow-[0_0_10px_rgba(192,193,255,0.1)]"
+                                ? "bg-apex-error-container text-apex-error"
+                                : "bg-apex-tertiary-container text-apex-tertiary"
                             }`}>
-                              {u.is_banned ? "IDLE" : "ACTIVE"}
+                              {u.is_banned ? "Suspended" : "Active"}
                             </span>
                           )}
                         </td>
@@ -306,12 +303,9 @@ export default function UsersManagement() {
           </div>
           
           {/* Registry Footer Pagination */}
-          <div className="px-6 py-4 bg-apex-bg border-t border-apex-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-mono text-[10px] text-apex-on-surface-variant/70 tracking-widest uppercase">
+          <div className="px-6 py-4 bg-apex-surface-lowest border-t border-apex-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-sans text-sm text-apex-on-surface-variant">
             <div className="flex items-center gap-4">
-              <span>SHOWING ENTRY {filteredUsers.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredUsers.length)} OF {filteredUsers.length}</span>
-              <div className="w-24 h-1 bg-apex-surface rounded-full overflow-hidden flex">
-                <div className="h-full bg-apex-primary" style={{ width: `${filteredUsers.length ? ((Math.min(startIndex + itemsPerPage, filteredUsers.length)) / filteredUsers.length) * 100 : 0}%` }}></div>
-              </div>
+              <span>Showing {filteredUsers.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length}</span>
             </div>
             <div className="flex gap-1.5 text-xs text-apex-text select-none">
               <button 
@@ -337,45 +331,44 @@ export default function UsersManagement() {
       {!error && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
           
-          <div className="bg-apex-surface-low border-l-2 border-l-apex-primary border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
+          <div className="bg-apex-surface border border-apex-outline-variant rounded-2xl p-6 flex flex-col justify-between h-36 shadow-sm">
             <div className="flex justify-between items-start text-apex-on-surface-variant">
-              <span className="font-apex-sans text-xs tracking-widest uppercase font-bold">ACTIVE NODES</span>
-              <Activity size={16} className="text-apex-primary" />
+              <span className="font-apex-sans text-sm font-medium">Active Users</span>
+              <div className="w-8 h-8 rounded-full bg-apex-surface-highest flex items-center justify-center">
+                <Activity size={16} className="text-apex-text" />
+              </div>
             </div>
             <div>
-              <p className="font-apex-sans text-3xl text-apex-text leading-none font-black tracking-tight">{activeCount}</p>
-              <p className="font-apex-mono text-[9px] text-apex-primary mt-1 tracking-widest uppercase font-bold">CLEARANCE_VERIFIED</p>
-            </div>
-            <div className="absolute bottom-4 left-5 right-5 flex justify-between font-apex-mono text-[9px] text-apex-on-surface-variant/70 uppercase tracking-widest">
-              <span>SUSPENDED: {users.length - activeCount}</span>
-              <span className="text-apex-primary">NETWORK: SECURE</span>
+              <p className="font-apex-sans text-4xl text-apex-text font-bold tracking-tight">{activeCount}</p>
+              <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-1">{users.length - activeCount} suspended</p>
             </div>
           </div>
 
-          <div className="bg-apex-surface-low border-l-2 border-l-apex-text border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative">
+          <div className="bg-apex-surface border border-apex-outline-variant rounded-2xl p-6 flex flex-col justify-between h-36 shadow-sm">
             <div className="flex justify-between items-start text-apex-on-surface-variant">
-              <span className="font-apex-sans text-xs tracking-widest uppercase font-bold">TOTAL PERSONNEL</span>
-              <Users size={16} className="text-apex-text" />
+              <span className="font-apex-sans text-sm font-medium">Total Staff</span>
+              <div className="w-8 h-8 rounded-full bg-apex-surface-highest flex items-center justify-center">
+                <Users size={16} className="text-apex-text" />
+              </div>
             </div>
             <div>
-              <p className="font-apex-sans text-3xl text-apex-text leading-none font-black tracking-tight">{users.length}</p>
-              <p className="font-apex-mono text-[9px] text-apex-on-surface-variant mt-1 tracking-widest uppercase font-bold">REGISTERED_ENTITIES</p>
-            </div>
-            <div className="absolute bottom-4 left-5 right-5 flex justify-between font-apex-mono text-[9px] text-apex-on-surface-variant/70 uppercase tracking-widest">
-              <span>AUTH: REQUIRED</span>
-              <span className="text-apex-text">SYNC: ACTIVE</span>
+              <p className="font-apex-sans text-4xl text-apex-text font-bold tracking-tight">{users.length}</p>
+              <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-1">Registered members</p>
             </div>
           </div>
 
-          <div className="bg-apex-surface-low border-l-2 border-l-apex-secondary border-t border-r border-b border-apex-outline-variant/20 p-5 flex flex-col justify-between h-32 relative group cursor-pointer hover:border-apex-secondary/50 transition-colors" onClick={() => handleOpenModal()}>
-            <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-apex-secondary/50"></div>
-            <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-apex-secondary/50"></div>
-            <div className="flex justify-between items-start text-apex-secondary">
-              <span className="font-apex-sans text-xs tracking-widest uppercase font-bold">SYSTEM COMMAND</span>
-              <UserPlus size={16} />
+          <div 
+            className="bg-apex-primary text-apex-bg rounded-2xl p-6 flex flex-col justify-between h-36 shadow-md cursor-pointer hover:bg-apex-primary/90 transition-colors" 
+            onClick={() => handleOpenModal()}
+          >
+            <div className="flex justify-between items-start text-apex-bg/80">
+              <span className="font-apex-sans text-sm font-medium">Action</span>
+              <div className="w-8 h-8 rounded-full bg-apex-bg/20 flex items-center justify-center">
+                <UserPlus size={16} className="text-apex-bg" />
+              </div>
             </div>
             <div className="flex-grow flex items-center">
-              <p className="font-apex-sans text-xl text-apex-secondary leading-tight font-black tracking-tight uppercase group-hover:scale-105 transition-transform">Initialize<br/>Staff Node</p>
+              <p className="font-apex-sans text-xl text-apex-bg font-bold">New User</p>
             </div>
           </div>
 
@@ -386,10 +379,10 @@ export default function UsersManagement() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-apex-sans">
           <div
-            className="absolute inset-0 bg-apex-bg/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowModal(false)}
           />
-          <div className="relative bg-apex-bg p-8 w-full max-w-md shadow-[0_0_30px_rgba(192,193,255,0.1)] rounded border border-apex-primary/30 text-apex-text apex-scanline-effect">
+          <div className="relative bg-apex-bg p-8 w-full max-w-md shadow-xl rounded-xl border border-apex-outline-variant text-apex-text">
             <button
               onClick={() => setShowModal(false)}
               className="absolute top-5 right-5 text-apex-on-surface-variant hover:text-apex-text transition-colors cursor-pointer"
@@ -397,28 +390,28 @@ export default function UsersManagement() {
               <X size={20} />
             </button>
 
-            <h2 className="text-xl font-apex-sans font-black text-apex-text uppercase mb-2">
-              {editId ? "CONFIGURE STAFF NODE" : "INITIALIZE STAFF NODE"}
+            <h2 className="text-xl font-apex-sans font-bold text-apex-text mb-2">
+              {editId ? "Edit User" : "New User"}
             </h2>
             {!editId && (
-              <p className="text-[10px] text-apex-on-surface-variant/70 font-apex-mono mb-6 leading-relaxed uppercase">
-                A TEMPORARY SESSION TOKEN <span className="font-bold text-apex-primary">seller</span> WILL BE SET. THE CORRESPONDING STAFF NODE MUST UPDATE IT ON INITIAL HANDSHAKE.
+              <p className="text-sm text-apex-on-surface-variant mb-6 leading-relaxed">
+                A temporary password <span className="font-bold text-apex-primary">seller</span> will be set. Users must update this on their first login.
               </p>
             )}
 
             {modalError && (
-              <div className="mb-4 p-3 bg-apex-error/10 text-apex-error text-xs font-apex-mono border border-apex-error/30 rounded uppercase">
-                [ERROR]: {modalError}
+              <div className="mb-4 p-3 bg-apex-error-container text-apex-error text-sm border border-apex-error-container rounded">
+                {modalError}
               </div>
             )}
 
             <form onSubmit={handleSave} className="space-y-5 mt-4">
               <div>
-                <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">
-                  IDENTIFIER_STRING [EMAIL]
+                <label className="block text-sm font-medium text-apex-on-surface-variant mb-2">
+                  Email Address
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-apex-on-surface-variant/40">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-apex-on-surface-variant/50">
                     <Mail size={16} />
                   </div>
                   <input
@@ -426,17 +419,17 @@ export default function UsersManagement() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-apex-surface-low border border-apex-outline-variant/30 text-apex-text pl-11 pr-4 py-3 rounded text-xs focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all font-apex-mono"
-                    placeholder="sys.op@apex.com"
+                    className="w-full bg-apex-surface border border-apex-outline-variant text-apex-text pl-11 pr-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-apex-primary/30 transition-all"
+                    placeholder="user@example.com"
                   />
                 </div>
               </div>
 
               {editId && (
                 <div>
-                  <label className="block text-[10px] font-bold text-apex-on-surface-variant/60 uppercase tracking-widest font-apex-mono mb-2">
-                    NEW SECURITY PROTOCOL{" "}
-                    <span className="text-apex-on-surface-variant/45 normal-case font-normal">
+                  <label className="block text-sm font-medium text-apex-on-surface-variant mb-2">
+                    New Password{" "}
+                    <span className="text-apex-on-surface-variant/60 font-normal">
                       (leave blank to keep current)
                     </span>
                   </label>
@@ -444,7 +437,7 @@ export default function UsersManagement() {
                     type="password"
                     value={editPassword}
                     onChange={(e) => setEditPassword(e.target.value)}
-                    className="w-full bg-apex-surface-low border border-apex-outline-variant/30 text-apex-text px-4 py-3 rounded text-xs focus:outline-none focus:border-apex-primary/50 focus:ring-1 focus:ring-apex-primary/30 transition-all font-apex-mono"
+                    className="w-full bg-apex-surface border border-apex-outline-variant text-apex-text px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-apex-primary/30 transition-all"
                     placeholder="••••••••"
                   />
                 </div>
@@ -454,17 +447,17 @@ export default function UsersManagement() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 py-2.5 bg-apex-surface-low hover:bg-apex-surface border border-apex-outline-variant/30 text-apex-text text-xs font-apex-mono uppercase tracking-wider rounded transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 bg-apex-surface border border-apex-outline-variant text-apex-text text-sm font-medium rounded-lg hover:bg-apex-surface-low transition-colors cursor-pointer"
                 >
-                  ABORT
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={modalLoading}
-                  className="flex-1 py-2.5 bg-apex-primary hover:brightness-110 text-apex-bg text-xs font-apex-sans font-bold uppercase tracking-wider rounded disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(192,193,255,0.2)]"
+                  className="flex-1 py-2.5 bg-apex-primary hover:bg-apex-primary/90 text-apex-bg text-sm font-medium rounded-lg disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
                   {modalLoading && <Loader2 size={14} className="animate-spin" />}
-                  {editId ? "COMMIT CHANGES" : "AUTHORIZE"}
+                  {editId ? "Save Changes" : "Create User"}
                 </button>
               </div>
             </form>
