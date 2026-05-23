@@ -12,7 +12,7 @@ export const initDB = () => {
   });
 };
 
-export const saveDraft = async (key: string, data: any) => {
+export const saveDraft = async <T>(key: string, data: T) => {
   const db = await initDB();
   return new Promise<void>((resolve, reject) => {
     const tx = db.transaction('drafts', 'readwrite');
@@ -23,9 +23,9 @@ export const saveDraft = async (key: string, data: any) => {
   });
 };
 
-export const getDraft = async (key: string) => {
+export const getDraft = async <T = unknown>(key: string) => {
   const db = await initDB();
-  return new Promise<any>((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     const tx = db.transaction('drafts', 'readonly');
     const store = tx.objectStore('drafts');
     const req = store.get(key);

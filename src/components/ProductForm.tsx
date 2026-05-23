@@ -892,13 +892,14 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
     if (isEdit) return;
     let mounted = true;
     
-    getDraft('product_queue').then((draft: any) => {
+    getDraft('product_queue').then((draft: unknown) => {
+      const draftArray = draft as QueueItem[];
       if (!mounted) return;
-      if (draft && Array.isArray(draft) && draft.length > 0) {
+      if (draftArray && Array.isArray(draftArray) && draftArray.length > 0) {
         // Only restore if there's actual data
-        const hasContent = draft.length > 1 || draft[0].name !== '' || draft[0].imageFile !== null;
+        const hasContent = draftArray.length > 1 || draftArray[0].name !== '' || draftArray[0].imageFile !== null;
         if (hasContent) {
-          const restored = draft.map((item: QueueItem) => {
+          const restored = draftArray.map((item: QueueItem) => {
             // Regenerate object URLs from the restored File objects since blob URLs expire across sessions
             if (item.imageFile) item.imagePreview = URL.createObjectURL(item.imageFile);
             item.extraImages.forEach(img => {
