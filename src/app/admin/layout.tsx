@@ -238,30 +238,16 @@ export default function AdminLayout({
           {/* Floating Vertical Toolbar (Right Edge) */}
           <div className="fixed top-6 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
             
-            {/* Row 1: Search + Profile */}
-            <div className="flex items-center gap-2 pointer-events-auto">
-              {/* Expandable Search */}
-              <div className="group flex items-center bg-apex-surface/80 backdrop-blur-md border border-apex-outline shadow-sm rounded-full overflow-hidden transition-all duration-300 w-10 hover:w-[250px] focus-within:w-[250px] h-10 hidden sm:flex">
-                <div className="w-10 h-10 flex items-center justify-center shrink-0 text-apex-on-surface-variant group-hover:text-apex-primary transition-colors">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="Search globally..." 
-                  className="bg-transparent border-none outline-none text-sm text-apex-text w-full pr-4" 
-                />
+            {/* Row 1: Search */}
+            <div className="pointer-events-auto group flex items-center bg-apex-surface/80 backdrop-blur-md border border-apex-outline shadow-sm rounded-full overflow-hidden transition-all duration-300 w-10 hover:w-[250px] focus-within:w-[250px] h-10 hidden sm:flex">
+              <div className="w-10 h-10 flex items-center justify-center shrink-0 text-apex-on-surface-variant group-hover:text-apex-primary transition-colors">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               </div>
-
-              {/* Profile */}
-              <div 
-                className="w-10 h-10 rounded-full bg-apex-surface border border-apex-outline shadow-sm overflow-hidden flex items-center justify-center cursor-pointer hover:border-apex-primary transition-colors shrink-0 relative group"
-                onClick={logout}
-              >
-                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=apex" alt="avatar" className="w-full h-full object-cover" />
-                <div className="absolute right-12 top-1/2 -translate-y-1/2 bg-apex-surface-highest text-apex-text text-xs font-bold px-2 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-sm border border-apex-outline">
-                  Logout {displayName}
-                </div>
-              </div>
+              <input 
+                type="text" 
+                placeholder="Search globally..." 
+                className="bg-transparent border-none outline-none text-sm text-apex-text w-full pr-4" 
+              />
             </div>
 
             {/* Row 2: Notification Bell */}
@@ -278,6 +264,17 @@ export default function AdminLayout({
               >
                 {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
               </button>
+            </div>
+
+            {/* Row 4: Profile */}
+            <div 
+              className="pointer-events-auto w-10 h-10 rounded-full bg-apex-surface border border-apex-outline shadow-sm overflow-hidden flex items-center justify-center cursor-pointer hover:border-apex-primary transition-colors shrink-0 relative group"
+              onClick={logout}
+            >
+              <img src="https://api.dicebear.com/7.x/bottts/svg?seed=apex" alt="avatar" className="w-full h-full object-cover" />
+              <div className="absolute right-12 top-1/2 -translate-y-1/2 bg-apex-surface-highest text-apex-text text-xs font-bold px-2 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-sm border border-apex-outline">
+                Logout {displayName}
+              </div>
             </div>
           </div>
 
