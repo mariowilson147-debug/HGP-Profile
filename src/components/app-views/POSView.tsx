@@ -31,6 +31,8 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
   const [search, setSearch] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [completedOrder, setCompletedOrder] = useState<CartItem[] | null>(null);
+  const [completedTotal, setCompletedTotal] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -160,12 +162,9 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
       }
 
       setSuccess(true);
+      setCompletedOrder([...cart]);
+      setCompletedTotal(total);
       setCart([]);
-      
-      // Reset success message after 3s
-      setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
 
       // Refresh inventory list (rudimentary refresh)
       const { data: newInventory } = await supabase
@@ -193,13 +192,66 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
     }
   };
 
+  const printReceipt = () => {
+    if (!completedOrder) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    const html = `
+      <html>
+        <head>
+          <title>Receipt</title>
+          <style>
+            body { font-family: monospace; width: 300px; margin: 0 auto; padding: 20px; color: #000; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .header h2 { margin: 0 0 5px 0; font-size: 24px; }
+            .header p { margin: 0; font-size: 12px; }
+            .item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+            .item-name { flex: 1; padding-right: 10px; }
+            .total { border-top: 1px dashed #000; border-bottom: 1px dashed #000; margin-top: 15px; padding: 15px 0; font-weight: bold; font-size: 18px; display: flex; justify-content: space-between; }
+            .footer { text-align: center; margin-top: 30px; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2>RECEIPT</h2>
+            <p>${new Date().toLocaleString()}</p>
+          </div>
+          <div class="items">
+            ${completedOrder.map(item => `
+              <div class="item">
+                <span class="item-name">${item.cart_quantity}x ${item.name}</span>
+                <span>${(item.retail_price * item.cart_quantity).toLocaleString()}</span>
+              </div>
+            `).join('')}
+          </div>
+          <div class="total">
+            <span>TOTAL</span>
+            <span>KES ${completedTotal.toLocaleString()}</span>
+          </div>
+          <div class="footer">
+            <p>Thank you for your business!</p>
+          </div>
+          <script>
+            window.onload = () => {
+              window.print();
+              setTimeout(() => window.close(), 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-8rem)]">
+    <div className="flex flex-col lg:flex-row gap-8 lg:h-[calc(100vh-8rem)] min-h-[calc(100vh-8rem)]">
       
       {/* Left: Products Grid */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col lg:h-full lg:overflow-hidden">
         <div className="mb-6 flex-shrink-0">
           <Link href={returnPath} className="hover:opacity-80 transition-opacity">
             <h1 className="text-3xl font-display font-bold text-slate-900">Point of Sale</h1>
@@ -277,7 +329,7 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
       </div>
 
       {/* Right: Cart */}
-      <div className="w-full lg:w-[400px] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-shrink-0 h-full">
+      <div className="w-full lg:w-[400px] flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm lg:overflow-hidden flex-shrink-0 lg:h-full min-h-[500px]">
         <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-center gap-3">
           <ShoppingCart className="text-slate-500" size={20} />
           <h2 className="font-display font-bold text-lg text-slate-900">Current Order</h2>
@@ -339,10 +391,24 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
             </span>
           </div>
 
-          {success ? (
-            <div className="w-full py-4 bg-green-500 text-white rounded-xl flex items-center justify-center gap-2 font-bold shadow-sm animate-in fade-in zoom-in duration-300">
-              <CheckCircle2 size={20} />
-              Checkout Complete!
+          {success && completedOrder ? (
+            <div className="w-full space-y-3 animate-in fade-in zoom-in duration-300">
+              <div className="py-3 bg-green-50 text-green-600 rounded-xl flex items-center justify-center gap-2 font-bold mb-4">
+                <CheckCircle2 size={20} />
+                Checkout Complete
+              </div>
+              <button
+                onClick={printReceipt}
+                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl flex items-center justify-center gap-2 font-bold shadow-sm transition-all"
+              >
+                Print Receipt
+              </button>
+              <button
+                onClick={() => { setSuccess(false); setCompletedOrder(null); setCompletedTotal(0); }}
+                className="w-full py-3.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl flex items-center justify-center gap-2 font-bold shadow-sm transition-all"
+              >
+                New Sale
+              </button>
             </div>
           ) : (
             <button
