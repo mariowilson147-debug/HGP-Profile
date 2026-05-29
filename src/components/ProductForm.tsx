@@ -11,6 +11,7 @@ import { UploadCloud, Save, Plus, Trash2, CheckCircle2,
 } from "lucide-react";
 import imageCompression from 'browser-image-compression';
 import { saveDraft, getDraft, deleteDraft } from "@/lib/idb";
+import SelectDropdown from "@/components/ui/SelectDropdown";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -510,13 +511,11 @@ function QueueCard({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Category</label>
-                  <select
+                  <SelectDropdown
                     value={item.category}
-                    onChange={e => onChange(item.id, { category: e.target.value, componentType: '', stemPrice: '', compatibleVaseIds: [] })}
-                    className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg px-4 py-2.5 text-sm text-apex-text focus:outline-none focus:border-apex-primary focus:ring-1 focus:ring-apex-primary transition-all"
-                  >
-                    {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
+                    onChange={(val) => onChange(item.id, { category: val, componentType: '', stemPrice: '', compatibleVaseIds: [] })}
+                    options={categories.map(c => ({ label: c.name, value: c.name }))}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Tags</label>
@@ -567,27 +566,27 @@ function QueueCard({
             <div className="flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Visibility</label>
-                <select
+                <SelectDropdown
                   value={item.visibility}
-                  onChange={e => onChange(item.id, { visibility: e.target.value as 'visible' | 'hidden' | 'archived' })}
-                  className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg px-3 py-2 text-sm text-apex-text focus:outline-none focus:border-apex-primary focus:ring-1 focus:ring-apex-primary transition-all"
-                >
-                  <option value="visible">Public (Visible)</option>
-                  <option value="hidden">Hidden (Admin Only)</option>
-                  <option value="archived">Archived</option>
-                </select>
+                  onChange={(val) => onChange(item.id, { visibility: val as 'visible' | 'hidden' | 'archived' })}
+                  options={[
+                    { label: 'Public (Visible)', value: 'visible' },
+                    { label: 'Hidden (Admin Only)', value: 'hidden' },
+                    { label: 'Archived', value: 'archived' }
+                  ]}
+                />
               </div>
               <div>
                 <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Availability</label>
-                <select
+                <SelectDropdown
                   value={item.availability}
-                  onChange={e => onChange(item.id, { availability: e.target.value as 'in_stock' | 'out_of_stock' | 'coming_soon' })}
-                  className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg px-3 py-2 text-sm text-apex-text focus:outline-none focus:border-apex-primary focus:ring-1 focus:ring-apex-primary transition-all"
-                >
-                  <option value="in_stock">In Stock</option>
-                  <option value="out_of_stock">Out of Stock</option>
-                  <option value="coming_soon">Coming Soon</option>
-                </select>
+                  onChange={(val) => onChange(item.id, { availability: val as 'in_stock' | 'out_of_stock' | 'coming_soon' })}
+                  options={[
+                    { label: 'In Stock', value: 'in_stock' },
+                    { label: 'Out of Stock', value: 'out_of_stock' },
+                    { label: 'Coming Soon', value: 'coming_soon' }
+                  ]}
+                />
               </div>
               
               <div className="pt-2">

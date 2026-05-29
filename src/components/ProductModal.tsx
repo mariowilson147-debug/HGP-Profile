@@ -18,6 +18,7 @@ interface ProductModalProps {
   onClose: () => void;
   user: User | null;
   allProducts?: Product[];
+  isClientShare?: boolean;
 }
 
 // Build full images array for a product
@@ -28,7 +29,7 @@ function getProductImages(product: Product): string[] {
   return [product.image_url, ...extras].filter(Boolean);
 }
 
-export default function ProductModal({ product, isOpen, onClose, user, allProducts = [] }: ProductModalProps) {
+export default function ProductModal({ product, isOpen, onClose, user, allProducts = [], isClientShare = false }: ProductModalProps) {
   const { openChat } = useChat();
   const { settings } = useSettings();
   const [selectedVaseImage, setSelectedVaseImage] = useState<string | null>(null);
@@ -152,7 +153,7 @@ export default function ProductModal({ product, isOpen, onClose, user, allProduc
 
               {/* Pricing & Actions */}
               <div className="flex items-end justify-between gap-4 mt-auto">
-                {user ? (
+                {user && !isClientShare ? (
                   <div className="flex flex-col gap-1">
                     {user.role === 'admin' && (
                       <div className="text-[10px] text-slate-500 font-medium mb-1">
@@ -181,7 +182,7 @@ export default function ProductModal({ product, isOpen, onClose, user, allProduc
                   </div>
                 )}
 
-                {!user && (
+                {(!user || isClientShare) && (
                   <div className="flex items-center gap-2">
                     {settings.enableWhatsapp && settings.whatsappNumber && (
                       <a

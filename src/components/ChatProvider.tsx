@@ -7,6 +7,7 @@ import { MessageSquare } from "lucide-react";
 
 const ChatDrawer = dynamic(() => import("./ChatDrawer"), { ssr: false });
 import { getMessagesBySession } from "@/lib/actions";
+import ShareWidget from "./ShareWidget";
 
 interface ChatContextType {
   isChatOpen: boolean;
@@ -92,6 +93,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     <ChatContext.Provider value={{ isChatOpen, openChat, closeChat, initialMessage }}>
       {children}
       <ChatDrawer />
+
+      {/* Share Widget — only on non-admin pages */}
+      {!isAdminRoute && <ShareWidget />}
 
       {/* Floating Chat Button — only on public pages, not admin */}
       {!isAdminRoute && (

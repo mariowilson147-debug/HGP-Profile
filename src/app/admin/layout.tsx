@@ -36,8 +36,13 @@ function AdminSidebarNav() {
   const navLinks = [
     { name: "Command", href: "/admin", active: pathname === "/admin" && activeTab === "overview", icon: Terminal },
     { name: "Registry", href: "/admin/products", active: pathname === "/admin/products" || (pathname === "/admin" && activeTab === "categories"), icon: Database },
-
     { name: "Nodes", href: "/admin/users", active: pathname === "/admin/users", icon: Users },
+    { name: "Branches", href: "/admin/branches", active: pathname === "/admin/branches", icon: Activity },
+    { name: "Inventory", href: "/admin/inventory", active: pathname === "/admin/inventory", icon: Database },
+    { name: "Adjustments", href: "/admin/adjustments", active: pathname === "/admin/adjustments", icon: Activity },
+    { name: "Procurement", href: "/admin/procurement", active: pathname === "/admin/procurement", icon: Download },
+    { name: "Transfers", href: "/admin/transfers", active: pathname === "/admin/transfers", icon: Activity },
+    { name: "Reports", href: "/admin/reports", active: pathname === "/admin/reports", icon: Tag },
   ];
 
   return (

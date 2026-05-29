@@ -16,40 +16,77 @@ const getAdminClient = () => {
   });
 };
 
+import { createSupabaseServerClient } from "./supabase/server";
+
+export async function updateMyProfile(nickname: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const adminClient = getAdminClient();
+  const { error } = await adminClient.from('user_profiles').update({ nickname }).eq('id', session.user.id);
+  
+  if (error) throw new Error(error.message);
+  return true;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type UserData = {
   id: string;
   email: string;
-  role: "admin" | "wholesale";
+  role: string;
+  branch_id?: string | null;
+  assigned_branches?: string[] | null;
+  nickname?: string | null;
   created_at: string;
   is_banned: boolean;
+};
+
+export type BranchData = {
+  id: string;
+  name: string;
 };
 
 // ─── List users ───────────────────────────────────────────────────────────────
 
 export async function getUsers(): Promise<UserData[]> {
   const supabase = getAdminClient();
-  const { data, error } = await supabase.auth.admin.listUsers();
-  if (error) throw new Error(error.message);
+  const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+  if (authError) throw new Error(authError.message);
+
+  const { data: profileData, error: profileError } = await supabase.from('user_profiles').select('*');
+  if (profileError) throw new Error(profileError.message);
 
   const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID;
 
-  return data.users
-    .map((u) => ({
-      id: u.id,
-      email: u.email || "",
-      role: (u.id === ADMIN_UID ? "admin" : "wholesale") as "admin" | "wholesale",
-      created_at: u.created_at,
-      // Supabase sets banned_until to a far-future date when banned
-      is_banned: !!u.banned_until && new Date(u.banned_until) > new Date(),
-    }))
+  return authData.users
+    .map((u) => {
+      const profile = profileData?.find(p => p.id === u.id);
+      return {
+        id: u.id,
+        email: u.email || "",
+        role: profile?.role || (u.id === ADMIN_UID ? "admin" : "wholesale"),
+        branch_id: profile?.branch_id || null,
+        assigned_branches: profile?.assigned_branches || null,
+        nickname: profile?.nickname || null,
+        created_at: u.created_at,
+        is_banned: !!u.banned_until && new Date(u.banned_until) > new Date(),
+      };
+    })
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
+
+export async function getBranches(): Promise<BranchData[]> {
+  const supabase = getAdminClient();
+  const { data, error } = await supabase.from('branches').select('id, name').order('name');
+  if (error) throw new Error(error.message);
+  return data || [];
 }
 
 // ─── Create user (default password: seller) ──────────────────────────────────
 
-export async function createUser(email: string) {
+export async function createUser(email: string, role: string = 'wholesale', branch_id: string | null = null, assigned_branches: string[] | null = null) {
   const supabase = getAdminClient();
   const { data, error } = await supabase.auth.admin.createUser({
     email,
@@ -58,20 +95,48 @@ export async function createUser(email: string) {
     user_metadata: { must_change_password: true },
   });
   if (error) throw new Error(error.message);
+  
+  if (data?.user) {
+    await supabase.from('user_profiles').insert([{
+      id: data.user.id,
+      role,
+      branch_id,
+      assigned_branches
+    }]);
+  }
   return data.user;
 }
 
 // ─── Update user (email / password) ──────────────────────────────────────────
 
-export async function updateUser(id: string, email?: string, password?: string) {
+export async function updateUser(id: string, email?: string, password?: string, role?: string, branch_id?: string | null, assigned_branches?: string[] | null) {
   const supabase = getAdminClient();
   const updates: { email?: string; password?: string } = {};
   if (email) updates.email = email;
   if (password) updates.password = password;
 
-  const { data, error } = await supabase.auth.admin.updateUserById(id, updates);
-  if (error) throw new Error(error.message);
-  return data.user;
+  if (Object.keys(updates).length > 0) {
+    const { error } = await supabase.auth.admin.updateUserById(id, updates);
+    if (error) throw new Error(error.message);
+  }
+
+  if (role || branch_id !== undefined || assigned_branches !== undefined) {
+    const { data: currentProfile } = await supabase.from('user_profiles').select('role, branch_id, assigned_branches').eq('id', id).single();
+    
+    const payload = {
+      id,
+      role: role || currentProfile?.role || 'wholesale',
+      branch_id: branch_id !== undefined ? (branch_id || null) : currentProfile?.branch_id,
+      assigned_branches: assigned_branches !== undefined ? (assigned_branches || null) : currentProfile?.assigned_branches
+    };
+    
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .upsert(payload);
+    if (profileError) throw new Error(profileError.message);
+  }
+  
+  return { success: true };
 }
 
 // ─── Delete user ──────────────────────────────────────────────────────────────

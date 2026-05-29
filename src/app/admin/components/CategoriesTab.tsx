@@ -2,9 +2,10 @@
 "use client";
 
 import { useState } from "react";
-import { Bookmark, Plus, Trash2, Save, Package, LayoutGrid, Plug, Shirt, Home, Wrench, Box, ShoppingCart, Lightbulb, Bath, Sofa, MoreVertical, Filter, CloudLightning } from "lucide-react";
+import { Bookmark, Plus, Trash2, Save, Package, LayoutGrid, Plug, Shirt, Home, Wrench, Box, ShoppingCart, Lightbulb, Bath, Sofa, MoreVertical, Filter, CloudLightning, ArrowLeft, ArrowRight } from "lucide-react";
 import { useSettings } from "@/components/SettingsProvider";
 import { Category, addDbCategory, updateDbCategory, deleteDbCategory, syncCategoriesFromProducts, deleteEmptyCategories } from "@/lib/actions";
+import SelectDropdown from "@/components/ui/SelectDropdown";
 
 const AVAILABLE_ICONS = [
   "Lightbulb", "Bath", "Sofa", "Plug", "Shirt", "Package", "Home", "Wrench", "Box", "ShoppingCart", "LayoutGrid"
@@ -22,7 +23,7 @@ export default function CategoriesTab() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 72;
   const totalPages = Math.max(1, Math.ceil(localCategories.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const visibleCategories = localCategories.slice(startIndex, startIndex + itemsPerPage);
@@ -155,19 +156,15 @@ export default function CategoriesTab() {
                     <tr key={cat.id} className="hover:bg-apex-surface-lowest transition-colors group">
                       {/* Icon */}
                       <td className="py-3 px-6">
-                        <div className="w-12 h-12 bg-apex-surface-low border border-apex-outline-variant rounded-lg flex items-center justify-center shrink-0 group-hover:border-apex-primary/50 transition-colors relative overflow-hidden text-apex-text group-hover:text-apex-primary">
-                          <select
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            value={cat.icon_name || "Package"}
-                            onChange={(e) => {
-                              handleUpdate(cat.id, 'icon_name', e.target.value);
-                              handleSave(cat.id);
-                            }}
-                          >
-                            {AVAILABLE_ICONS.map(i => <option key={i} className="bg-apex-surface text-apex-text" value={i}>{i}</option>)}
-                          </select>
-                          <CatIcon size={20} className={cat.is_visible ? "text-apex-primary" : "text-apex-on-surface-variant"} />
-                        </div>
+                        <SelectDropdown
+                          value={cat.icon_name || "Package"}
+                          onChange={(val) => {
+                            handleUpdate(cat.id, 'icon_name', val);
+                            handleSave(cat.id);
+                          }}
+                          options={AVAILABLE_ICONS.map(i => ({ label: i, value: i }))}
+                          className="w-32"
+                        />
                       </td>
                       
                       {/* Name */}
@@ -247,26 +244,55 @@ export default function CategoriesTab() {
         </div>
         
         {/* Registry Footer Pagination */}
-        <div className="px-6 py-4 bg-apex-surface-lowest border-t border-apex-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-sans text-sm text-apex-on-surface-variant">
-          <div className="flex items-center gap-4">
-            <span>Showing {localCategories.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + itemsPerPage, localCategories.length)} of {localCategories.length}</span>
+        {totalPages > 1 && (
+          <div className="flex justify-center py-6 bg-apex-surface-lowest border-t border-apex-outline-variant">
+            <div className="inline-flex items-center bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.05)] px-4 py-2.5 gap-3 border border-slate-50">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
+              >
+                <ArrowLeft size={20} strokeWidth={2.5} />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                if (
+                  page === 1 || 
+                  page === totalPages || 
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-medium transition-all ${
+                        currentPage === page 
+                          ? 'bg-[#6F7A8B] text-white shadow-sm' 
+                          : 'bg-[#F1F3F5] text-slate-700 hover:bg-[#E5E7EB]'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                } else if (
+                  page === currentPage - 2 ||
+                  page === currentPage + 2
+                ) {
+                  return <span key={page} className="text-slate-400 px-1">...</span>;
+                }
+                return null;
+              })}
+
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
+              >
+                <ArrowRight size={20} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
-          <div className="flex gap-1.5 text-xs text-apex-text select-none">
-            <button 
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >&lt;</button>
-            <span className="px-3 h-8 flex items-center justify-center rounded border border-apex-secondary bg-apex-surface-low text-apex-secondary font-bold">
-              {currentPage} / {totalPages}
-            </span>
-            <button 
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >&gt;</button>
-          </div>
-        </div>
+        )}
 
       </div>
 

@@ -15,6 +15,7 @@ export default function Header() {
   const [categories, setCategories] = useState<string[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isStrict, setIsStrict] = useState(false);
+  const [isClientMode, setIsClientMode] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -27,15 +28,17 @@ export default function Header() {
       try {
         const params = newSearchParams();
         const strictMode = params.get("strict") === "true";
-        const catParam = params.get("category");
+        const clientMode = params.get("client") === "true";
+        const catParam = params.get("categories") || params.get("category");
         setIsStrict(strictMode);
+        setIsClientMode(clientMode);
 
         const products = await getProducts();
         setAllProducts(products);
         const unique = Array.from(new Set(products.map(p => p.category)));
         
         let cats = ["All Collections", ...unique];
-        if (strictMode && catParam) {
+        if ((strictMode || clientMode) && catParam) {
           const allowed = catParam.split(',');
           cats = cats.filter(c => allowed.includes(c));
         }
@@ -76,6 +79,7 @@ export default function Header() {
   const handleLoginClick = () => {
     if (user) {
       if (user.role === 'admin') router.push('/admin');
+      else if (['seller', 'manager', 'ceo'].includes(user.role)) router.push('/seller');
     } else {
       router.push('/login');
     }
@@ -225,17 +229,19 @@ export default function Header() {
           </motion.form>
         </div>
 
-        <nav className="hidden md:flex flex-none items-center justify-center gap-8">
-          {categories.filter(c => c !== "All Collections").slice(0, 4).map((cat) => (
-            <Link 
-              key={cat}
-              href={`/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
-              className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors"
-            >
-              {cat}
-            </Link>
-          ))}
-        </nav>
+        {!isClientMode && (
+          <nav className="hidden md:flex flex-none items-center justify-center gap-8">
+            {categories.filter(c => c !== "All Collections").slice(0, 4).map((cat) => (
+              <Link 
+                key={cat}
+                href={`/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
+                className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors"
+              >
+                {cat}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         {/* Right: Icons */}
         <div className="flex-1 flex items-center justify-end gap-3 md:gap-4">
@@ -267,25 +273,32 @@ export default function Header() {
               exit={{ opacity: 0, y: -10 }}
               className="absolute top-[4.5rem] left-0 right-0 w-full bg-[#f1f0ec]/95 backdrop-blur-xl border border-[#e5e4e0] shadow-2xl rounded-3xl md:hidden flex flex-col p-6 gap-4 z-40"
             >
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Categories</h3>
-              <div className="flex flex-col gap-5">
-                {categories.map((cat) => (
-                  <Link 
-                    key={cat}
-                    href={cat === "All Collections" ? "/" : `/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-base font-medium text-slate-600 hover:text-slate-900"
-                  >
-                    {cat}
-                  </Link>
-                ))}
-              </div>
-
-              <div className="h-px w-full bg-slate-200/60 my-2" />
+              {!isClientMode && (
+                <>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Categories</h3>
+                  <div className="flex flex-col gap-5">
+                    {categories.map((cat) => (
+                      <Link 
+                        key={cat}
+                        href={cat === "All Collections" ? "/" : `/?category=${encodeURIComponent(cat)}${isStrict ? '&strict=true' : ''}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="text-base font-medium text-slate-600 hover:text-slate-900"
+                      >
+                        {cat}
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="h-px w-full bg-slate-200/60 my-2" />
+                </>
+              )}
               
               {user ? (
                 <div className="flex items-center justify-between mt-1">
-                  <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setMobileMenuOpen(false); user.role === 'admin' && router.push('/admin'); }}>
+                  <div className="flex items-center gap-3 cursor-pointer" onClick={() => { 
+                    setMobileMenuOpen(false); 
+                    if (user.role === 'admin') router.push('/admin');
+                    else if (['seller', 'manager', 'ceo'].includes(user.role)) router.push('/seller');
+                  }}>
                     <div className="w-10 h-10 bg-white border border-slate-300 rounded-full flex items-center justify-center text-slate-700 font-bold text-sm shrink-0">
                       {user.email?.[0].toUpperCase() || "U"}
                     </div>

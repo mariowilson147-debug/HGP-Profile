@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 
-export default function ProtectedRoute({ children, reqRole }: { children: React.ReactNode, reqRole?: "admin" | "authenticated" | "wholesale" }) {
+export default function ProtectedRoute({ children, reqRole, allowedRoles }: { children: React.ReactNode, reqRole?: "admin" | "authenticated" | "wholesale", allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
@@ -19,13 +19,16 @@ export default function ProtectedRoute({ children, reqRole }: { children: React.
         if (reqRole === "admin" && user.role !== "admin") {
           // Regular user trying to access admin
           router.push("/");
+        } else if (allowedRoles && !allowedRoles.includes(user.role)) {
+          // User role not in the allowed list
+          router.push("/");
         } else {
           // Authorized
           setIsReady(true);
         }
       }
     }
-  }, [user, isLoading, router, reqRole]);
+  }, [user, isLoading, router, reqRole, allowedRoles]);
 
   if (!isReady) {
     return (

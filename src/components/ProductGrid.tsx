@@ -7,11 +7,11 @@ import ImageCarousel from "./ImageCarousel";
 
 const ProductModal = dynamic(() => import("./ProductModal"), { ssr: false });
 import { useAuth } from "@/components/AuthProvider";
-import { Search, Flower2 } from "lucide-react";
+import { Search, Flower2, ArrowLeft, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 
-const ITEMS_PER_PAGE = 52;
+const ITEMS_PER_PAGE = 72;
 
 
 // Build the full images array for a product (primary + variation images)
@@ -26,6 +26,8 @@ function ProductGridContent({ products }: { products: Product[] }) {
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q") || "";
   const categoryQuery = searchParams.get("category");
+  const categoriesQuery = searchParams.get("categories");
+  const clientMode = searchParams.get("client") === "true";
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState(categoryQuery || "All Collections");
@@ -35,7 +37,13 @@ function ProductGridContent({ products }: { products: Product[] }) {
   const filteredProducts = useMemo(() => {
     return products
       .filter(p => p.visibility !== 'hidden' && p.visibility !== 'archived')
-      .filter(p => selectedCategory === "All Collections" || p.category === selectedCategory)
+      .filter(p => {
+        if (categoriesQuery) {
+          const allowed = categoriesQuery.split(',');
+          return allowed.includes(p.category);
+        }
+        return selectedCategory === "All Collections" || p.category === selectedCategory;
+      })
       .filter(p => p.name.toLowerCase().includes(urlQuery.toLowerCase()) || (p.tags && p.tags.some(t => t.toLowerCase().includes(urlQuery.toLowerCase()))))
       .sort((a, b) => {
         if (a.is_featured && !b.is_featured) return -1;
@@ -58,40 +66,6 @@ function ProductGridContent({ products }: { products: Product[] }) {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const renderPagination = () => {
-    const pages: React.ReactNode[] = [];
-    let ellipsisCount = 0;
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-        pages.push(
-          <button
-            key={i}
-            onClick={() => handlePageChange(i)}
-            aria-label={`Page ${i}`}
-            aria-current={currentPage === i ? "page" : undefined}
-            className={`w-10 h-10 flex items-center justify-center border text-sm font-medium transition-colors ${
-              currentPage === i
-                ? "bg-slate-900 text-white border-slate-900"
-                : "border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-400"
-            }`}
-          >
-            {i}
-          </button>
-        );
-      } else {
-        const lastItem = pages[pages.length - 1];
-        const lastKey = lastItem && (lastItem as React.ReactElement).key;
-        if (!String(lastKey).startsWith("ellipsis")) {
-          ellipsisCount++;
-          pages.push(
-            <span key={`ellipsis-${ellipsisCount}`} className="px-2 text-slate-400 select-none">…</span>
-          );
-        }
-      }
-    }
-    return pages;
   };
 
   return (
@@ -186,10 +160,52 @@ function ProductGridContent({ products }: { products: Product[] }) {
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-20 mb-10">
-          <button disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)} className="w-10 h-10 flex items-center justify-center border border-slate-200 disabled:opacity-50">&lt;</button>
-          {renderPagination()}
-          <button disabled={currentPage === totalPages} onClick={() => handlePageChange(currentPage + 1)} className="w-10 h-10 flex items-center justify-center border border-slate-200 disabled:opacity-50">&gt;</button>
+        <div className="flex justify-center mt-20 mb-10 pb-8">
+          <div className="inline-flex items-center bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.05)] px-4 py-2.5 gap-3 border border-slate-50">
+            <button 
+              onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
+            >
+              <ArrowLeft size={20} strokeWidth={2.5} />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+              if (
+                page === 1 || 
+                page === totalPages || 
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-medium transition-all ${
+                      currentPage === page 
+                        ? 'bg-[#6F7A8B] text-white shadow-sm' 
+                        : 'bg-[#F1F3F5] text-slate-700 hover:bg-[#E5E7EB]'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              } else if (
+                page === currentPage - 2 ||
+                page === currentPage + 2
+              ) {
+                return <span key={page} className="text-slate-400 px-1">...</span>;
+              }
+              return null;
+            })}
+
+            <button 
+              onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
+            >
+              <ArrowRight size={20} strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -199,6 +215,7 @@ function ProductGridContent({ products }: { products: Product[] }) {
         onClose={() => setSelectedProduct(null)}
         user={user}
         allProducts={products}
+        isClientShare={clientMode}
       />
     </div>
   );

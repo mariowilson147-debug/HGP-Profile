@@ -3,7 +3,15 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export type User = { id: string; email: string; role: "admin" | "wholesale" } | null;
+export type User = { 
+  id: string; 
+  email: string; 
+  role: "admin" | "ceo" | "manager" | "seller" | "wholesale";
+  branch_id?: string | null;
+  assigned_branches?: string[] | null;
+  nickname?: string | null;
+  avatar_url?: string | null;
+} | null;
 
 interface AuthContextType {
   user: User;
@@ -52,15 +60,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    async function fetchProfileAndSetUser(session: { user: { id: string; email?: string } }) {
+      const isExpired = checkExpiration(session);
+      if (isExpired) return;
+
+      let role: NonNullable<User>["role"] = session.user.id === ADMIN_UID ? "admin" : "wholesale";
+      let branch_id = null;
+      let assigned_branches = null;
+      let nickname = null;
+      let avatar_url = null;
+
+      if (session.user.id !== ADMIN_UID) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile) {
+          role = profile.role as NonNullable<User>["role"];
+          branch_id = profile.branch_id;
+          assigned_branches = profile.assigned_branches;
+          nickname = profile.nickname;
+          avatar_url = profile.avatar_url;
+        } else {
+          // If no profile exists, create a default wholesale profile
+          await supabase.from('user_profiles').insert([{ id: session.user.id, role: 'wholesale' }]);
+        }
+      }
+
+      if (mounted) {
+        setUser({ 
+          id: session.user.id, 
+          email: session.user.email || "", 
+          role, 
+          branch_id,
+          assigned_branches,
+          nickname,
+          avatar_url
+        });
+      }
+    }
+
     async function getInitialSession() {
       const { data: { session } } = await supabase.auth.getSession();
       if (mounted) {
         if (session?.user) {
-          const isExpired = checkExpiration(session);
-          if (!isExpired) {
-            const role = session.user.id === ADMIN_UID ? "admin" : "wholesale";
-            setUser({ id: session.user.id, email: session.user.email || "", role });
-          }
+          await fetchProfileAndSetUser(session);
         } else {
           setUser(null);
         }
@@ -73,11 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) {
         if (session?.user) {
-          const isExpired = checkExpiration(session);
-          if (!isExpired) {
-            const role = session.user.id === ADMIN_UID ? "admin" : "wholesale";
-            setUser({ id: session.user.id, email: session.user.email || "", role });
-          }
+          fetchProfileAndSetUser(session);
         } else {
           setUser(null);
           clearTimeout(expirationTimer);

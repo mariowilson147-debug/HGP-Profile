@@ -17,6 +17,7 @@ export type Product = {
   id: string;
   name: string;
   category: string;
+  sku?: string | null;
   image_url: string;
   buying_price: number;
   wholesale_price: number;
@@ -528,3 +529,128 @@ export async function getSystemMetrics() {
     };
   }
 }
+// --- Branches ---
+
+export async function createBranch(name: string, location: string | null) {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase.from('branches').insert([{ name, location }]).select().single();
+  if (error) throw error;
+  revalidatePath('/admin/branches');
+  return data;
+}
+
+export async function updateBranch(id: string, name: string, location: string | null) {
+  const supabase = getAdminSupabase();
+  const { data, error } = await supabase.from('branches').update({ name, location }).eq('id', id).select().single();
+  if (error) throw error;
+  revalidatePath('/admin/branches');
+  return data;
+}
+
+export async function deleteBranch(id: string) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from('branches').delete().eq('id', id);
+  if (error) throw error;
+  revalidatePath('/admin/branches');
+}
+
+export type InventoryAdjustment = {
+  id?: string;
+  branch_id: string;
+  product_id: string;
+  manager_id: string;
+  old_stock: number;
+  new_stock: number;
+  difference: number;
+  reason: string;
+  created_at?: string;
+};
+
+export async function createAdjustment(adjustment: InventoryAdjustment, inventoryId: string | null) {
+  const supabase = getAdminSupabase();
+  
+  // 1. Update or create inventory
+  if (inventoryId) {
+    const { error: invError } = await supabase
+      .from('inventory')
+      .update({ stock_level: adjustment.new_stock })
+      .eq('id', inventoryId);
+    if (invError) throw invError;
+  } else {
+    const { error: invError } = await supabase
+      .from('inventory')
+      .insert([{
+        branch_id: adjustment.branch_id,
+        product_id: adjustment.product_id,
+        stock_level: adjustment.new_stock,
+        reorder_level: 5 // Default reorder level
+      }]);
+    if (invError) throw invError;
+  }
+  
+  // 2. Log adjustment
+  const { error: adjError } = await supabase
+    .from('inventory_adjustments')
+    .insert([adjustment]);
+    
+  if (adjError) {
+    // Note: In a real system, we'd use a transaction or RPC to ensure atomic commits
+    console.error("Failed to log adjustment:", adjError);
+    throw adjError;
+  }
+}
+
+export async function getAdjustmentHistory(branchId: string, fromDate?: Date, toDate?: Date) {
+  const supabase = getAdminSupabase();
+  let query = supabase
+    .from('inventory_adjustments')
+    .select(`
+      id,
+      old_stock,
+      new_stock,
+      difference,
+      reason,
+      created_at,
+      manager_id,
+      products (
+        name,
+        sku,
+        image_url
+      )
+    `)
+    .eq('branch_id', branchId)
+    .order('created_at', { ascending: false });
+
+  if (fromDate) {
+    query = query.gte('created_at', fromDate.toISOString());
+  }
+  if (toDate) {
+    const endOfDay = new Date(toDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    query = query.lte('created_at', endOfDay.toISOString());
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  
+  // Fetch user names for the managers
+  if (data && data.length > 0) {
+    const managerIds = [...new Set(data.map((d: Record<string, unknown>) => d.manager_id as string))];
+    const { data: usersData } = await supabase.from('users').select('id, full_name').in('id', managerIds);
+    
+    if (usersData) {
+      const userMap = usersData.reduce((acc: Record<string, string>, user: Record<string, unknown>) => {
+        acc[user.id as string] = user.full_name as string;
+        return acc;
+      }, {});
+      
+      return data.map((d: Record<string, unknown>) => ({
+        ...d,
+        manager_name: userMap[d.manager_id as string] || 'Unknown User'
+      }));
+    }
+  }
+  
+  return data || [];
+}
+

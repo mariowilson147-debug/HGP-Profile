@@ -6,7 +6,7 @@ import { Product } from "@/lib/actions";
 import Link from "next/link";
 import {
   Trash2, Plus, Filter, Database, Package,
-  Eye, EyeOff, Archive, Star, Search, ChevronLeft, ChevronRight,
+  Eye, EyeOff, Archive, Star, Search, ChevronLeft, ChevronRight, ArrowLeft, ArrowRight,
   Flower2, Pencil, MoreHorizontal, X
 } from "lucide-react";
 
@@ -200,7 +200,7 @@ export default function ProductsPage() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const CARDS_PER_PAGE = 12;
+  const CARDS_PER_PAGE = 72;
   const totalPages    = Math.max(1, Math.ceil(filteredProducts.length / CARDS_PER_PAGE));
   const startIndex    = (currentPage - 1) * CARDS_PER_PAGE;
   const visibleProducts = filteredProducts.slice(startIndex, startIndex + CARDS_PER_PAGE);
@@ -334,27 +334,50 @@ export default function ProductsPage() {
 
       {/* ── Pagination ── */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4 font-apex-sans text-sm text-apex-on-surface-variant">
-          <span>
-            Showing {startIndex + 1}–{Math.min(startIndex + CARDS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length}
-          </span>
-          <div className="flex items-center gap-2">
-            <button
+        <div className="flex justify-center mt-12 mb-8">
+          <div className="inline-flex items-center bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.05)] px-4 py-2.5 gap-3 border border-slate-50">
+            <button 
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all disabled:opacity-30 border border-apex-outline-variant bg-apex-surface hover:bg-apex-surface-low"
+              className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
             >
-              <ChevronLeft size={16} />
+              <ArrowLeft size={20} strokeWidth={2.5} />
             </button>
-            <span className="px-4 h-8 flex items-center rounded-lg font-medium bg-apex-surface-lowest border border-apex-outline-variant">
-              {currentPage} / {totalPages}
-            </span>
-            <button
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+              if (
+                page === 1 || 
+                page === totalPages || 
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-medium transition-all ${
+                      currentPage === page 
+                        ? 'bg-[#6F7A8B] text-white shadow-sm' 
+                        : 'bg-[#F1F3F5] text-slate-700 hover:bg-[#E5E7EB]'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              } else if (
+                page === currentPage - 2 ||
+                page === currentPage + 2
+              ) {
+                return <span key={page} className="text-slate-400 px-1">...</span>;
+              }
+              return null;
+            })}
+
+            <button 
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="w-8 h-8 flex items-center justify-center rounded-lg transition-all disabled:opacity-30 border border-apex-outline-variant bg-apex-surface hover:bg-apex-surface-low"
+              className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
             >
-              <ChevronRight size={16} />
+              <ArrowRight size={20} strokeWidth={2.5} />
             </button>
           </div>
         </div>

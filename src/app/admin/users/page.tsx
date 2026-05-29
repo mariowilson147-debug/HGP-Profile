@@ -7,7 +7,9 @@ import {
   updateUser,
   deleteUser,
   toggleUserBan,
+  getBranches,
   type UserData,
+  type BranchData,
 } from "@/lib/auth-actions";
 import {
   Search,
@@ -27,8 +29,11 @@ import {
   Plus,
   HardDrive,
   Activity,
-  Database
+  Database,
+  ArrowLeft,
+  ArrowRight
 } from "lucide-react";
+import SelectDropdown from "@/components/ui/SelectDropdown";
 
 export default function UsersManagement() {
   const [users, setUsers] = useState<UserData[]>([]);
@@ -41,6 +46,10 @@ export default function UsersManagement() {
   const [editId, setEditId] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [editPassword, setEditPassword] = useState("");
+  const [role, setRole] = useState("wholesale");
+  const [branchId, setBranchId] = useState("");
+  const [assignedBranches, setAssignedBranches] = useState<string[]>([]);
+  const [branches, setBranches] = useState<BranchData[]>([]);
   const [modalError, setModalError] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
 
@@ -62,6 +71,7 @@ export default function UsersManagement() {
 
   useEffect(() => {
     loadUsers();
+    getBranches().then(setBranches).catch(console.error);
   }, []);
 
   // ── Open modal ─────────────────────────────────────────────────────────────
@@ -70,10 +80,16 @@ export default function UsersManagement() {
       setEditId(user.id);
       setEmail(user.email);
       setEditPassword("");
+      setRole(user.role || "wholesale");
+      setBranchId(user.branch_id || "");
+      setAssignedBranches(user.assigned_branches || []);
     } else {
       setEditId(null);
       setEmail("");
       setEditPassword("");
+      setRole("wholesale");
+      setBranchId("");
+      setAssignedBranches([]);
     }
     setModalError("");
     setShowModal(true);
@@ -85,11 +101,14 @@ export default function UsersManagement() {
     setModalError("");
     setModalLoading(true);
     try {
+      const selectedBranchId = role === 'seller' && branchId ? branchId : null;
+      const selectedAssignedBranches = role === 'manager' && assignedBranches.length > 0 ? assignedBranches : null;
+      
       if (editId) {
-        await updateUser(editId, email, editPassword || undefined);
+        await updateUser(editId, email, editPassword || undefined, role, selectedBranchId, selectedAssignedBranches);
       } else {
         // New staff are always created with default password "seller"
-        await createUser(email);
+        await createUser(email, role, selectedBranchId, selectedAssignedBranches);
       }
       setShowModal(false);
       loadUsers();
@@ -140,7 +159,7 @@ export default function UsersManagement() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 72;
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const visibleUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
@@ -234,12 +253,22 @@ export default function UsersManagement() {
                         {/* EMAIL */}
                         <td className="py-3 px-6">
                           <p className="font-apex-sans font-medium text-sm text-apex-text">{u.email}</p>
-                          <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-0.5">{isAdmin ? "Full Access" : "Standard Access"}</p>
+                          <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-0.5">{u.role === 'admin' ? "Full Access" : "Standard Access"}</p>
                         </td>
 
                         {/* TYPE */}
                         <td className="py-3 px-6 font-apex-sans text-sm text-apex-on-surface-variant">
-                          {isAdmin ? "Administrator" : "Staff"}
+                          <span className="capitalize">{u.role}</span>
+                          {u.role === 'seller' && u.branch_id && (
+                            <span className="block text-xs mt-0.5 opacity-70">
+                              {branches.find(b => b.id === u.branch_id)?.name || "Branch Assigned"}
+                            </span>
+                          )}
+                          {u.role === 'manager' && u.assigned_branches && u.assigned_branches.length > 0 && (
+                            <span className="block text-xs mt-0.5 opacity-70">
+                              {u.assigned_branches.length} Branches Assigned
+                            </span>
+                          )}
                         </td>
 
                         {/* ADDED ON */}
@@ -303,26 +332,55 @@ export default function UsersManagement() {
           </div>
           
           {/* Registry Footer Pagination */}
-          <div className="px-6 py-4 bg-apex-surface-lowest border-t border-apex-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-sans text-sm text-apex-on-surface-variant">
-            <div className="flex items-center gap-4">
-              <span>Showing {filteredUsers.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length}</span>
+          {totalPages > 1 && (
+            <div className="flex justify-center py-6 bg-apex-surface-lowest border-t border-apex-outline-variant">
+              <div className="inline-flex items-center bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.05)] px-4 py-2.5 gap-3 border border-slate-50">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
+                >
+                  <ArrowLeft size={20} strokeWidth={2.5} />
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                  if (
+                    page === 1 || 
+                    page === totalPages || 
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-medium transition-all ${
+                          currentPage === page 
+                            ? 'bg-[#6F7A8B] text-white shadow-sm' 
+                            : 'bg-[#F1F3F5] text-slate-700 hover:bg-[#E5E7EB]'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  } else if (
+                    page === currentPage - 2 ||
+                    page === currentPage + 2
+                  ) {
+                    return <span key={page} className="text-slate-400 px-1">...</span>;
+                  }
+                  return null;
+                })}
+
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
+                >
+                  <ArrowRight size={20} strokeWidth={2.5} />
+                </button>
+              </div>
             </div>
-            <div className="flex gap-1.5 text-xs text-apex-text select-none">
-              <button 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >&lt;</button>
-              <span className="px-3 h-8 flex items-center justify-center rounded border border-apex-primary bg-apex-surface-low text-apex-primary font-bold">
-                {currentPage} / {totalPages}
-              </span>
-              <button 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >&gt;</button>
-            </div>
-          </div>
+          )}
 
         </div>
       )}
@@ -424,6 +482,67 @@ export default function UsersManagement() {
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-apex-on-surface-variant mb-2">
+                  User Role
+                </label>
+                <SelectDropdown
+                  value={role}
+                  onChange={setRole}
+                  options={[
+                    { label: "Wholesale Buyer", value: "wholesale" },
+                    { label: "Branch Seller", value: "seller" },
+                    { label: "Branch Manager", value: "manager" },
+                    { label: "CEO / Executive", value: "ceo" },
+                    { label: "Administrator", value: "admin" }
+                  ]}
+                />
+              </div>
+
+              {role === 'seller' && (
+                <div>
+                  <label className="block text-sm font-medium text-apex-on-surface-variant mb-2">
+                    Assign Branch
+                  </label>
+                  <SelectDropdown
+                    value={branchId}
+                    onChange={setBranchId}
+                    options={branches.map(b => ({ label: b.name, value: b.id }))}
+                    placeholder="Select a branch..."
+                  />
+                </div>
+              )}
+
+              {role === 'manager' && (
+                <div>
+                  <label className="block text-sm font-medium text-apex-on-surface-variant mb-2">
+                    Assign Branches
+                  </label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto p-2 bg-apex-surface-lowest border border-apex-outline-variant rounded-lg">
+                    {branches.length === 0 && (
+                      <div className="text-sm text-apex-on-surface-variant p-2">No branches available</div>
+                    )}
+                    {branches.map(b => (
+                      <label key={b.id} className="flex items-center gap-2 text-sm text-apex-text cursor-pointer hover:bg-apex-surface p-1 rounded">
+                        <input 
+                          type="checkbox" 
+                          checked={assignedBranches.includes(b.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAssignedBranches([...assignedBranches, b.id]);
+                            } else {
+                              setAssignedBranches(assignedBranches.filter(id => id !== b.id));
+                            }
+                          }}
+                          className="rounded border-apex-outline-variant text-apex-primary focus:ring-apex-primary"
+                        />
+                        {b.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {editId && (
                 <div>

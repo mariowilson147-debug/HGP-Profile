@@ -17,22 +17,47 @@ import {
   Plus,
   MoreVertical,
   Archive,
-  Database
+  Database,
+  ArrowLeft,
+  ArrowRight
 } from "lucide-react";
 import { useSettings } from "@/components/SettingsProvider";
 
-const getBase64ImageFromUrl = async (imageUrl: string) => {
+const getCompressedImageFromUrl = async (imageUrl: string, maxWidth = 800, quality = 0.8): Promise<string> => {
   const res = await fetch(imageUrl);
   const blob = await res.blob();
   return new Promise((resolve, reject) => {
-    const reader  = new FileReader();
-    reader.addEventListener("load", function () {
-      resolve(reader.result);
-    }, false);
-    reader.onerror = () => {
-      return reject(new Error("Failed to load image"));
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(blob);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const canvas = document.createElement("canvas");
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      } else {
+        reject(new Error("Failed to get canvas context"));
+      }
     };
-    reader.readAsDataURL(blob);
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Failed to load image"));
+    };
+    img.src = objectUrl;
   });
 };
 
@@ -46,7 +71,7 @@ interface ExportLog {
 }
 
 export default function ExportsHub() {
-  const [selectedFormat, setSelectedFormat] = useState<"excel" | "pdf" | "link">("excel");
+  const [selectedFormat, setSelectedFormat] = useState<"excel" | "pdf">("excel");
   const [exporting, setExporting] = useState(false);
   const { settings } = useSettings();
   
@@ -57,12 +82,11 @@ export default function ExportsHub() {
   const [historyLogs, setHistoryLogs] = useState<ExportLog[]>([
     { id: "EXP-8921", target: "All Categories Export", format: ".XLSX", size: "1.2 MB", status: "COMPLETED", date: new Date().toLocaleDateString("en-GB") },
     { id: "EXP-8920", target: "Lighting & Electronics", format: ".PDF", size: "3.4 MB", status: "COMPLETED", date: new Date(Date.now() - 86400000).toLocaleDateString("en-GB") },
-    { id: "EXP-8919", target: "Client Shared Link", format: "LINK", size: "--", status: "COMPLETED", date: new Date(Date.now() - 86400000 * 2).toLocaleDateString("en-GB") },
   ]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 72;
   const totalPages = Math.max(1, Math.ceil(historyLogs.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const visibleLogs = historyLogs.slice(startIndex, startIndex + itemsPerPage);
@@ -127,14 +151,12 @@ export default function ExportsHub() {
 
         if (p.image_url) {
           try {
-            const res = await fetch(p.image_url);
-            const buffer = await res.arrayBuffer();
-            const extension = p.image_url.split('.').pop()?.toLowerCase();
-            const imageType: 'png' | 'jpeg' = extension === 'png' ? 'png' : 'jpeg';
+            const compressedDataUrl = await getCompressedImageFromUrl(p.image_url, 400, 0.7);
+            const base64Data = compressedDataUrl.split(',')[1];
             
             const imageId = workbook.addImage({
-              buffer: buffer,
-              extension: imageType,
+              base64: base64Data,
+              extension: 'jpeg',
             });
             
             sheet.addImage(imageId, {
@@ -202,7 +224,7 @@ export default function ExportsHub() {
          let imgData: string | null = null;
          try {
            if (p.image_url) {
-             imgData = (await getBase64ImageFromUrl(p.image_url)) as string;
+             imgData = await getCompressedImageFromUrl(p.image_url, 400, 0.7);
            }
          } catch(e) {}
          
@@ -263,35 +285,11 @@ export default function ExportsHub() {
     setExporting(false);
   };
 
-  const handleShareLink = async () => {
-    setExporting(true);
-    const baseUrl = window.location.origin;
-    let url = baseUrl + "/";
-    if (selectedCategories.length > 0) {
-      url += `?category=${encodeURIComponent(selectedCategories[0])}`;
-    }
-    
-    try {
-      await navigator.clipboard.writeText(url);
-      setHistoryLogs(prev => [
-        { id: `XP-${Math.floor(9000 + Math.random() * 999)}-L`, target: selectedCategories.length > 0 ? "Restricted Catalog Link" : "Core Catalog Link", format: "LINK", size: "--", status: "COMPLETED", date: new Date().toLocaleDateString("en-GB") },
-        ...prev
-      ]);
-      alert("Share Link copied to clipboard!");
-      setShowModal(false);
-    } catch(e) {
-      alert("Failed to copy link.");
-    }
-    setExporting(false);
-  };
-
   const handleInitializeExport = () => {
     if (selectedFormat === "excel") {
       handleExcelExport();
     } else if (selectedFormat === "pdf") {
       handlePDFExport();
-    } else {
-      handleShareLink();
     }
   };
 
@@ -411,26 +409,55 @@ export default function ExportsHub() {
         </div>
         
         {/* Registry Footer Pagination */}
-        <div className="px-6 py-4 bg-apex-surface-lowest border-t border-apex-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4 font-apex-sans text-sm text-apex-on-surface-variant">
-          <div className="flex items-center gap-4">
-            <span>Showing {historyLogs.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + itemsPerPage, historyLogs.length)} of {historyLogs.length}</span>
+        {totalPages > 1 && (
+          <div className="flex justify-center py-6 bg-apex-surface-lowest border-t border-apex-outline-variant">
+            <div className="inline-flex items-center bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.05)] px-4 py-2.5 gap-3 border border-slate-50">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
+              >
+                <ArrowLeft size={20} strokeWidth={2.5} />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                if (
+                  page === 1 || 
+                  page === totalPages || 
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-medium transition-all ${
+                        currentPage === page 
+                          ? 'bg-[#6F7A8B] text-white shadow-sm' 
+                          : 'bg-[#F1F3F5] text-slate-700 hover:bg-[#E5E7EB]'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                } else if (
+                  page === currentPage - 2 ||
+                  page === currentPage + 2
+                ) {
+                  return <span key={page} className="text-slate-400 px-1">...</span>;
+                }
+                return null;
+              })}
+
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
+              >
+                <ArrowRight size={20} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
-          <div className="flex gap-1.5 text-xs text-apex-text select-none">
-            <button 
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >&lt;</button>
-            <span className="px-3 h-8 flex items-center justify-center rounded border border-apex-primary bg-apex-surface-low text-apex-primary font-bold">
-              {currentPage} / {totalPages}
-            </span>
-            <button 
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="w-8 h-8 flex items-center justify-center rounded border border-apex-surface-highest bg-apex-surface-low hover:bg-apex-surface cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >&gt;</button>
-          </div>
-        </div>
+        )}
 
       </div>
 
@@ -467,16 +494,6 @@ export default function ExportsHub() {
                   }`}
                 >
                   Excel
-                </button>
-                <button 
-                  onClick={() => setSelectedFormat("link")}
-                  className={`px-4 py-1.5 rounded-md transition-all duration-200 ${
-                    selectedFormat === "link"
-                      ? "bg-apex-primary text-apex-bg font-medium shadow-sm" 
-                      : "text-apex-on-surface-variant hover:text-apex-text"
-                  }`}
-                >
-                  Share Link
                 </button>
               </div>
             </div>

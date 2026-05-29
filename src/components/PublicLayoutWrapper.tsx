@@ -6,9 +6,9 @@ import Footer from "./Footer";
 
 export default function PublicLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdminRoute = pathname?.startsWith("/admin");
+  const isAppRoute = pathname?.startsWith("/admin") || pathname?.startsWith("/seller") || pathname?.startsWith("/manager") || pathname === "/login";
 
-  if (isAdminRoute) {
+  if (isAppRoute) {
     return <main className="flex-grow flex flex-col">{children}</main>;
   }
 
