@@ -57,16 +57,18 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
         .eq('branch_id', branchId)
         .gt('stock_level', 0); // Only in stock
 
-      if (mounted && data) {
-        const mapped = data.map((item: unknown) => {
-          const rawItem = item as { stock_level: number; products: unknown };
-          const prod = Array.isArray(rawItem.products) ? rawItem.products[0] : rawItem.products;
-          return {
-            ...(prod as Omit<POSProduct, 'stock_level'>),
-            stock_level: rawItem.stock_level
-          };
-        }) as POSProduct[];
-        setProducts(mapped);
+      if (mounted) {
+        if (data) {
+          const mapped = data.map((item: unknown) => {
+            const rawItem = item as { stock_level: number; products: unknown };
+            const prod = Array.isArray(rawItem.products) ? rawItem.products[0] : rawItem.products;
+            return {
+              ...(prod as Omit<POSProduct, 'stock_level'>),
+              stock_level: rawItem.stock_level
+            };
+          }) as POSProduct[];
+          setProducts(mapped);
+        }
         setLoading(false);
       }
     }
