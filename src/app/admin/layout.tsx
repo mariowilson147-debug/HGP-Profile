@@ -224,56 +224,65 @@ export default function AdminLayout({
 
         {/* Right Side Content Canvas Wrapper */}
         <div className="flex-1 flex flex-col pl-0 lg:pl-64 w-full min-h-screen relative z-10 transition-all duration-300">
-          {/* TopNavBar Shell */}
-          <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-16rem)] h-[72px] bg-apex-bg border-b border-apex-outline-variant/50 flex justify-between items-center px-4 lg:px-8 z-40 transition-all duration-300">
-            <div className="flex items-center gap-4 flex-1">
-              <button 
-                className="lg:hidden text-apex-on-surface-variant hover:text-apex-text p-2 -ml-2"
-                onClick={() => setIsMobileMenuOpen(true)}
-              >
-                <Menu size={24} />
-              </button>
-              <div className="relative w-full max-w-[400px] group hidden sm:block">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-apex-on-surface-variant/50">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                </span>
+          {/* Mobile Top Header */}
+          <div className="lg:hidden fixed top-0 left-0 w-full h-[60px] bg-apex-bg border-b border-apex-outline-variant/50 flex items-center px-4 z-40">
+            <button 
+              className="text-apex-on-surface-variant hover:text-apex-text p-2 -ml-2"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
+            <div className="ml-4 font-bold text-apex-text">Admin</div>
+          </div>
+
+          {/* Floating Vertical Toolbar (Right Edge) */}
+          <div className="fixed top-6 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
+            
+            {/* Row 1: Search + Profile */}
+            <div className="flex items-center gap-2 pointer-events-auto">
+              {/* Expandable Search */}
+              <div className="group flex items-center bg-apex-surface/80 backdrop-blur-md border border-apex-outline shadow-sm rounded-full overflow-hidden transition-all duration-300 w-10 hover:w-[250px] focus-within:w-[250px] h-10 hidden sm:flex">
+                <div className="w-10 h-10 flex items-center justify-center shrink-0 text-apex-on-surface-variant group-hover:text-apex-primary transition-colors">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
                 <input 
-                  className="w-full bg-apex-surface border border-apex-outline-variant rounded-lg focus:ring-1 focus:ring-apex-primary focus:border-apex-primary text-apex-text text-sm pl-10 pr-4 h-10 placeholder:text-apex-on-surface-variant focus:outline-none shadow-sm transition-all" 
-                  placeholder="Search..." 
-                  type="text"
+                  type="text" 
+                  placeholder="Search globally..." 
+                  className="bg-transparent border-none outline-none text-sm text-apex-text w-full pr-4" 
                 />
               </div>
-            </div>
-            
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-4 text-apex-on-surface-variant">
-                <button 
-                  onClick={toggleTheme} 
-                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-apex-outline-variant hover:bg-apex-surface-low hover:text-apex-text transition-colors bg-apex-surface"
-                >
-                  {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
-                </button>
-                <NotificationDropdown />
-              </div>
-              
-              <div className="flex items-center gap-4 ml-2 pl-6">
-                <div className="text-right hidden sm:block">
-                  <p className="font-apex-sans text-xs font-bold leading-none text-apex-text">{displayName}</p>
-                  <p className="text-[10px] text-apex-on-surface-variant mt-1 font-medium">Administrator</p>
-                </div>
-                <div 
-                  className="w-9 h-9 rounded-full bg-apex-surface-low overflow-hidden border border-apex-outline-variant flex items-center justify-center text-apex-secondary shrink-0 cursor-pointer hover:border-apex-primary transition-colors"
-                  onClick={logout}
-                  title="Logout"
-                >
-                  <img src="https://api.dicebear.com/7.x/bottts/svg?seed=apex" alt="avatar" className="w-full h-full object-cover" />
+
+              {/* Profile */}
+              <div 
+                className="w-10 h-10 rounded-full bg-apex-surface border border-apex-outline shadow-sm overflow-hidden flex items-center justify-center cursor-pointer hover:border-apex-primary transition-colors shrink-0 relative group"
+                onClick={logout}
+              >
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=apex" alt="avatar" className="w-full h-full object-cover" />
+                <div className="absolute right-12 top-1/2 -translate-y-1/2 bg-apex-surface-highest text-apex-text text-xs font-bold px-2 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-sm border border-apex-outline">
+                  Logout {displayName}
                 </div>
               </div>
             </div>
-          </header>
+
+            {/* Row 2: Notification Bell */}
+            <div className="pointer-events-auto bg-apex-surface/80 backdrop-blur-md border border-apex-outline shadow-sm rounded-full flex items-center justify-center w-10 h-10 hover:border-apex-primary transition-colors">
+              <NotificationDropdown />
+            </div>
+
+            {/* Row 3: Theme Toggle */}
+            <div className="pointer-events-auto bg-apex-surface/80 backdrop-blur-md border border-apex-outline shadow-sm rounded-full flex items-center justify-center w-10 h-10 hover:border-apex-primary transition-colors">
+              <button 
+                onClick={toggleTheme} 
+                className="w-full h-full flex items-center justify-center text-apex-on-surface-variant hover:text-apex-text transition-colors"
+                title="Toggle Theme"
+              >
+                {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
+              </button>
+            </div>
+          </div>
 
           {/* Main Content Canvas */}
-          <main className="flex-grow w-full relative pt-20 pb-16 min-h-screen">
+          <main className="flex-grow w-full relative pt-[80px] lg:pt-8 pb-16 min-h-screen px-4 sm:px-8">
             {children}
           </main>
         </div>
