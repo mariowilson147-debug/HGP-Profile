@@ -71,7 +71,7 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
               };
             });
             // Sort branch products alphabetically by name
-            branchProducts.sort((a, b) => (a.name as string).localeCompare(b.name as string));
+            branchProducts.sort((a: any, b: any) => (a.name as string).localeCompare(b.name as string));
             setProducts(branchProducts as Product[]);
           } else {
             setProducts([]);
