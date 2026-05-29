@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { Search, Loader2, AlertTriangle, PackageOpen, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Loader2, AlertTriangle, PackageOpen, TrendingUp, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -123,6 +123,31 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
 
   const totalValuation = inventory.reduce((sum, item) => sum + (item.stock_level * (item.products?.buying_price || 0)), 0);
 
+  const exportToExcel = () => {
+    const headers = ["Name", "SKU", "Category", "Buying Price", "Wholesale Price", "Retail Price", "Stock Level", "Reorder Level"];
+    
+    const rows = filtered.map(p => [
+      `"${(p.products?.name || '').replace(/"/g, '""')}"`,
+      `"${p.products?.sku || ''}"`,
+      `"${p.products?.category || ''}"`,
+      p.products?.buying_price || 0,
+      p.products?.wholesale_price || 0,
+      p.products?.retail_price || 0,
+      p.stock_level || 0,
+      p.reorder_level || 0
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Inventory_Export_${branchId ? 'Branch' : 'Universal'}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-8">
       {/* Header & Search */}
@@ -133,15 +158,24 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
           </Link>
           <p className="text-apex-on-surface-variant mt-2">{branchId ? "Manage stock levels for your specific location." : "Global view of stock across all branches."}</p>
         </div>
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-apex-on-surface-variant" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search branch stock..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-apex-surface border border-apex-outline rounded-xl focus:ring-2 focus:ring-apex-text focus:border-transparent outline-none transition-all shadow-sm text-apex-text"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-apex-on-surface-variant" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search branch stock..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-apex-surface border border-apex-outline rounded-xl focus:ring-2 focus:ring-apex-text focus:border-transparent outline-none transition-all shadow-sm text-apex-text"
+            />
+          </div>
+          <button 
+            onClick={exportToExcel}
+            className="flex justify-center items-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-sm font-medium transition-colors w-full sm:w-auto shadow-sm whitespace-nowrap"
+            title="Export as Excel (CSV)"
+          >
+            <Download size={18} /> Export
+          </button>
         </div>
       </div>
 
