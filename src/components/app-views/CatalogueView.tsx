@@ -114,30 +114,6 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const currentProducts = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const exportToExcel = () => {
-    const branchName = branches.find(b => b.id === selectedViewBranch)?.name || "Universal";
-    const headers = ["Name", "SKU", "Category", "Retail Price", "Wholesale Price", "Stock Level", "Status"];
-    
-    const rows = filteredProducts.map(p => [
-      `"${p.name.replace(/"/g, '""')}"`,
-      `"${p.sku || ''}"`,
-      `"${p.category}"`,
-      p.retail_price,
-      p.wholesale_price,
-      p.stock_level ?? 'N/A',
-      p.availability || 'available'
-    ]);
-
-    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Catalogue_Export_${viewMode === 'universal' ? 'Universal' : branchName}_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   return (
     <div className="space-y-8">
@@ -177,14 +153,7 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
                 {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             )}
-            
-            <button 
-              onClick={exportToExcel}
-              className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-sm font-medium transition-colors w-fit shadow-sm"
-              title="Export as Excel (CSV)"
-            >
-              <Download size={16} /> Export
-            </button>
+
           </div>
         </div>
         
