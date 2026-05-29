@@ -60,15 +60,17 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
         if (mounted) {
           if (data) {
             const invMap = new Map(invData?.map(i => [i.product_id, i]) || []);
-            const branchProducts = data.map(prod => {
-              const inv = invMap.get(prod.id);
-              return {
-                ...prod,
-                stock_level: inv ? inv.stock_level : 0,
-                wholesale_price: inv?.branch_wholesale_price ?? prod.wholesale_price,
-                retail_price: inv?.branch_retail_price ?? prod.retail_price
-              };
-            });
+            const branchProducts = data
+              .filter(prod => invMap.has(prod.id))
+              .map(prod => {
+                const inv = invMap.get(prod.id)!;
+                return {
+                  ...prod,
+                  stock_level: inv.stock_level,
+                  wholesale_price: inv.branch_wholesale_price ?? prod.wholesale_price,
+                  retail_price: inv.branch_retail_price ?? prod.retail_price
+                };
+              });
             // Sort branch products alphabetically by name
             branchProducts.sort((a, b) => ((a as Product).name || "").localeCompare((b as Product).name || ""));
             setProducts(branchProducts as Product[]);
