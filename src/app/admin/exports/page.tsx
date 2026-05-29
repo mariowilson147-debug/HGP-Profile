@@ -124,8 +124,10 @@ export default function ExportsHub() {
         return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
       });
         
-      const ExcelJS = (await import('exceljs')).default;
-      const { saveAs } = await import('file-saver');
+      const exceljsModule = await import('exceljs');
+      const ExcelJS = exceljsModule.default || exceljsModule;
+      const fileSaverModule = await import('file-saver');
+      const saveAs = fileSaverModule.saveAs || (fileSaverModule.default && fileSaverModule.default.saveAs) || fileSaverModule.default;
 
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet('Catalog');
@@ -151,7 +153,7 @@ export default function ExportsHub() {
 
         if (p.image_url) {
           try {
-            const compressedDataUrl = await getCompressedImageFromUrl(p.image_url, 400, 0.7);
+            const compressedDataUrl = await getCompressedImageFromUrl(p.image_url, 200, 0.6);
             const base64Data = compressedDataUrl.split(',')[1];
             
             const imageId = workbook.addImage({
@@ -202,8 +204,10 @@ export default function ExportsHub() {
         return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
       });
 
-      const jsPDF = (await import('jspdf')).default;
-      const autoTable = (await import('jspdf-autotable')).default;
+      const jspdfModule = await import('jspdf');
+      const jsPDF = jspdfModule.default || jspdfModule.jsPDF || jspdfModule;
+      const autoTableModule = await import('jspdf-autotable');
+      const autoTable = autoTableModule.default || autoTableModule;
 
       const doc = new jsPDF('l', 'pt', 'a4');
       
@@ -224,7 +228,7 @@ export default function ExportsHub() {
          let imgData: string | null = null;
          try {
            if (p.image_url) {
-             imgData = await getCompressedImageFromUrl(p.image_url, 400, 0.7);
+             imgData = await getCompressedImageFromUrl(p.image_url, 200, 0.6);
            }
          } catch(e) {}
          
