@@ -109,12 +109,21 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
   const [successMsg, setSuccessMsg] = useState("");
   const supabase = createSupabaseBrowserClient();
 
+  const { user } = useAuth();
+
   useEffect(() => {
     getProducts().then(setProducts);
     supabase.from('branches').select('id, name').neq('id', branchId).then(({ data }) => {
-      if (data) setAllBranches(data);
+      if (data) {
+        if (user?.role === 'manager') {
+          const allowed = user.assigned_branches || (user.branch_id ? [user.branch_id] : []);
+          setAllBranches(data.filter(b => allowed.includes(b.id)));
+        } else {
+          setAllBranches(data);
+        }
+      }
     });
-  }, [branchId, supabase]);
+  }, [branchId, supabase, user]);
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase())).slice(0, 5);
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getProducts, type Product as BaseProduct } from "@/lib/actions";
-import { Search, Loader2, Image as ImageIcon, Lightbulb, Bath, Sofa, Plug, Shirt, Package, Home, Wrench, Box, ShoppingCart, LayoutGrid, ArrowLeft, ArrowRight, Store, Globe } from "lucide-react";
+import { Search, Loader2, Image as ImageIcon, Lightbulb, Bath, Sofa, Plug, Shirt, Package, Home, Wrench, Box, ShoppingCart, LayoutGrid, ArrowLeft, ArrowRight, Store, Globe, Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSettings } from "@/components/SettingsProvider";
@@ -19,16 +19,30 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [viewMode, setViewMode] = useState<"universal" | "branch">("universal");
+  const [viewMode, setViewMode] = useState<"universal" | "branch">(branchId ? "branch" : "universal");
+  const [selectedViewBranch, setSelectedViewBranch] = useState<string>(branchId || "");
+  const [branches, setBranches] = useState<{id: string, name: string}[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { settings } = useSettings();
   const supabase = createSupabaseBrowserClient();
+
+  // Fetch branches
+  useEffect(() => {
+    supabase.from('branches').select('id, name').then(({data}) => {
+      if (data) {
+        setBranches(data);
+        if (!selectedViewBranch && data.length > 0) {
+          setSelectedViewBranch(data[0].id);
+        }
+      }
+    });
+  }, [supabase, selectedViewBranch]);
 
   useEffect(() => {
     let mounted = true;
     async function load() {
       setLoading(true);
-      if (viewMode === "universal" || !branchId) {
+      if (viewMode === "universal" || !selectedViewBranch) {
         const data = await getProducts();
         if (mounted) {
           setProducts(data);
@@ -43,7 +57,7 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
               id, name, sku, category, tags, image_url, retail_price, wholesale_price, availability
             )
           `)
-          .eq('branch_id', branchId);
+          .eq('branch_id', selectedViewBranch);
           
         if (mounted) {
           if (data) {
@@ -64,7 +78,7 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
     }
     load();
     return () => { mounted = false };
-  }, [viewMode, branchId, supabase]);
+  }, [viewMode, selectedViewBranch, supabase]);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -81,7 +95,8 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
-    p.category.toLowerCase().includes(search.toLowerCase())
+    p.category.toLowerCase().includes(search.toLowerCase()) ||
+    (p.sku && p.sku.toLowerCase().includes(search.toLowerCase()))
   );
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,6 +110,31 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const currentProducts = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const exportToExcel = () => {
+    const branchName = branches.find(b => b.id === selectedViewBranch)?.name || "Universal";
+    const headers = ["Name", "SKU", "Category", "Retail Price", "Wholesale Price", "Stock Level", "Status"];
+    
+    const rows = filteredProducts.map(p => [
+      `"${p.name.replace(/"/g, '""')}"`,
+      `"${p.sku || ''}"`,
+      `"${p.category}"`,
+      p.retail_price,
+      p.wholesale_price,
+      p.stock_level ?? 'N/A',
+      p.availability || 'available'
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Catalogue_Export_${viewMode === 'universal' ? 'Universal' : branchName}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-8">
       {/* Header & Search */}
@@ -107,8 +147,8 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
             <p className="text-slate-500 mt-2">Browse the product registry and pricing.</p>
           </div>
           
-          {branchId && (
-            <div className="flex bg-slate-100/50 rounded-xl p-1 w-fit mt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-2">
+            <div className="flex bg-slate-100/50 rounded-xl p-1 w-fit">
               <button
                 onClick={() => setViewMode("universal")}
                 className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${viewMode === 'universal' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -122,7 +162,26 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
                 <Store size={16} /> Branch Stock
               </button>
             </div>
-          )}
+            
+            {viewMode === "branch" && (
+              <select 
+                value={selectedViewBranch} 
+                onChange={(e) => setSelectedViewBranch(e.target.value)}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-slate-900 outline-none shadow-sm min-w-[150px]"
+              >
+                <option value="" disabled>Select Branch</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            )}
+            
+            <button 
+              onClick={exportToExcel}
+              className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg text-sm font-medium transition-colors w-fit shadow-sm"
+              title="Export as Excel (CSV)"
+            >
+              <Download size={16} /> Export
+            </button>
+          </div>
         </div>
         
         <div className="flex items-center gap-2 justify-end">
