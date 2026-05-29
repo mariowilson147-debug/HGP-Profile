@@ -51,23 +51,22 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
           setLoading(false);
         }
       } else {
-        const { data } = await supabase
+        const data = await getProducts();
+        const { data: invData } = await supabase
           .from('inventory')
-          .select(`
-            stock_level,
-            products (
-              id, name, sku, category, tags, image_url, retail_price, wholesale_price, availability
-            )
-          `)
+          .select('product_id, stock_level, branch_wholesale_price, branch_retail_price')
           .eq('branch_id', selectedViewBranch);
           
         if (mounted) {
           if (data) {
-            const branchProducts = data.map((item: Record<string, unknown>) => {
-              const prod = item.products as Record<string, unknown>;
+            const invMap = new Map(invData?.map(i => [i.product_id, i]) || []);
+            const branchProducts = data.map(prod => {
+              const inv = invMap.get(prod.id);
               return {
                 ...prod,
-                stock_level: item.stock_level
+                stock_level: inv ? inv.stock_level : 0,
+                wholesale_price: inv?.branch_wholesale_price ?? prod.wholesale_price,
+                retail_price: inv?.branch_retail_price ?? prod.retail_price
               };
             });
             // Sort branch products alphabetically by name

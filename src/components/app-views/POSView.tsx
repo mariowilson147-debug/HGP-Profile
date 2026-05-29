@@ -47,6 +47,7 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
         .from('inventory')
         .select(`
           stock_level,
+          branch_retail_price,
           products (
             id,
             name,
@@ -62,10 +63,11 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
       if (mounted) {
         if (data) {
           const mapped = data.map((item: unknown) => {
-            const rawItem = item as { stock_level: number; products: unknown };
+            const rawItem = item as { stock_level: number; branch_retail_price?: number; products: unknown };
             const prod = Array.isArray(rawItem.products) ? rawItem.products[0] : rawItem.products;
             return {
-              ...(prod as Omit<POSProduct, 'stock_level'>),
+              ...(prod as Omit<POSProduct, 'stock_level' | 'retail_price'>),
+              retail_price: rawItem.branch_retail_price ?? (prod as {retail_price: number}).retail_price,
               stock_level: rawItem.stock_level
             };
           }) as POSProduct[];

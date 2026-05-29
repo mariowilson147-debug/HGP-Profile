@@ -7,19 +7,40 @@ import { getProducts, type Product } from "@/lib/actions";
 import { Loader2, Search, CheckCircle2, Plus, Clock, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 
+interface BranchInventory {
+  stock_level: number;
+  branch_buying_price?: number;
+  branch_wholesale_price?: number;
+  branch_retail_price?: number;
+}
+
 function ProcurementRow({ 
   product, 
-  stockLevel, 
+  inventoryData, 
   onProcure, 
   isSubmitting 
 }: { 
   product: Product; 
-  stockLevel: number; 
-  onProcure: (productId: string, qty: number, cost: number) => void;
+  inventoryData?: BranchInventory; 
+  onProcure: (productId: string, qty: number, cost: number, wholesale: number, retail: number) => void;
   isSubmitting: boolean;
 }) {
+  const stockLevel = inventoryData?.stock_level || 0;
+  const initialCost = inventoryData?.branch_buying_price ?? product.buying_price;
+  const initialWholesale = inventoryData?.branch_wholesale_price ?? product.wholesale_price;
+  const initialRetail = inventoryData?.branch_retail_price ?? product.retail_price;
+
   const [qty, setQty] = useState("");
-  const [cost, setCost] = useState(product.buying_price?.toString() || "");
+  const [cost, setCost] = useState(initialCost?.toString() || "");
+  const [wholesale, setWholesale] = useState(initialWholesale?.toString() || "");
+  const [retail, setRetail] = useState(initialRetail?.toString() || "");
+
+  // Update inputs if branch inventory data changes (e.g., after selecting a different branch)
+  useEffect(() => {
+    setCost(initialCost?.toString() || "");
+    setWholesale(initialWholesale?.toString() || "");
+    setRetail(initialRetail?.toString() || "");
+  }, [initialCost, initialWholesale, initialRetail]);
 
   return (
     <tr className="border-b border-apex-outline hover:bg-apex-surface-low transition-colors">
@@ -27,27 +48,40 @@ function ProcurementRow({
         <div className="font-bold text-apex-text">{product.name}</div>
         <div className="text-xs text-apex-on-surface-variant">SKU: {product.sku || 'N/A'}</div>
       </td>
-      <td className="py-3 px-4 text-apex-text text-center">
+      <td className="py-3 px-4 text-apex-text text-center font-bold">
         {stockLevel}
       </td>
       <td className="py-3 px-4">
         <input 
           type="number" min="1" placeholder="Qty" value={qty} onChange={e => setQty(e.target.value)}
-          className="w-20 px-2 py-1.5 bg-apex-surface border border-apex-outline rounded-lg focus:ring-2 focus:ring-apex-text outline-none text-apex-text text-sm"
+          className="w-16 px-2 py-1.5 bg-apex-surface border border-apex-outline rounded-lg focus:ring-2 focus:ring-apex-text outline-none text-apex-text text-sm"
         />
       </td>
       <td className="py-3 px-4">
         <input 
           type="number" min="0" step="0.01" placeholder="Cost" value={cost} onChange={e => setCost(e.target.value)}
+          className="w-20 px-2 py-1.5 bg-apex-surface border border-apex-outline rounded-lg focus:ring-2 focus:ring-apex-text outline-none text-apex-text text-sm"
+        />
+      </td>
+      <td className="py-3 px-4">
+        <input 
+          type="number" min="0" step="0.01" placeholder="Wholesale" value={wholesale} onChange={e => setWholesale(e.target.value)}
           className="w-24 px-2 py-1.5 bg-apex-surface border border-apex-outline rounded-lg focus:ring-2 focus:ring-apex-text outline-none text-apex-text text-sm"
         />
       </td>
-      <td className="py-3 px-4 text-apex-text text-sm text-right">KES {product.wholesale_price}</td>
-      <td className="py-3 px-4 text-apex-text text-sm text-right">KES {product.retail_price}</td>
+      <td className="py-3 px-4">
+        <input 
+          type="number" min="0" step="0.01" placeholder="Retail" value={retail} onChange={e => setRetail(e.target.value)}
+          className="w-24 px-2 py-1.5 bg-apex-surface border border-apex-outline rounded-lg focus:ring-2 focus:ring-apex-text outline-none text-apex-text text-sm"
+        />
+      </td>
       <td className="py-3 px-4 text-right">
         <button 
-          disabled={isSubmitting || !qty || parseInt(qty) <= 0 || !cost}
-          onClick={() => onProcure(product.id, parseInt(qty), parseFloat(cost))}
+          disabled={isSubmitting || !qty || parseInt(qty) <= 0 || !cost || !wholesale || !retail}
+          onClick={() => {
+            onProcure(product.id, parseInt(qty), parseFloat(cost), parseFloat(wholesale), parseFloat(retail));
+            setQty(""); // Reset qty after click
+          }}
           className="px-3 py-1.5 bg-apex-primary text-apex-bg rounded-lg text-sm font-bold hover:opacity-90 disabled:opacity-50 flex items-center justify-center min-w-[80px]"
         >
           {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : "Procure"}
@@ -57,17 +91,26 @@ function ProcurementRow({
   );
 }
 
-export default function ProcurementView({ branchId, returnPath = "/manager" }: { branchId?: string | null, returnPath?: string }) {
+export default function ProcurementView({ 
+  branchId, 
+  availableBranches, 
+  returnPath = "/manager" 
+}: { 
+  branchId?: string | null, 
+  availableBranches?: {id: string, name: string}[],
+  returnPath?: string 
+}) {
   const { user } = useAuth();
   const supabase = createSupabaseBrowserClient();
   
-  const [adminBranchId, setAdminBranchId] = useState<string>("");
-  const [branches, setBranches] = useState<{id: string, name: string}[]>([]);
+  const [activeBranchId, setActiveBranchId] = useState<string>(branchId || "");
+  const [branches, setBranches] = useState<{id: string, name: string}[]>(availableBranches || []);
   
-  const selectedBranchId = branchId || adminBranchId;
+  const selectedBranchId = activeBranchId;
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [inventory, setInventory] = useState<Record<string, number>>({});
+  const [inventory, setInventory] = useState<Record<string, BranchInventory>>({});
+  
   interface PurchaseRecord {
     id: string;
     quantity: number;
@@ -86,9 +129,21 @@ export default function ProcurementView({ branchId, returnPath = "/manager" }: {
     if (!selectedBranchId) return;
     
     // Inventory
-    const { data: invData } = await supabase.from('inventory').select('product_id, stock_level').eq('branch_id', selectedBranchId);
-    const invMap: Record<string, number> = {};
-    if (invData) invData.forEach(inv => invMap[inv.product_id] = inv.stock_level);
+    const { data: invData } = await supabase.from('inventory')
+      .select('product_id, stock_level, branch_buying_price, branch_wholesale_price, branch_retail_price')
+      .eq('branch_id', selectedBranchId);
+      
+    const invMap: Record<string, BranchInventory> = {};
+    if (invData) {
+      invData.forEach(inv => {
+        invMap[inv.product_id] = {
+          stock_level: inv.stock_level,
+          branch_buying_price: inv.branch_buying_price,
+          branch_wholesale_price: inv.branch_wholesale_price,
+          branch_retail_price: inv.branch_retail_price
+        };
+      });
+    }
     setInventory(invMap);
 
     // Purchases
@@ -101,14 +156,21 @@ export default function ProcurementView({ branchId, returnPath = "/manager" }: {
   };
 
   useEffect(() => {
-    supabase.from('branches').select('id, name').then(({data}) => {
-      if (data) {
-        setBranches(data);
-        if (!branchId && data.length > 0) setAdminBranchId(data[0].id);
-      }
-    });
+    // If availableBranches is provided (Manager), we use them.
+    // Otherwise (Admin), we fetch all branches.
+    if (!availableBranches) {
+      supabase.from('branches').select('id, name').then(({data}) => {
+        if (data) {
+          setBranches(data);
+          if (!activeBranchId && data.length > 0) setActiveBranchId(data[0].id);
+        }
+      });
+    } else {
+      setBranches(availableBranches);
+      if (!activeBranchId && availableBranches.length > 0) setActiveBranchId(availableBranches[0].id);
+    }
     getProducts().then(setProducts);
-  }, [branchId, supabase]);
+  }, [availableBranches, supabase]);
 
   useEffect(() => {
     loadData();
@@ -118,7 +180,7 @@ export default function ProcurementView({ branchId, returnPath = "/manager" }: {
     .filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase()))
     .slice(0, 10);
 
-  const handleProcure = async (productId: string, qty: number, cost: number) => {
+  const handleProcure = async (productId: string, qty: number, cost: number, wholesale: number, retail: number) => {
     if (!selectedBranchId) return;
     setSubmittingId(productId);
     try {
@@ -133,17 +195,32 @@ export default function ProcurementView({ branchId, returnPath = "/manager" }: {
       }]);
       if (pError) console.warn("Purchases insert error:", pError);
 
-      const currentStock = inventory[productId] || 0;
-      if (inventory.hasOwnProperty(productId)) {
-        await supabase.from('inventory').update({ stock_level: currentStock + qty }).eq('branch_id', selectedBranchId).eq('product_id', productId);
+      const currentInv = inventory[productId];
+      const currentStock = currentInv?.stock_level || 0;
+      
+      if (currentInv) {
+        await supabase.from('inventory').update({ 
+          stock_level: currentStock + qty,
+          branch_buying_price: cost,
+          branch_wholesale_price: wholesale,
+          branch_retail_price: retail
+        }).eq('branch_id', selectedBranchId).eq('product_id', productId);
       } else {
-        await supabase.from('inventory').insert([{ branch_id: selectedBranchId, product_id: productId, stock_level: qty, reorder_level: 5 }]);
+        await supabase.from('inventory').insert([{ 
+          branch_id: selectedBranchId, 
+          product_id: productId, 
+          stock_level: qty, 
+          reorder_level: 5,
+          branch_buying_price: cost,
+          branch_wholesale_price: wholesale,
+          branch_retail_price: retail 
+        }]);
       }
 
-      await supabase.from('products').update({ buying_price: cost }).eq('id', productId);
+      // DO NOT update global products table anymore to prevent interfering with catalogue prices.
 
       const prodName = products.find(p => p.id === productId)?.name || 'Item';
-      setSuccessMsg(`Successfully restocked ${qty}x ${prodName}`);
+      setSuccessMsg(`Successfully restocked ${qty}x ${prodName} and updated pricing.`);
       setTimeout(() => setSuccessMsg(""), 3000);
       
       loadData(); // Refresh inventory and purchases
@@ -155,7 +232,7 @@ export default function ProcurementView({ branchId, returnPath = "/manager" }: {
     }
   };
 
-  if (!selectedBranchId && branchId !== undefined && branchId !== null) {
+  if (!selectedBranchId && branchId !== undefined && branchId !== null && (!availableBranches || availableBranches.length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-8rem)]">
         <h2 className="text-xl font-bold text-apex-text mb-2">No Branch Selected</h2>
@@ -173,22 +250,21 @@ export default function ProcurementView({ branchId, returnPath = "/manager" }: {
           <Link href={returnPath} className="hover:opacity-80 transition-opacity">
             <h1 className="text-3xl font-display font-bold text-apex-text">Procurement</h1>
           </Link>
-          <p className="text-apex-on-surface-variant mt-2">Restock inventory and view purchase history.</p>
+          <p className="text-apex-on-surface-variant mt-2">Restock inventory and set branch-specific pricing.</p>
         </div>
         
         <div className="flex items-center gap-4">
-          {!branchId && (
-            <div className="flex flex-col">
-              <label className="text-xs font-bold text-apex-on-surface-variant uppercase tracking-wider mb-1">Select Receiving Branch</label>
-              <select
-                value={adminBranchId}
-                onChange={(e) => setAdminBranchId(e.target.value)}
-                className="px-4 py-2.5 bg-apex-surface border border-apex-outline rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium min-w-[200px] text-apex-text"
-              >
-                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            </div>
-          )}
+          <div className="flex flex-col">
+            <label className="text-xs font-bold text-apex-on-surface-variant uppercase tracking-wider mb-1">Select Receiving Branch</label>
+            <select
+              value={activeBranchId}
+              onChange={(e) => setActiveBranchId(e.target.value)}
+              className="px-4 py-2.5 bg-apex-surface border border-apex-outline rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium min-w-[200px] text-apex-text"
+            >
+              {branches.length === 0 && <option disabled value="">No branches available</option>}
+              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
           
           <Link 
             href={addProductLink}
@@ -229,11 +305,11 @@ export default function ProcurementView({ branchId, returnPath = "/manager" }: {
             <thead>
               <tr className="bg-apex-surface-highest text-apex-on-surface-variant text-xs uppercase tracking-wider">
                 <th className="py-3 px-4 font-bold">Product</th>
-                <th className="py-3 px-4 font-bold text-center">Qty Avail</th>
-                <th className="py-3 px-4 font-bold">Buy Qty</th>
+                <th className="py-3 px-4 font-bold text-center">In Stock</th>
+                <th className="py-3 px-4 font-bold">Qty</th>
                 <th className="py-3 px-4 font-bold">Unit Cost</th>
-                <th className="py-3 px-4 font-bold text-right">Wholesale</th>
-                <th className="py-3 px-4 font-bold text-right">Retail</th>
+                <th className="py-3 px-4 font-bold">Wholesale</th>
+                <th className="py-3 px-4 font-bold">Retail</th>
                 <th className="py-3 px-4 font-bold text-right">Action</th>
               </tr>
             </thead>
@@ -242,7 +318,7 @@ export default function ProcurementView({ branchId, returnPath = "/manager" }: {
                 <ProcurementRow 
                   key={p.id} 
                   product={p} 
-                  stockLevel={inventory[p.id] || 0} 
+                  inventoryData={inventory[p.id]} 
                   onProcure={handleProcure}
                   isSubmitting={submittingId === p.id}
                 />
