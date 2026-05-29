@@ -45,6 +45,8 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
       if (viewMode === "universal" || !selectedViewBranch) {
         const data = await getProducts();
         if (mounted) {
+          // Sort universal products alphabetically by name
+          data.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
           setProducts(data);
           setLoading(false);
         }
@@ -68,6 +70,8 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
                 stock_level: item.stock_level
               };
             });
+            // Sort branch products alphabetically by name
+            branchProducts.sort((a, b) => (a.name as string).localeCompare(b.name as string));
             setProducts(branchProducts as Product[]);
           } else {
             setProducts([]);
