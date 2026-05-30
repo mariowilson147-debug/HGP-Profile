@@ -98,12 +98,34 @@ export default function ProcurementView({
     end.setHours(23, 59, 59, 999);
 
     const { data: purData } = await supabase.from('purchases')
-      .select('id, quantity, unit_cost, total_cost, created_at, products(name)')
+      .select(`
+        id, 
+        created_at, 
+        purchase_items(
+          quantity, 
+          unit_cost, 
+          subtotal, 
+          products(name)
+        )
+      `)
       .eq('branch_id', selectedBranchId)
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString())
       .order('created_at', { ascending: false });
-    if (purData) setPurchases(purData as unknown as PurchaseRecord[]);
+      
+    if (purData) {
+      const flatPurchases = (purData as any[]).flatMap(pur => 
+        (pur.purchase_items || []).map((item: any, idx: number) => ({
+          id: `${pur.id}-${idx}`,
+          quantity: item.quantity,
+          unit_cost: item.unit_cost,
+          total_cost: item.subtotal,
+          created_at: pur.created_at,
+          products: item.products
+        }))
+      );
+      setPurchases(flatPurchases);
+    }
   };
 
   useEffect(() => {
@@ -155,19 +177,31 @@ export default function ProcurementView({
     setIsProcessing(true);
 
     try {
+      // 1. Create Purchase Header
+      const totalAmount = cart.reduce((sum, item) => sum + (item.restock_qty * item.unit_cost), 0);
+      const { data: purchaseData, error: pError } = await supabase.from('purchases').insert([{
+        branch_id: selectedBranchId,
+        manager_id: user.id,
+        total_amount: totalAmount,
+        status: 'completed'
+      }]).select().single();
+
+      if (pError) throw pError;
+      const purchaseId = purchaseData.id;
+
+      // 2. Insert Items and Update Inventory
       for (const item of cart) {
-        const total = item.restock_qty * item.unit_cost;
+        const subtotal = item.restock_qty * item.unit_cost;
         
-        // Add to purchases
-        const { error: pError } = await supabase.from('purchases').insert([{
-          branch_id: selectedBranchId,
-          manager_id: user.id,
+        // Add to purchase_items
+        const { error: iError } = await supabase.from('purchase_items').insert([{
+          purchase_id: purchaseId,
           product_id: item.id,
           quantity: item.restock_qty,
           unit_cost: item.unit_cost,
-          total_cost: total
+          subtotal: subtotal
         }]);
-        if (pError) throw pError;
+        if (iError) throw iError;
 
         // Update inventory
         const currentInv = inventory[item.id];
@@ -199,7 +233,7 @@ export default function ProcurementView({
       loadData();
     } catch (err) {
       console.error(err);
-      alert("Failed to process restock");
+      alert("Failed to process restock. See console for details.");
     } finally {
       setIsProcessing(false);
     }
