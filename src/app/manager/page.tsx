@@ -99,6 +99,16 @@ const modules = [
     textColor: "text-indigo-600"
   },
   {
+    id: "sessions",
+    title: "Sales Sessions",
+    description: "View daily sales folders, receipt histories, and seller drilldowns.",
+    icon: Briefcase,
+    href: "/manager/sessions",
+    color: "bg-fuchsia-500",
+    bgColor: "bg-fuchsia-50",
+    textColor: "text-fuchsia-600"
+  },
+  {
     id: "settings",
     title: "Settings",
     description: "Update your profile, nickname, and account security.",

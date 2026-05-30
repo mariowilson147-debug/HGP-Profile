@@ -14,6 +14,7 @@ type POSProduct = {
   sku?: string | null;
   image_url: string;
   retail_price: number;
+  unit_cost: number;
   stock_level: number;
 };
 
@@ -48,13 +49,15 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
         .select(`
           stock_level,
           branch_retail_price,
+          branch_buying_price,
           products (
             id,
             name,
             category,
             sku,
             image_url,
-            retail_price
+            retail_price,
+            buying_price
           )
         `)
         .eq('branch_id', branchId)
@@ -63,11 +66,12 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
       if (mounted) {
         if (data) {
           const mapped = data.map((item: unknown) => {
-            const rawItem = item as { stock_level: number; branch_retail_price?: number; products: unknown };
+            const rawItem = item as { stock_level: number; branch_retail_price?: number; branch_buying_price?: number; products: unknown };
             const prod = Array.isArray(rawItem.products) ? rawItem.products[0] : rawItem.products;
             return {
-              ...(prod as Omit<POSProduct, 'stock_level' | 'retail_price'>),
-              retail_price: rawItem.branch_retail_price ?? (prod as {retail_price: number}).retail_price,
+              ...(prod as Omit<POSProduct, 'stock_level' | 'retail_price' | 'unit_cost'>),
+              retail_price: rawItem.branch_retail_price ?? (prod as {retail_price: number}).retail_price ?? 0,
+              unit_cost: rawItem.branch_buying_price ?? (prod as {buying_price: number}).buying_price ?? 0,
               stock_level: rawItem.stock_level
             };
           }) as POSProduct[];
@@ -119,6 +123,9 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
     setIsProcessing(true);
 
     try {
+      // Generate short receipt number
+      const receiptNumber = 'REC-' + Math.random().toString(36).substr(2, 6).toUpperCase() + '-' + Date.now().toString().slice(-4);
+
       // 1. Create Sale Record
       const { data: sale, error: saleError } = await supabase
         .from('sales')
@@ -126,7 +133,8 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
           branch_id: branchId,
           seller_id: user.id,
           total_amount: total,
-          status: 'completed'
+          status: 'completed',
+          receipt_number: receiptNumber
         }])
         .select()
         .single();
@@ -139,6 +147,7 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
         product_id: item.id,
         quantity: item.cart_quantity,
         unit_price: item.retail_price,
+        unit_cost: item.unit_cost,
         subtotal: item.retail_price * item.cart_quantity
       }));
 
@@ -171,16 +180,18 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
       // Refresh inventory list (rudimentary refresh)
       const { data: newInventory } = await supabase
         .from('inventory')
-        .select('stock_level, products(id, name, category, image_url, retail_price)')
+        .select('stock_level, branch_retail_price, branch_buying_price, products(id, name, category, image_url, retail_price, buying_price)')
         .eq('branch_id', branchId)
         .gt('stock_level', 0);
         
       if (newInventory) {
         setProducts(newInventory.map((item: unknown) => {
-          const rawItem = item as { stock_level: number; products: unknown };
+          const rawItem = item as { stock_level: number; branch_retail_price?: number; branch_buying_price?: number; products: unknown };
           const prod = Array.isArray(rawItem.products) ? rawItem.products[0] : rawItem.products;
           return {
-            ...(prod as Omit<POSProduct, 'stock_level'>),
+            ...(prod as Omit<POSProduct, 'stock_level' | 'retail_price' | 'unit_cost'>),
+            retail_price: rawItem.branch_retail_price ?? (prod as {retail_price: number}).retail_price ?? 0,
+            unit_cost: rawItem.branch_buying_price ?? (prod as {buying_price: number}).buying_price ?? 0,
             stock_level: rawItem.stock_level
           };
         }) as POSProduct[]);
