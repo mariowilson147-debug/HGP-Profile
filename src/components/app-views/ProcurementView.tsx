@@ -114,14 +114,25 @@ export default function ProcurementView({
       .order('created_at', { ascending: false });
       
     if (purData) {
-      const flatPurchases = (purData as any[]).flatMap(pur => 
-        (pur.purchase_items || []).map((item: any, idx: number) => ({
+      type FetchedPurchase = {
+        id: string;
+        created_at: string;
+        purchase_items: {
+          quantity: number;
+          unit_cost: number;
+          subtotal: number;
+          products: { name: string };
+        }[] | null;
+      };
+      
+      const flatPurchases = (purData as unknown as FetchedPurchase[]).flatMap(pur => 
+        (pur.purchase_items || []).map((item, idx: number) => ({
           id: `${pur.id}-${idx}`,
           quantity: item.quantity,
           unit_cost: item.unit_cost,
           total_cost: item.subtotal,
           created_at: pur.created_at,
-          products: item.products
+          products: item.products as { name: string }
         }))
       );
       setPurchases(flatPurchases);
