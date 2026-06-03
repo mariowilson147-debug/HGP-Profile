@@ -105,6 +105,7 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
   const [products, setProducts] = useState<TransferProduct[]>([]);
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [sourceBranch, setSourceBranch] = useState(branchId || "");
   const [destinationBranch, setDestinationBranch] = useState("");
   const [allBranches, setAllBranches] = useState<{ id: string, name: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -114,10 +115,12 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
   const { user } = useAuth();
 
   useEffect(() => {
+    if (!sourceBranch) return;
+    
     supabase.from('inventory').select(`
       stock_level,
       products:product_id ( id, name, sku, category, image_url )
-    `).eq('branch_id', branchId).gt('stock_level', 0).then(({ data, error }) => {
+    `).eq('branch_id', sourceBranch).gt('stock_level', 0).then(({ data, error }) => {
       if (error) console.error("Error fetching transfer inventory:", error);
       if (data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -128,7 +131,7 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
         setProducts(mapped);
       }
     });
-    supabase.from('branches').select('id, name').neq('id', branchId).then(({ data }) => {
+    supabase.from('branches').select('id, name').then(({ data }) => {
       if (data) {
         if (user?.role === 'manager') {
           const allowed = user.assigned_branches || (user.branch_id ? [user.branch_id] : []);
@@ -138,7 +141,7 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
         }
       }
     });
-  }, [branchId, supabase, user]);
+  }, [sourceBranch, supabase, user]);
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase())).slice(0, 5);
 
@@ -165,14 +168,18 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
   };
 
   const handleSubmit = async () => {
-    if (cart.length === 0 || !userId || !destinationBranch) return;
+    if (cart.length === 0 || !userId || !sourceBranch || !destinationBranch) return;
+    if (sourceBranch === destinationBranch) {
+      alert("Source and destination branches cannot be the same.");
+      return;
+    }
     setIsSubmitting(true);
     setSuccessMsg("");
 
     try {
       // 1. Check current inventory to ensure sufficient stock
       for (const item of cart) {
-        const { data: invData } = await supabase.from('inventory').select('stock_level').eq('branch_id', branchId).eq('product_id', item.product.id).single();
+        const { data: invData } = await supabase.from('inventory').select('stock_level').eq('branch_id', sourceBranch).eq('product_id', item.product.id).single();
         if (!invData || invData.stock_level < item.quantity) {
           throw new Error(`Insufficient stock for ${item.product.name}. Available: ${invData?.stock_level || 0}`);
         }
@@ -180,7 +187,7 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
 
       // 2. Create Transfer Header
       const { data: transfer, error: tError } = await supabase.from('transfers').insert([{
-        from_branch_id: branchId,
+        from_branch_id: sourceBranch,
         to_branch_id: destinationBranch,
         status: 'pending',
         created_by: userId
@@ -198,7 +205,7 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
         });
 
         // Deduct from Source Inventory immediately
-        const { data: invData } = await supabase.from('inventory').select('id, stock_level').eq('branch_id', branchId).eq('product_id', item.product.id).single();
+        const { data: invData } = await supabase.from('inventory').select('id, stock_level').eq('branch_id', sourceBranch).eq('product_id', item.product.id).single();
         if (invData) {
           await supabase.from('inventory').update({ stock_level: invData.stock_level - item.quantity }).eq('id', invData.id);
         }
@@ -262,14 +269,28 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
           </div>
         )}
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-apex-text mb-2">Destination Branch</label>
-          <SelectDropdown
-            value={destinationBranch}
-            onChange={setDestinationBranch}
-            options={allBranches.map(b => ({ label: b.name, value: b.id }))}
-            placeholder="-- Select Destination --"
-          />
+        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-apex-text mb-2">Transfer From</label>
+            <SelectDropdown
+              value={sourceBranch}
+              onChange={(val) => {
+                setSourceBranch(val);
+                setCart([]); // Clear cart when source changes
+              }}
+              options={allBranches.map(b => ({ label: b.name, value: b.id }))}
+              placeholder="-- Select Source --"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-apex-text mb-2">Transfer To</label>
+            <SelectDropdown
+              value={destinationBranch}
+              onChange={setDestinationBranch}
+              options={allBranches.map(b => ({ label: b.name, value: b.id }))}
+              placeholder="-- Select Destination --"
+            />
+          </div>
         </div>
         
         {cart.length === 0 ? (
@@ -298,7 +319,7 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
 
             <button 
               onClick={handleSubmit}
-              disabled={isSubmitting || !destinationBranch}
+              disabled={isSubmitting || !sourceBranch || !destinationBranch || sourceBranch === destinationBranch}
               className="w-full py-3 hover:bg-slate-800 font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 bg-apex-surface-highest text-apex-text"
             >
               {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <ArrowRightLeft size={18} />}

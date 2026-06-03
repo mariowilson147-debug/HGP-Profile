@@ -80,7 +80,7 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
             const merged = allProducts.map((p: Record<string, unknown>) => {
               const inv = invMap.get(p.id as string);
               return {
-                id: inv ? inv.id as string : null,
+                id: inv ? inv.id as string : p.id as string,
                 product_id: p.id as string,
                 stock_level: inv ? inv.stock_level as number : 0,
                 reorder_level: inv ? inv.reorder_level as number : 10,
