@@ -87,15 +87,17 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
       if (mounted) {
         if (allProducts) {
           const inventoryMap = new Map((branchInventory || []).map((inv: Record<string, unknown>) => [inv.product_id, inv]));
-          
-          const mergedInventory: InventoryItem[] = allProducts.map((prod: Record<string, unknown>) => {
+          const mergedInventory: InventoryItem[] = [];
+          allProducts.forEach((prod: Record<string, unknown>) => {
             const inv = inventoryMap.get(prod.id) as Record<string, unknown> | undefined;
-            return {
-              id: inv ? inv.id as string : null,
-              stock_level: inv ? inv.stock_level as number : 0,
-              product_id: prod.id as string,
-              products: prod as { id: string, name: string, sku: string, category: string, image_url: string }
-            };
+            if (inv) {
+              mergedInventory.push({
+                id: inv.id as string,
+                stock_level: inv.stock_level as number,
+                product_id: prod.id as string,
+                products: prod as { id: string, name: string, sku: string, category: string, image_url: string }
+              });
+            }
           });
           
           setInventory(mergedInventory);

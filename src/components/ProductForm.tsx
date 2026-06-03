@@ -12,6 +12,7 @@ import { UploadCloud, Save, Plus, Trash2, CheckCircle2,
 import imageCompression from 'browser-image-compression';
 import { saveDraft, getDraft, deleteDraft } from "@/lib/idb";
 import SelectDropdown from "@/components/ui/SelectDropdown";
+import { useManagerBranch } from "@/components/ManagerBranchProvider";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -661,6 +662,8 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
   const { settings } = useSettings();
   const { toasts, add: addToast } = useToast();
   const [vaseProducts, setVaseProducts] = useState<Product[]>([]);
+  const managerBranch = useManagerBranch();
+  const selectedBranchId = managerBranch?.selectedBranchId;
 
   // Always guarantee "Flowers" appears in the category dropdown so the
   // FlowerConfigSection (component_type, vase selector, stem price) is
@@ -876,6 +879,21 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
       const result = await addProducts(payloads);
       if (result?.error) throw new Error(result.error);
       
+      // Auto-add to inventory if a branch is selected
+      if (selectedBranchId && result.data && Array.isArray(result.data)) {
+        const supabase = createSupabaseBrowserClient();
+        const inventoryPayloads = result.data.map((p: Record<string, unknown>) => ({
+          branch_id: selectedBranchId,
+          product_id: p.id,
+          stock_level: 0,
+          reorder_level: 5,
+          branch_buying_price: p.buying_price,
+          branch_wholesale_price: p.wholesale_price,
+          branch_retail_price: p.retail_price
+        }));
+        await supabase.from('inventory').insert(inventoryPayloads);
+      }
+
       await deleteDraft('product_queue'); // Clear draft on success
       
       addToast(`SUCCESSFULLY ADDED ${queue.length} ITEM(S) TO REGISTRY`, "success");

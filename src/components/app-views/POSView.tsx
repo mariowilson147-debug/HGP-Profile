@@ -288,6 +288,38 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
                 <X size={16} />
               </button>
             )}
+
+            {/* Fast Search Dropdown */}
+            {search && (
+              <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-64 overflow-y-auto">
+                {filtered.length === 0 ? (
+                  <div className="p-4 text-center text-slate-500">No products found.</div>
+                ) : (
+                  filtered.slice(0, 10).map(product => {
+                    const cartItem = cart.find(c => c.id === product.id);
+                    const isMaxed = cartItem ? cartItem.cart_quantity >= product.stock_level : false;
+                    
+                    return (
+                      <button
+                        key={product.id}
+                        onClick={() => { addToCart(product); setSearch(""); }}
+                        disabled={isMaxed}
+                        className={`w-full text-left p-3 border-b border-slate-100 hover:bg-slate-50 flex justify-between items-center transition-colors ${isMaxed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <div>
+                          <div className="font-bold text-slate-900">{product.name}</div>
+                          <div className="text-xs text-slate-500">SKU: {product.sku || 'N/A'}</div>
+                        </div>
+                        <div className="text-sm font-medium text-slate-500">
+                          {product.stock_level} in stock 
+                          <span className="font-bold text-slate-900 ml-3">KES {product.retail_price?.toLocaleString()}</span>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
         </div>
 
