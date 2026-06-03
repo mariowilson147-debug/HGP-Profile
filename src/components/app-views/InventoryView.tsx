@@ -113,9 +113,10 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
   }, [selectedViewBranch, supabase]);
 
   const filtered = inventory.filter(item => 
-    item.products?.name?.toLowerCase().includes(search.toLowerCase()) || 
+    item.stock_level > 0 &&
+    (item.products?.name?.toLowerCase().includes(search.toLowerCase()) || 
     item.products?.category?.toLowerCase().includes(search.toLowerCase()) ||
-    (item.products?.sku && item.products?.sku.toLowerCase().includes(search.toLowerCase()))
+    (item.products?.sku && item.products?.sku.toLowerCase().includes(search.toLowerCase())))
   );
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
