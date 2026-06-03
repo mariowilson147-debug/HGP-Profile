@@ -38,6 +38,8 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [adjustAmount, setAdjustAmount] = useState<string>("");
   const [reason, setReason] = useState("");
@@ -131,11 +133,17 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
     return () => { mounted = false };
   }, [selectedBranchId, activeTab, dateRange]);
 
-  const filteredInventory = inventory.filter(item => 
+  const allFiltered = inventory.filter(item => 
     item.products?.name.toLowerCase().includes(search.toLowerCase()) || 
     item.products?.category.toLowerCase().includes(search.toLowerCase()) ||
     (item.products?.sku && item.products?.sku.toLowerCase().includes(search.toLowerCase()))
-  ).slice(0, 10); // Limit to 10 for quick search
+  );
+  const totalPages = Math.ceil(allFiltered.length / itemsPerPage);
+  const filteredInventory = allFiltered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   const handleAdjust = async () => {
     if (!selectedItem || !user || !selectedBranchId) return;
@@ -285,6 +293,30 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
                 ))}
                 {filteredInventory.length === 0 && search && (
                   <p className="text-center text-apex-on-surface-variant py-4">No inventory matching &quot;{search}&quot;</p>
+                )}
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 px-2 pb-2">
+                    <span className="text-sm text-slate-500">
+                      {((page - 1) * itemsPerPage) + 1}-{Math.min(page * itemsPerPage, allFiltered.length)} of {allFiltered.length}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="px-2 py-1 rounded border border-slate-200 text-xs font-medium hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        Prev
+                      </button>
+                      <button
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="px-2 py-1 rounded border border-slate-200 text-xs font-medium hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
                 )}
                 {inventory.length === 0 && !loading && (
                   <p className="text-center text-apex-on-surface-variant py-4">Inventory is empty for this branch.</p>

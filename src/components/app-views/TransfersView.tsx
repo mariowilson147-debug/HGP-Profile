@@ -104,6 +104,8 @@ type CartItem = {
 function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: string }) {
   const [products, setProducts] = useState<TransferProduct[]>([]);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
   const [cart, setCart] = useState<CartItem[]>([]);
   const [sourceBranch, setSourceBranch] = useState(branchId || "");
   const [destinationBranch, setDestinationBranch] = useState("");
@@ -143,7 +145,13 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
     });
   }, [sourceBranch, supabase, user]);
 
-  const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase())).slice(0, 5);
+  const allFiltered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase()));
+  const totalPages = Math.ceil(allFiltered.length / itemsPerPage);
+  const filtered = allFiltered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   const addToCart = (product: TransferProduct) => {
     if (cart.find(c => c.product.id === product.id)) return;
@@ -240,22 +248,45 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
           />
         </div>
         
-        {search && (
-          <div className="border border-apex-outline rounded-xl overflow-hidden divide-y divide-apex-outline-variant">
-            {filtered.map(p => (
-              <button 
-                key={p.id}
-                onClick={() => addToCart(p)}
-                className="w-full flex items-center justify-between p-4 hover:bg-apex-surface-low transition-colors text-left"
+        <div className="border border-apex-outline rounded-xl overflow-hidden divide-y divide-apex-outline-variant">
+          {filtered.map(p => (
+            <button 
+              key={p.id}
+              onClick={() => addToCart(p)}
+              className="w-full flex items-center justify-between p-4 hover:bg-apex-surface-low transition-colors text-left"
+            >
+              <div>
+                <div className="font-bold text-apex-text">{p.name}</div>
+                <div className="text-sm text-apex-on-surface-variant">SKU: {p.sku || 'N/A'} • Available: <span className="font-bold text-slate-800">{p.stock_level}</span></div>
+              </div>
+              <Plus className="text-apex-on-surface-variant" size={20} />
+            </button>
+          ))}
+          {filtered.length === 0 && <div className="p-4 text-center text-apex-on-surface-variant">No products found.</div>}
+        </div>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4 px-2">
+            <span className="text-sm text-slate-500">
+              {((page - 1) * itemsPerPage) + 1}-{Math.min(page * itemsPerPage, allFiltered.length)} of {allFiltered.length}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
               >
-                <div>
-                  <div className="font-bold text-apex-text">{p.name}</div>
-                  <div className="text-sm text-apex-on-surface-variant">SKU: {p.sku || 'N/A'} • Available: <span className="font-bold text-slate-800">{p.stock_level}</span></div>
-                </div>
-                <Plus className="text-apex-on-surface-variant" size={20} />
+                Prev
               </button>
-            ))}
-            {filtered.length === 0 && <div className="p-4 text-center text-apex-on-surface-variant">No products found.</div>}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

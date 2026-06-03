@@ -31,6 +31,8 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
   const [isProcessing, setIsProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<CartItem[] | null>(null);
@@ -176,24 +178,33 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
       setCompletedTotal(total);
       setCart([]);
 
-      // Refresh inventory list (rudimentary refresh)
-      const { data: newInventory } = await supabase
+      // Refresh inventory list
+      const { data: invData } = await supabase
         .from('inventory')
-        .select('stock_level, branch_retail_price, branch_buying_price, products(id, name, category, image_url, retail_price, buying_price)')
+        .select('product_id, stock_level, branch_retail_price, branch_buying_price')
         .eq('branch_id', branchId)
         .gt('stock_level', 0);
         
-      if (newInventory) {
-        setProducts(newInventory.map((item: unknown) => {
-          const rawItem = item as { stock_level: number; branch_retail_price?: number; branch_buying_price?: number; products: unknown };
-          const prod = Array.isArray(rawItem.products) ? rawItem.products[0] : rawItem.products;
-          return {
-            ...(prod as Omit<POSProduct, 'stock_level' | 'retail_price' | 'unit_cost'>),
-            retail_price: rawItem.branch_retail_price ?? (prod as {retail_price: number}).retail_price ?? 0,
-            unit_cost: rawItem.branch_buying_price ?? (prod as {buying_price: number}).buying_price ?? 0,
-            stock_level: rawItem.stock_level
-          };
-        }) as POSProduct[]);
+      const allProducts = await getProducts();
+
+      if (invData && allProducts.length > 0) {
+        const invMap = new Map(invData.map(i => [i.product_id, i]));
+        const mapped: POSProduct[] = allProducts
+          .filter(p => invMap.has(p.id))
+          .map(p => {
+            const inv = invMap.get(p.id)!;
+            return {
+              id: p.id,
+              name: p.name,
+              category: p.category,
+              sku: p.sku,
+              image_url: p.image_url,
+              retail_price: inv.branch_retail_price ?? p.retail_price ?? 0,
+              unit_cost: inv.branch_buying_price ?? p.buying_price ?? 0,
+              stock_level: inv.stock_level
+            };
+          });
+        setProducts(mapped);
       }
 
     } catch (err) {
@@ -258,6 +269,12 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
   };
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase()));
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 lg:h-[calc(100vh-8rem)] min-h-[calc(100vh-8rem)]">
@@ -329,7 +346,7 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
         ) : (
           <div className="flex-1 overflow-y-auto pr-2 pb-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {filtered.map(product => (
+              {paginated.map(product => (
                 <button
                   key={product.id}
                   onClick={() => addToCart(product)}
@@ -368,6 +385,30 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
                 </div>
               )}
             </div>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6 px-2">
+                <span className="text-sm text-slate-500">
+                  Showing {((page - 1) * itemsPerPage) + 1} to {Math.min(page * itemsPerPage, filtered.length)} of {filtered.length}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

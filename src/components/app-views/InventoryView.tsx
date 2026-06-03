@@ -160,10 +160,10 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <Link href={returnPath} className="hover:opacity-80 transition-opacity">
+            <h1 className="text-3xl font-display font-bold text-apex-text">
+              {selectedViewBranch ? "Branch Inventory" : "Universal Inventory"}
+            </h1>
           </Link>
-          <h1 className="text-3xl font-display font-bold text-apex-text">
-            {selectedViewBranch ? "Branch Inventory" : "Universal Inventory"}
-          </h1>
           <p className="text-apex-on-surface-variant mt-2">
             {selectedViewBranch ? "Manage stock levels for your specific location." : "Global view of stock across all branches."}
           </p>
