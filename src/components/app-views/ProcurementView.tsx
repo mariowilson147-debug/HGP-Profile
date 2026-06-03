@@ -214,27 +214,24 @@ export default function ProcurementView({
         }]);
         if (iError) throw iError;
 
-        // Update inventory
+        // Update inventory using upsert
         const currentInv = inventory[item.id];
         const newStock = (currentInv?.stock_level || 0) + item.restock_qty;
         
-        if (currentInv) {
-          await supabase.from('inventory').update({ 
-            stock_level: newStock,
-            branch_buying_price: item.unit_cost,
-            branch_wholesale_price: item.wholesale_price,
-            branch_retail_price: item.retail_price
-          }).eq('branch_id', selectedBranchId).eq('product_id', item.id);
-        } else {
-          await supabase.from('inventory').insert([{ 
-            branch_id: selectedBranchId, 
-            product_id: item.id, 
-            stock_level: newStock, 
-            reorder_level: 5,
-            branch_buying_price: item.unit_cost,
-            branch_wholesale_price: item.wholesale_price,
-            branch_retail_price: item.retail_price 
-          }]);
+        const { error: upsertError } = await supabase.from('inventory').upsert({
+          branch_id: selectedBranchId,
+          product_id: item.id,
+          stock_level: newStock,
+          reorder_level: 5,
+          branch_buying_price: item.unit_cost,
+          branch_wholesale_price: item.wholesale_price,
+          branch_retail_price: item.retail_price,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'product_id,branch_id' });
+        
+        if (upsertError) {
+          console.error("Inventory Upsert Error:", upsertError);
+          throw upsertError;
         }
       }
 

@@ -94,13 +94,15 @@ export default function TransfersView({ branchId, returnPath = "/manager" }: { b
 }
 
 // ─── Create Transfer Tab ──────────────────────────────────────────────────────
+type TransferProduct = Product & { stock_level: number };
+
 type CartItem = {
-  product: Product;
+  product: TransferProduct;
   quantity: number;
 };
 
 function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: string }) {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<TransferProduct[]>([]);
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [destinationBranch, setDestinationBranch] = useState("");
@@ -112,7 +114,20 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
   const { user } = useAuth();
 
   useEffect(() => {
-    getProducts().then(setProducts);
+    supabase.from('inventory').select(`
+      stock_level,
+      products:product_id ( id, name, sku, category, image_url )
+    `).eq('branch_id', branchId).gt('stock_level', 0).then(({ data, error }) => {
+      if (error) console.error("Error fetching transfer inventory:", error);
+      if (data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mapped = data.map((inv: any) => ({
+          ...inv.products,
+          stock_level: inv.stock_level
+        })) as TransferProduct[];
+        setProducts(mapped);
+      }
+    });
     supabase.from('branches').select('id, name').neq('id', branchId).then(({ data }) => {
       if (data) {
         if (user?.role === 'manager') {
@@ -127,7 +142,7 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase())).slice(0, 5);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: TransferProduct) => {
     if (cart.find(c => c.product.id === product.id)) return;
     setCart([...cart, { product, quantity: 1 }]);
     setSearch("");
@@ -135,7 +150,11 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
 
   const updateCart = (index: number, quantity: string) => {
     const newCart = [...cart];
-    newCart[index].quantity = parseInt(quantity) || 0;
+    let qty = parseInt(quantity) || 0;
+    if (qty > newCart[index].product.stock_level) {
+      qty = newCart[index].product.stock_level;
+    }
+    newCart[index].quantity = qty;
     setCart(newCart);
   };
 
@@ -224,7 +243,7 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
               >
                 <div>
                   <div className="font-bold text-apex-text">{p.name}</div>
-                  <div className="text-sm text-apex-on-surface-variant">SKU: {p.sku || 'N/A'}</div>
+                  <div className="text-sm text-apex-on-surface-variant">SKU: {p.sku || 'N/A'} • Available: <span className="font-bold text-slate-800">{p.stock_level}</span></div>
                 </div>
                 <Plus className="text-apex-on-surface-variant" size={20} />
               </button>
@@ -267,9 +286,9 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
                   <button onClick={() => removeCart(idx)} className="text-red-500 text-sm font-medium hover:underline">Remove</button>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Quantity to Transfer</label>
+                  <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Quantity to Transfer (Max {item.product.stock_level})</label>
                   <input 
-                    type="number" min="1" value={item.quantity} 
+                    type="number" min="1" max={item.product.stock_level} value={item.quantity} 
                     onChange={e => updateCart(idx, e.target.value)}
                     className="w-full p-2 border border-apex-outline rounded-lg outline-none focus:border-slate-900"
                   />
