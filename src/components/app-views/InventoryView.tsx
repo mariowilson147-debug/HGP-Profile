@@ -35,9 +35,19 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
   const [page, setPage] = useState(1);
   const itemsPerPage = 20;
 
+  const [selectedViewBranch, setSelectedViewBranch] = useState<string | null>(branchId || null);
+  const [branches, setBranches] = useState<{id: string, name: string}[]>([]);
+
+  useEffect(() => {
+    supabase.from('branches').select('id, name').order('name').then(({data}) => {
+      if (data) setBranches(data);
+    });
+  }, [supabase]);
+
   useEffect(() => {
     let mounted = true;
     async function loadInventory() {
+      setLoading(true);
       // Fetch all products
       const { data: allProducts, error: prodError } = await supabase
         .from('products')
@@ -52,8 +62,8 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
         .from('inventory')
         .select('id, stock_level, reorder_level, product_id, branch_id, branches(name)');
 
-      if (branchId) {
-        invQuery = invQuery.eq('branch_id', branchId);
+      if (selectedViewBranch) {
+        invQuery = invQuery.eq('branch_id', selectedViewBranch);
       }
 
       const { data: inventoryData, error: invError } = await invQuery;
@@ -64,7 +74,7 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
 
       if (mounted) {
         if (allProducts) {
-          if (branchId) {
+          if (selectedViewBranch) {
             // Manager mode: show 1 row per product for this branch
             const invMap = new Map((inventoryData || []).map((inv: Record<string, unknown>) => [inv.product_id as string, inv]));
             const merged = allProducts.map((p: Record<string, unknown>) => {
@@ -105,7 +115,7 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
 
     loadInventory();
     return () => { mounted = false };
-  }, [branchId, supabase]);
+  }, [selectedViewBranch, supabase]);
 
   const filtered = inventory.filter(item => 
     item.products?.name?.toLowerCase().includes(search.toLowerCase()) || 
@@ -142,7 +152,7 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Inventory_Export_${branchId ? 'Branch' : 'Universal'}_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `Inventory_Export_${selectedViewBranch ? 'Branch' : 'Universal'}_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -154,12 +164,31 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <Link href={returnPath} className="hover:opacity-80 transition-opacity">
-            <h1 className="text-3xl font-display font-bold text-apex-text">{branchId ? "Branch Inventory" : "Universal Inventory"}</h1>
           </Link>
-          <p className="text-apex-on-surface-variant mt-2">{branchId ? "Manage stock levels for your specific location." : "Global view of stock across all branches."}</p>
+          <h1 className="text-3xl font-display font-bold text-apex-text">
+            {selectedViewBranch ? "Branch Inventory" : "Universal Inventory"}
+          </h1>
+          <p className="text-apex-on-surface-variant mt-2">
+            {selectedViewBranch ? "Manage stock levels for your specific location." : "Global view of stock across all branches."}
+          </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-center">
-          <div className="relative w-full md:w-96">
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="relative w-full sm:w-64">
+            <select
+              value={selectedViewBranch || ""}
+              onChange={(e) => setSelectedViewBranch(e.target.value || null)}
+              className="w-full px-4 py-2.5 bg-apex-surface border border-apex-outline rounded-xl focus:ring-2 focus:ring-apex-text focus:border-transparent outline-none transition-all shadow-sm text-apex-text appearance-none"
+            >
+              <option value="">Universal (All Branches)</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-apex-on-surface-variant" size={18} />
             <input 
               type="text" 
@@ -179,19 +208,7 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
         </div>
       </div>
 
-      {!branchId && !loading && (
-        <div className="bg-amber-50 border border-amber-200 p-6 rounded-2xl flex items-start gap-4">
-          <AlertTriangle className="text-amber-500 mt-1" />
-          <div>
-            <h3 className="font-bold text-amber-800">No Branch Selected</h3>
-            <p className="text-amber-700 text-sm mt-1">
-              Please ensure a branch is assigned or selected.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {showValuation && !loading && branchId && (
+      {showValuation && !loading && selectedViewBranch && (
         <div className="p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between shadow-sm bg-apex-surface-highest text-apex-text">
           <div className="flex items-center gap-4 mb-4 md:mb-0">
             <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
@@ -222,7 +239,7 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
                 <tr className="bg-apex-surface-highest border-b border-apex-outline text-xs uppercase tracking-wider text-apex-on-surface-variant font-semibold">
                   <th className="px-6 py-4">Product</th>
                   <th className="px-6 py-4">Category</th>
-                  {!branchId && <th className="px-6 py-4">Branch</th>}
+                  {!selectedViewBranch && <th className="px-6 py-4">Branch</th>}
                   <th className="px-6 py-4">Stock Level</th>
                   <th className="px-6 py-4">Wholesale Price</th>
                   <th className="px-6 py-4">Retail Price</th>
@@ -249,7 +266,7 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
                         {item.products.category}
                       </span>
                     </td>
-                    {!branchId && (
+                    {!selectedViewBranch && (
                       <td className="px-6 py-4">
                         <span className="text-apex-on-surface-variant font-medium text-sm">
                           {item.branches?.name || "Unknown Branch"}
