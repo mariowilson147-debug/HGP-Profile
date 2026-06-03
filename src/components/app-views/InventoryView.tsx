@@ -6,6 +6,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Search, Loader2, AlertTriangle, PackageOpen, TrendingUp, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { getProducts } from "@/lib/actions";
 
 type InventoryItem = {
   id: string;
@@ -48,14 +49,8 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
     let mounted = true;
     async function loadInventory() {
       setLoading(true);
-      // Fetch all products
-      const { data: allProducts, error: prodError } = await supabase
-        .from('products')
-        .select('id, name, sku, category, image_url, wholesale_price, retail_price, buying_price');
-
-      if (prodError) {
-        console.error("Products fetch error:", prodError);
-      }
+      // Fetch all products using the server action to bypass RLS issues
+      const allProducts = await getProducts();
 
       // Fetch inventory
       let invQuery = supabase
