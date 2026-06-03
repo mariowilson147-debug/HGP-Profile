@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { createAdjustment, getAdjustmentHistory, type InventoryAdjustment } from "@/lib/actions";
+import { createAdjustment, getAdjustmentHistory, getProducts, type InventoryAdjustment } from "@/lib/actions";
 import { Search, Loader2, PackageOpen, AlertTriangle, Save, Calendar, Check, History, Calculator } from "lucide-react";
 import Image from "next/image";
 
@@ -75,8 +75,8 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
       }
       setLoading(true);
       
-      // Fetch all products
-      const { data: allProducts } = await supabase.from('products').select('id, name, sku, category, image_url');
+      // Fetch all products using server action to bypass RLS
+      const allProducts = await getProducts();
       
       // Fetch inventory for this branch
       const { data: branchInventory } = await supabase

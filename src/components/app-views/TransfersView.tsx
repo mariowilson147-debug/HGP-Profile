@@ -117,17 +117,17 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
   useEffect(() => {
     if (!sourceBranch) return;
     
-    supabase.from('inventory').select(`
-      stock_level,
-      products:product_id ( id, name, sku, category, image_url )
-    `).eq('branch_id', sourceBranch).gt('stock_level', 0).then(({ data, error }) => {
+    supabase.from('inventory').select('product_id, stock_level').eq('branch_id', sourceBranch).gt('stock_level', 0).then(async ({ data, error }) => {
       if (error) console.error("Error fetching transfer inventory:", error);
       if (data) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const mapped = data.map((inv: any) => ({
-          ...inv.products,
-          stock_level: inv.stock_level
-        })) as TransferProduct[];
+        const allProducts = await getProducts();
+        const invMap = new Map(data.map(i => [i.product_id, i.stock_level]));
+        const mapped = allProducts
+          .filter(p => invMap.has(p.id))
+          .map(p => ({
+            ...p,
+            stock_level: invMap.get(p.id)!
+          })) as TransferProduct[];
         setProducts(mapped);
       }
     });

@@ -6,6 +6,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Search, Loader2, PackageOpen, Plus, Minus, Trash2, ShoppingCart, CreditCard, CheckCircle2, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { getProducts } from "@/lib/actions";
 
 type POSProduct = {
   id: string;
@@ -43,38 +44,36 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
         return;
       }
 
-      // Fetch products that have stock in this branch
-      const { data, error } = await supabase
+      // Fetch inventory for this branch
+      const { data: invData, error: invError } = await supabase
         .from('inventory')
-        .select(`
-          stock_level,
-          branch_retail_price,
-          branch_buying_price,
-          products (
-            id,
-            name,
-            category,
-            sku,
-            image_url,
-            retail_price,
-            buying_price
-          )
-        `)
+        .select('product_id, stock_level, branch_retail_price, branch_buying_price')
         .eq('branch_id', branchId)
         .gt('stock_level', 0); // Only in stock
 
+      // Fetch all products using server action to bypass RLS
+      const allProducts = await getProducts();
+
       if (mounted) {
-        if (data) {
-          const mapped = data.map((item: unknown) => {
-            const rawItem = item as { stock_level: number; branch_retail_price?: number; branch_buying_price?: number; products: unknown };
-            const prod = Array.isArray(rawItem.products) ? rawItem.products[0] : rawItem.products;
-            return {
-              ...(prod as Omit<POSProduct, 'stock_level' | 'retail_price' | 'unit_cost'>),
-              retail_price: rawItem.branch_retail_price ?? (prod as {retail_price: number}).retail_price ?? 0,
-              unit_cost: rawItem.branch_buying_price ?? (prod as {buying_price: number}).buying_price ?? 0,
-              stock_level: rawItem.stock_level
-            };
-          }) as POSProduct[];
+        if (invData && allProducts.length > 0) {
+          const invMap = new Map(invData.map(i => [i.product_id, i]));
+          
+          const mapped: POSProduct[] = allProducts
+            .filter(p => invMap.has(p.id))
+            .map(p => {
+              const inv = invMap.get(p.id)!;
+              return {
+                id: p.id,
+                name: p.name,
+                category: p.category,
+                sku: p.sku,
+                image_url: p.image_url,
+                retail_price: inv.branch_retail_price ?? p.retail_price ?? 0,
+                unit_cost: inv.branch_buying_price ?? p.buying_price ?? 0,
+                stock_level: inv.stock_level
+              };
+            });
+            
           setProducts(mapped);
         }
         setLoading(false);
