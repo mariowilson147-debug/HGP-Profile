@@ -157,18 +157,17 @@ export default function ProductModal({ product, isOpen, onClose, user, allProduc
                   <div className="flex flex-col gap-1">
                     {user.role === 'admin' && (
                       <div className="text-[10px] text-slate-500 font-medium mb-1">
-                        Cost: KES {product.buying_price?.toLocaleString()}
+                        {isFlowerArrangement ? "Stem Cost:" : "Cost:"} KES {product.buying_price?.toLocaleString()}
                       </div>
                     )}
-                    {/* Show stem price for flower arrangements */}
-                    {isFlowerArrangement && product.attributes?.stem_price && (
-                      <div className="text-xs text-slate-500 font-medium">
-                        Stem only: KES {Number(product.attributes.stem_price).toLocaleString()}
-                      </div>
-                    )}
-                    <div className="text-sm font-medium text-slate-500">Retail: KES {product.retail_price?.toLocaleString()}</div>
-                    <div className="text-3xl font-display font-medium text-slate-900 tracking-tight">
-                      KES {product.wholesale_price?.toLocaleString()} <span className="text-sm font-normal text-slate-500">ws</span>
+                    <div className="text-sm font-medium text-slate-500">
+                      {isFlowerArrangement ? "Stem Retail:" : "Retail:"} KES {product.retail_price?.toLocaleString()}
+                    </div>
+                    <div className="text-3xl font-display font-medium text-slate-900 tracking-tight flex items-baseline gap-1">
+                      KES {product.wholesale_price?.toLocaleString()}
+                      <span className="text-sm font-normal text-slate-500">
+                        ws {isFlowerArrangement && "(stem)"}
+                      </span>
                     </div>
                   </div>
                 ) : (

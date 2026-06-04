@@ -273,17 +273,19 @@ export default function ProcurementView({
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex flex-col">
-            <label className="text-xs font-bold text-apex-on-surface-variant uppercase tracking-wider mb-1">Select Receiving Branch</label>
-            <select
-              value={activeBranchId}
-              onChange={(e) => setActiveBranchId(e.target.value)}
-              className="px-4 py-2.5 bg-apex-surface border border-apex-outline rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium min-w-[200px] text-apex-text"
-            >
-              {branches.length === 0 && <option disabled value="">No branches available</option>}
-              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
+          {!branchId && (
+            <div className="flex flex-col">
+              <label className="text-xs font-bold text-apex-on-surface-variant uppercase tracking-wider mb-1">Select Receiving Branch</label>
+              <select
+                value={activeBranchId}
+                onChange={(e) => setActiveBranchId(e.target.value)}
+                className="px-4 py-2.5 bg-apex-surface border border-apex-outline rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium min-w-[200px] text-apex-text"
+              >
+                {branches.length === 0 && <option disabled value="">No branches available</option>}
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+          )}
           <Link 
             href={addProductLink}
             className="px-5 py-2.5 bg-apex-primary text-apex-bg rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center gap-2 self-end h-[42px]"

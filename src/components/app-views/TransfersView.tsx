@@ -130,6 +130,12 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
   const [successMsg, setSuccessMsg] = useState("");
   const supabase = createSupabaseBrowserClient();
 
+  const selectedBranchId = branchId || sourceBranch;
+
+  useEffect(() => {
+    if (branchId) setSourceBranch(branchId);
+  }, [branchId]);
+
   const { user } = useAuth();
 
   useEffect(() => {
@@ -327,6 +333,7 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
               }}
               options={allBranches.map(b => ({ label: b.name, value: b.id }))}
               placeholder="-- Select Source --"
+              disabled={!!branchId}
             />
           </div>
           <div>

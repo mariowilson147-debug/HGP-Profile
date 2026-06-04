@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { Loader2, TrendingUp, DollarSign, PieChart, Receipt } from "lucide-react";
+import { Loader2, TrendingUp, DollarSign, PieChart, Receipt, Download } from "lucide-react";
 import Link from "next/link";
 import DatePicker from "@/components/ui/DatePicker";
+import SelectDropdown from "@/components/ui/SelectDropdown";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   LineChart, Line, AreaChart, Area
@@ -45,6 +46,16 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
   });
   
   const [salesData, setSalesData] = useState<SaleRecord[]>([]);
+  const [adminBranchFilter, setAdminBranchFilter] = useState<string>("all");
+  const [branches, setBranches] = useState<{id: string, name: string}[]>([]);
+
+  useEffect(() => {
+    if (!branchId) {
+      supabase.from('branches').select('id, name').order('name').then(({ data }) => {
+        if (data) setBranches(data);
+      });
+    }
+  }, [branchId, supabase]);
 
   useEffect(() => {
     async function fetchReports() {
@@ -83,6 +94,8 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
 
       if (branchId) {
         query = query.eq('branch_id', branchId);
+      } else if (adminBranchFilter !== "all") {
+        query = query.eq('branch_id', adminBranchFilter);
       }
 
       const { data } = await query;
@@ -93,7 +106,7 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
     }
     
     fetchReports();
-  }, [branchId, fromDate, toDate, supabase]);
+  }, [branchId, fromDate, toDate, adminBranchFilter, supabase]);
 
   if (!branchId && branchId !== undefined && branchId !== null) {
     return (
@@ -173,6 +186,32 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
   // Sales data is descending, so we reverse it to chronological order for the trend chart
   const trendData = Object.values(trendDataMap).reverse();
 
+  const handleExportCSV = () => {
+    const headers = ["Date", "Receipt ID", "Seller", "Total Amount", "Profit Margin"];
+    const rows = salesData.map(sale => {
+      let cost = 0;
+      sale.sale_items?.forEach((item: SaleItem) => {
+        cost += (item.products?.buying_price || 0) * item.quantity;
+      });
+      const margin = sale.total_amount - cost;
+      
+      const dateStr = `${new Date(sale.created_at).toLocaleDateString()} ${new Date(sale.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+      const sellerName = sale.user_profiles?.nickname || 'Unknown';
+      const receiptId = sale.id.split('-')[0];
+      
+      return `"${dateStr}","${receiptId}","${sellerName}","${sale.total_amount}","${margin}"`;
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `sales_report_${fromDate}_to_${toDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -183,7 +222,19 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
           <p className="text-apex-on-surface-variant mt-2">{branchId ? "Deep analytics, margins, and sales history." : "Aggregated analytics and sales across all branches."}</p>
         </div>
         
-        <div className="flex z-10 flex-col sm:flex-row gap-4 bg-apex-surface p-2 rounded-2xl shadow-sm border border-apex-outline">
+        <div className="flex z-10 flex-col sm:flex-row gap-4 bg-apex-surface p-2 rounded-2xl shadow-sm border border-apex-outline items-center">
+          {!branchId && (
+            <div className="flex items-center gap-2 px-2 border-r border-apex-outline mr-2 pr-4 h-full">
+              <span className="text-sm font-medium text-apex-on-surface-variant">Branch:</span>
+              <SelectDropdown
+                value={adminBranchFilter}
+                onChange={setAdminBranchFilter}
+                options={[{ label: "All Branches", value: "all" }, ...branches.map(b => ({ label: b.name, value: b.id }))]}
+                placeholder="All Branches"
+                className="w-40"
+              />
+            </div>
+          )}
           <DatePicker 
             date={fromDate} 
             setDate={setFromDate} 
@@ -369,9 +420,17 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
 
           {/* Recent Receipts */}
           <div className="bg-apex-surface rounded-2xl border border-apex-outline shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-apex-outline-variant bg-apex-surface-highest flex items-center gap-3">
-              <Receipt className="text-apex-on-surface-variant" size={20} />
-              <h2 className="font-bold text-apex-text">Recent Receipts</h2>
+            <div className="p-5 border-b border-apex-outline-variant bg-apex-surface-highest flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Receipt className="text-apex-on-surface-variant" size={20} />
+                <h2 className="font-bold text-apex-text">Recent Receipts</h2>
+              </div>
+              <button 
+                onClick={handleExportCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors"
+              >
+                <Download size={16} /> Export CSV
+              </button>
             </div>
             <div className="p-0 overflow-x-auto">
               <table className="w-full text-left text-sm">

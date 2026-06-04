@@ -15,9 +15,10 @@ interface SelectDropdownProps {
   options: SelectOption[];
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
-export default function SelectDropdown({ value, onChange, options, placeholder = "Select...", className = "" }: SelectDropdownProps) {
+export default function SelectDropdown({ value, onChange, options, placeholder = "Select...", className = "", disabled = false }: SelectDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -37,8 +38,9 @@ export default function SelectDropdown({ value, onChange, options, placeholder =
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-10 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center justify-between px-3 hover:border-[#2ab6eb] transition-all outline-none text-left"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-full h-10 bg-white rounded-xl border flex items-center justify-between px-3 transition-all outline-none text-left ${disabled ? 'border-slate-100 bg-slate-50 cursor-not-allowed opacity-70' : 'border-slate-200 shadow-sm hover:border-[#2ab6eb]'}`}
       >
         <span className={`text-[14px] font-medium truncate ${selectedOption ? 'text-slate-800' : 'text-slate-400'}`}>
           {selectedOption ? selectedOption.label : placeholder}

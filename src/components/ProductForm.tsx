@@ -44,7 +44,6 @@ interface QueueItem {
   extraImages: ExtraImage[];
   // Flower-specific
   componentType: 'arrangement' | 'vase' | '';
-  stemPrice: string;
   compatibleVaseIds: string[];
 }
 
@@ -66,7 +65,6 @@ function blankItem(defaultCategory: string, id?: string): QueueItem {
     errorMsg: "",
     extraImages: [],
     componentType: '',
-    stemPrice: '',
     compatibleVaseIds: [],
   };
 }
@@ -339,7 +337,6 @@ function FlowerConfigSection({
               onClick={() => onChange(item.id, {
                 componentType: type,
                 compatibleVaseIds: type === 'vase' ? [] : item.compatibleVaseIds,
-                stemPrice: type === 'vase' ? '' : item.stemPrice,
               })}
               className={`flex-1 py-2 text-sm font-medium rounded border transition-all
                 ${item.componentType === type
@@ -361,28 +358,6 @@ function FlowerConfigSection({
       {/* Arrangement-specific fields */}
       {item.componentType === 'arrangement' && (
         <>
-          {/* Stem price */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-apex-text mb-2">
-              Stem Only Price (flower without vase)
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-apex-on-surface-variant/50">KES</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={item.stemPrice}
-                onChange={e => onChange(item.id, { stemPrice: e.target.value })}
-                className="w-full bg-apex-surface border border-apex-outline-variant rounded pl-9 pr-3 py-2.5 text-sm text-apex-text focus:outline-none focus:border-pink-400/50 focus:ring-1 focus:ring-pink-400/30 transition-all placeholder:text-apex-on-surface-variant/20"
-                placeholder="0.00"
-              />
-            </div>
-            <p className="text-[9px] text-apex-on-surface-variant/40 font-apex-mono mt-1 uppercase tracking-widest">
-              The &quot;FULL ARRANGEMENT PRICE&quot; field above = flower + default vase combined
-            </p>
-          </div>
-
           {/* Compatible vases */}
           <div>
             <label className="block text-sm font-medium text-apex-text mb-2">
@@ -463,7 +438,7 @@ function QueueCard({
     : null;
 
   const isFlower = item.category === "Flowers & Vases";
-  const retailLabel = isFlower && item.componentType === 'arrangement' ? "Full Arrangement Price" : "Retail Price";
+  const isArrangement = isFlower && item.componentType === 'arrangement';
 
   return (
     <div className={`bg-apex-surface rounded-2xl border transition-all duration-200 relative overflow-hidden shadow-sm
@@ -514,7 +489,7 @@ function QueueCard({
                   <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">Category</label>
                   <SelectDropdown
                     value={item.category}
-                    onChange={(val) => onChange(item.id, { category: val, componentType: '', stemPrice: '', compatibleVaseIds: [] })}
+                    onChange={(val) => onChange(item.id, { category: val, componentType: '', compatibleVaseIds: [] })}
                     options={categories.map(c => ({ label: c.name, value: c.name }))}
                   />
                 </div>
@@ -617,7 +592,8 @@ function QueueCard({
               {(["buying_price", "wholesale_price", "retail_price"] as const).map((field, i) => (
                 <div key={field}>
                   <label className="block text-xs font-medium text-apex-on-surface-variant mb-1">
-                    {["Cost Price", "Wholesale Price", i === 2 ? retailLabel : "Retail Price"][i]}
+                    {["Cost Price", "Wholesale Price", "Retail Price"][i]}
+                    {isArrangement && <span className="text-pink-500 ml-1">(Stem Only)</span>}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-apex-on-surface-variant/50">KES</span>
@@ -638,6 +614,33 @@ function QueueCard({
                   <span className={`text-sm font-bold ${margin >= 20 ? "text-green-600" : margin >= 10 ? "text-amber-500" : "text-red-500"}`}>
                     {margin}%
                   </span>
+                </div>
+              )}
+
+              {isArrangement && item.compatibleVaseIds.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-apex-outline-variant/20">
+                  <h4 className="text-xs font-semibold text-apex-text mb-2">Auto-Calculated Arrangement Prices</h4>
+                  <div className="flex flex-col gap-2">
+                    {item.compatibleVaseIds.map(vaseId => {
+                      const vase = vaseProducts.find(v => v.id === vaseId);
+                      if (!vase) return null;
+                      
+                      const stemW = parseFloat(item.prices.wholesale_price) || 0;
+                      const stemR = parseFloat(item.prices.retail_price) || 0;
+                      const vaseW = vase.wholesale_price || 0;
+                      const vaseR = vase.retail_price || 0;
+
+                      return (
+                        <div key={vaseId} className="flex flex-col bg-pink-500/5 border border-pink-500/20 rounded-lg p-2.5">
+                          <span className="text-xs font-medium text-pink-700 mb-1">{vase.name}</span>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-apex-on-surface-variant font-semibold">Wholesale: KES {(stemW + vaseW).toLocaleString()}</span>
+                            <span className="text-apex-on-surface-variant font-semibold">Retail: KES {(stemR + vaseR).toLocaleString()}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -721,7 +724,6 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
         ? (attrs.image_urls as string[]).map(url => ({ id: crypto.randomUUID(), file: null, preview: "", url }))
         : [],
       componentType: (attrs.component_type as 'arrangement' | 'vase' | '') || '',
-      stemPrice: String(attrs.stem_price || ''),
       compatibleVaseIds: Array.isArray(attrs.compatible_vase_ids) ? (attrs.compatible_vase_ids as string[]) : [],
     };
   });
@@ -794,7 +796,6 @@ export default function ProductForm({ initialData }: { initialData?: Product }) 
     if (item.category === 'Flowers & Vases') {
       attrs.component_type = item.componentType;
       if (item.componentType === 'arrangement') {
-        attrs.stem_price = item.stemPrice || '0';
         attrs.compatible_vase_ids = item.compatibleVaseIds;
       }
     }

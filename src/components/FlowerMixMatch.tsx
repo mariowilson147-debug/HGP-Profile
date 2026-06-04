@@ -22,12 +22,14 @@ export default function FlowerMixMatch({ flower, compatibleVases, user, onVaseIm
 
   if (compatibleVases.length === 0) return null;
 
-  const stemPrice = parseFloat(String(flower.attributes?.stem_price || "0")) || 0;
+  const stemPrice = flower.retail_price || 0;
+  const stemPriceWholesale = flower.wholesale_price || 0;
+
   const vasePrice = selectedVase ? (selectedVase.retail_price || 0) : 0;
   const combinedPrice = stemPrice + vasePrice;
 
   const vasePriceWholesale = selectedVase ? (selectedVase.wholesale_price || 0) : 0;
-  const combinedWholesale = stemPrice + vasePriceWholesale;
+  const combinedWholesale = stemPriceWholesale + vasePriceWholesale;
 
   const isAdmin = user?.role === "admin";
 
@@ -102,7 +104,10 @@ export default function FlowerMixMatch({ flower, compatibleVases, user, onVaseIm
             <div className="flex justify-between">
               <span className="text-slate-600">Flower stem alone</span>
               {stemPrice > 0 ? (
-                <span className="font-semibold text-slate-800">KES {stemPrice.toLocaleString()}</span>
+                <span className="font-semibold text-slate-800">
+                  KES {(isAdmin ? stemPriceWholesale : stemPrice).toLocaleString()}
+                  {isAdmin && <span className="text-[9px] text-slate-400 ml-1">ws</span>}
+                </span>
               ) : (
                 <span className="text-slate-400 italic">—</span>
               )}
