@@ -654,3 +654,61 @@ export async function getAdjustmentHistory(branchId: string, fromDate?: Date, to
   return data || [];
 }
 
+export async function reverseSale(saleId: string) {
+  const supabase = getAdminSupabase();
+  
+  // Fetch the sale to ensure it exists and hasn't been reversed
+  const { data: sale, error: saleError } = await supabase
+    .from('sales')
+    .select('*')
+    .eq('id', saleId)
+    .single();
+
+  if (saleError) throw saleError;
+  if (!sale || sale.status === 'reversed') {
+    return { error: "Sale not found or already reversed." };
+  }
+
+  // Fetch sale items
+  const { data: items, error: itemsError } = await supabase
+    .from('sale_items')
+    .select('*')
+    .eq('sale_id', saleId);
+
+  if (itemsError) throw itemsError;
+
+  // Restore inventory for each item
+  if (items && items.length > 0) {
+    for (const item of items) {
+      // First get current stock level
+      const { data: invData, error: invGetError } = await supabase
+        .from('inventory')
+        .select('id, stock_level')
+        .eq('branch_id', sale.branch_id)
+        .eq('product_id', item.product_id)
+        .single();
+        
+      if (!invGetError && invData) {
+        const newStock = (invData.stock_level || 0) + item.quantity;
+        await supabase
+          .from('inventory')
+          .update({ stock_level: newStock })
+          .eq('id', invData.id);
+      }
+    }
+  }
+
+  // Update sale status to 'reversed'
+  const { error: updateError } = await supabase
+    .from('sales')
+    .update({ status: 'reversed' })
+    .eq('id', saleId);
+
+  if (updateError) throw updateError;
+
+  revalidatePath("/admin/sessions");
+  revalidatePath("/manager/sessions");
+  revalidatePath("/seller/sales");
+  return { success: true };
+}
+

@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { Loader2, Folder, FolderOpen, Receipt, User, Clock, ArrowLeft, TrendingUp, Search, Calendar, List, Package } from "lucide-react";
+import { Loader2, Folder, FolderOpen, Receipt, User, Clock, ArrowLeft, TrendingUp, Search, Calendar, List, Package, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import { getProducts } from "@/lib/actions";
+import { getProducts, reverseSale } from "@/lib/actions";
 import DatePicker from "@/components/ui/DatePicker";
 
 type SaleItem = {
@@ -26,6 +26,7 @@ type SaleRecord = {
   created_at: string;
   total_amount: number;
   seller_id: string;
+  status: string;
   sale_items: SaleItem[];
   user_profiles: { nickname: string } | null;
 };
@@ -45,7 +46,15 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
   const [sessions, setSessions] = useState<SessionDay[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSeller, setSelectedSeller] = useState<string | null>(null);
+  const [reversingSaleId, setReversingSaleId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"sessions" | "byItem">("sessions");
+
+  async function handleReverseSale(saleId: string) {
+    if (!confirm("Are you sure you want to reverse this sale? This cannot be undone.")) return;
+    setReversingSaleId(saleId);
+    await reverseSale(saleId);
+    window.location.reload();
+  }
 
   useEffect(() => {
     async function loadSessions() {
@@ -59,6 +68,7 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
           created_at,
           total_amount,
           seller_id,
+          status,
           sale_items (
             id,
             quantity,
@@ -105,14 +115,16 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
           }
           
           grouped[dateStr].sales.push(sale);
-          grouped[dateStr].totalRevenue += sale.total_amount;
-          
-          let saleCost = 0;
-          sale.sale_items?.forEach(item => {
-            const cost = item.unit_cost > 0 ? item.unit_cost : (item.products?.buying_price || 0);
-            saleCost += cost * item.quantity;
-          });
-          grouped[dateStr].totalMargin += (sale.total_amount - saleCost);
+          if (sale.status !== 'reversed') {
+            grouped[dateStr].totalRevenue += sale.total_amount;
+            
+            let saleCost = 0;
+            sale.sale_items?.forEach(item => {
+              const cost = item.unit_cost > 0 ? item.unit_cost : (item.products?.buying_price || 0);
+              saleCost += cost * item.quantity;
+            });
+            grouped[dateStr].totalMargin += (sale.total_amount - saleCost);
+          }
         });
 
         // Convert to array and sort by date descending
@@ -149,6 +161,8 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
       total: number;
       margin: number;
       time: string;
+      saleId: string;
+      status: string;
     }[];
   }> = {};
 
@@ -162,13 +176,17 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
         sellerData[sellerName] = { sellerName, revenue: 0, margin: 0, items: [] };
       }
 
-      sellerData[sellerName].revenue += sale.total_amount;
+      if (sale.status !== 'reversed') {
+        sellerData[sellerName].revenue += sale.total_amount;
+      }
 
       sale.sale_items?.forEach(item => {
         const cost = item.unit_cost > 0 ? item.unit_cost : (item.products?.buying_price || 0);
         const itemMargin = item.subtotal - (cost * item.quantity);
         
-        sellerData[sellerName].margin += itemMargin;
+        if (sale.status !== 'reversed') {
+          sellerData[sellerName].margin += itemMargin;
+        }
         sellerData[sellerName].items.push({
           receipt,
           productName: item.products?.name || 'Unknown',
@@ -176,7 +194,9 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
           price: item.unit_price,
           total: item.subtotal,
           margin: itemMargin,
-          time
+          time,
+          saleId: sale.id,
+          status: sale.status || 'completed'
         });
       });
     });
@@ -338,21 +358,41 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
                             <th className="py-2 px-4 font-medium text-center">Qty</th>
                             <th className="py-2 px-4 font-medium text-right">Price</th>
                             <th className="py-2 px-4 font-medium text-right">Total</th>
+                            <th className="py-2 px-4 font-medium text-center">Action</th>
                             <th className="py-2 px-4 font-medium text-right">Margin</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-apex-outline-variant">
-                          {seller.items.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-white transition-colors">
+                          {seller.items.map((item, idx) => {
+                            const isReversed = item.status === 'reversed';
+                            const isFirstOfReceipt = idx === 0 || seller.items[idx-1].receipt !== item.receipt;
+                            
+                            return (
+                            <tr key={idx} className={`hover:bg-white transition-colors ${isReversed ? 'opacity-50 line-through' : ''}`}>
                               <td className="py-2 px-4 text-apex-on-surface-variant whitespace-nowrap"><Clock size={12} className="inline mr-1"/>{item.time}</td>
-                              <td className="py-2 px-4 font-mono text-xs text-apex-on-surface-variant">{item.receipt}</td>
+                              <td className="py-2 px-4 font-mono text-xs text-apex-on-surface-variant">
+                                {item.receipt}
+                                {isReversed && <span className="ml-2 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase font-bold no-underline inline-block">Reversed</span>}
+                              </td>
                               <td className="py-2 px-4 font-medium text-apex-text">{item.productName}</td>
                               <td className="py-2 px-4 text-center">{item.qty}</td>
                               <td className="py-2 px-4 text-right">KES {item.price.toLocaleString()}</td>
                               <td className="py-2 px-4 text-right font-medium">KES {item.total.toLocaleString()}</td>
+                              <td className="py-2 px-4 text-center">
+                                {isFirstOfReceipt && !isReversed && (user?.role === 'admin' || user?.role === 'manager') && (
+                                  <button 
+                                    onClick={() => handleReverseSale(item.saleId)}
+                                    disabled={reversingSaleId === item.saleId}
+                                    className="text-xs flex items-center gap-1 mx-auto text-red-500 hover:text-red-700 font-medium no-underline disabled:opacity-50"
+                                  >
+                                    {reversingSaleId === item.saleId ? '...' : <><XCircle size={14}/> Reverse</>}
+                                  </button>
+                                )}
+                              </td>
                               <td className="py-2 px-4 text-right text-emerald-600 font-medium">KES {item.margin.toLocaleString()}</td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

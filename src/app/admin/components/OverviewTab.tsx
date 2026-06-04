@@ -150,6 +150,33 @@ export default function OverviewTab({ stats }: { stats: any }) {
               <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-0.5">Generate PDF or Excel</p>
             </div>
           </Link>
+          <Link href="/admin/pos" className="bg-apex-surface border border-apex-outline-variant hover:border-apex-primary/50 shadow-sm rounded-xl p-4 flex items-center gap-4 transition-all hover:-translate-y-0.5 group">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-apex-bg transition-colors">
+              <Activity size={20} />
+            </div>
+            <div>
+              <p className="font-apex-sans font-bold text-apex-text text-sm">Point of Sale</p>
+              <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-0.5">Process new orders</p>
+            </div>
+          </Link>
+          <Link href="/admin/sessions" className="bg-apex-surface border border-apex-outline-variant hover:border-apex-primary/50 shadow-sm rounded-xl p-4 flex items-center gap-4 transition-all hover:-translate-y-0.5 group">
+            <div className="w-10 h-10 rounded-full bg-fuchsia-500/10 flex items-center justify-center text-fuchsia-500 group-hover:bg-fuchsia-500 group-hover:text-apex-bg transition-colors">
+              <History size={20} />
+            </div>
+            <div>
+              <p className="font-apex-sans font-bold text-apex-text text-sm">Sales Sessions</p>
+              <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-0.5">View & reverse sales</p>
+            </div>
+          </Link>
+          <Link href="/admin/catalogue" className="bg-apex-surface border border-apex-outline-variant hover:border-apex-primary/50 shadow-sm rounded-xl p-4 flex items-center gap-4 transition-all hover:-translate-y-0.5 group">
+            <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:bg-purple-500 group-hover:text-apex-bg transition-colors">
+              <Tag size={20} />
+            </div>
+            <div>
+              <p className="font-apex-sans font-bold text-apex-text text-sm">Catalogue</p>
+              <p className="font-apex-sans text-xs text-apex-on-surface-variant mt-0.5">Browse products & prices</p>
+            </div>
+          </Link>
         </div>
       </div>
 
