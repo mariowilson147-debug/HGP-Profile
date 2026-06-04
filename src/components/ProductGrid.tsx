@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useMemo } from "react";
+import import_react, { useState, useEffect, Suspense, useMemo } from "react";
 import { Product } from "@/lib/actions";
 import dynamic from "next/dynamic";
 import ImageCarousel from "./ImageCarousel";
@@ -13,6 +13,14 @@ import { useSearchParams } from "next/navigation";
 
 const ITEMS_PER_PAGE = 72;
 
+function getCategoryWeight(category: string) {
+  const cat = (category || "").toLowerCase();
+  if (cat.includes("lighting")) return 1;
+  if (cat.includes("flower") && cat.includes("vase")) return 2;
+  if (cat.includes("bathroom") && (cat.includes("plump") || cat.includes("plumb"))) return 3;
+  if (cat.includes("electrical") && cat.includes("appliance")) return 4;
+  return 999;
+}
 
 // Build the full images array for a product (primary + variation images)
 function getProductImages(product: Product): string[] {
@@ -46,6 +54,13 @@ function ProductGridContent({ products }: { products: Product[] }) {
       })
       .filter(p => p.name.toLowerCase().includes(urlQuery.toLowerCase()) || (p.tags && p.tags.some(t => t.toLowerCase().includes(urlQuery.toLowerCase()))))
       .sort((a, b) => {
+        if (selectedCategory === "All Collections" && !urlQuery) {
+          const wA = getCategoryWeight(a.category);
+          const wB = getCategoryWeight(b.category);
+          if (wA !== wB) return wA - wB;
+          if (a.category !== b.category) return (a.category || "").localeCompare(b.category || "");
+        }
+        
         if (a.is_featured && !b.is_featured) return -1;
         if (!a.is_featured && b.is_featured) return 1;
         return (a.sort_order || 0) - (b.sort_order || 0);
@@ -86,7 +101,7 @@ function ProductGridContent({ products }: { products: Product[] }) {
       ) : (
         <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
           <AnimatePresence>
-            {paginatedProducts.map((product) => {
+            {paginatedProducts.map((product, index) => {
               const images = getProductImages(product);
               const isFlowerArrangement = product.category === "Flowers & Vases" &&
                 product.attributes?.component_type === "arrangement";
@@ -95,16 +110,28 @@ function ProductGridContent({ products }: { products: Product[] }) {
                   ? (product.attributes.compatible_vase_ids as string[]).length
                   : 0;
 
+              const prevProduct = paginatedProducts[index - 1];
+              const showHeader = selectedCategory === "All Collections" && !urlQuery && (!prevProduct || prevProduct.category !== product.category);
+
               return (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.4 }}
-                  key={product.id}
-                  className="group flex flex-col"
-                >
+                <import_react.Fragment key={product.id}>
+                  {showHeader && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="col-span-full mt-6 mb-2 border-b border-slate-200 pb-2"
+                    >
+                      <h2 className="text-2xl font-display font-bold text-slate-800">{product.category}</h2>
+                    </motion.div>
+                  )}
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.4 }}
+                    className="group flex flex-col"
+                  >
                   {/* ── Image area: carousel handles tap vs swipe internally ── */}
                   <div className="relative w-full overflow-hidden bg-[#f4f4f4] mb-4">
                     <ImageCarousel
@@ -153,6 +180,7 @@ function ProductGridContent({ products }: { products: Product[] }) {
                     )}
                   </div>
                 </motion.div>
+                </import_react.Fragment>
               );
             })}
           </AnimatePresence>

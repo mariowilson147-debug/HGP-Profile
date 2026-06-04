@@ -32,7 +32,7 @@ function getProductImages(product: Product): string[] {
 export default function ProductModal({ product, isOpen, onClose, user, allProducts = [], isClientShare = false }: ProductModalProps) {
   const { openChat } = useChat();
   const { settings } = useSettings();
-  const [selectedVaseImage, setSelectedVaseImage] = useState<string | null>(null);
+  const [selectedOptionImage, setSelectedOptionImage] = useState<string | null>(null);
 
   // ── Derived values and hooks BEFORE early return (Rules of Hooks) ──────────
 
@@ -55,21 +55,23 @@ export default function ProductModal({ product, isOpen, onClose, user, allProduc
     return allProducts.filter(p => ids.includes(p.id));
   }, [isFlowerArrangement, product, allProducts]);
 
-  // Count arrangements that reference this vase
-  const arrangementCount = useMemo(() => {
-    if (!isVase || !product) return 0;
+  // Find compatible arrangements from allProducts
+  const compatibleArrangements = useMemo(() => {
+    if (!isVase || !product) return [];
     return allProducts.filter(
       p =>
         p.category === "Flowers & Vases" &&
         p.attributes?.component_type === "arrangement" &&
         Array.isArray(p.attributes?.compatible_vase_ids) &&
         (p.attributes.compatible_vase_ids as string[]).includes(product.id)
-    ).length;
+    );
   }, [isVase, product, allProducts]);
 
-  // The displayed images: if a vase is selected in mix-match, show it as the active slide
-  const displayImages = selectedVaseImage
-    ? [selectedVaseImage, ...images]
+  const arrangementCount = compatibleArrangements.length;
+
+  // The displayed images: if an option is selected in mix-match, show it as the active slide
+  const displayImages = selectedOptionImage
+    ? [selectedOptionImage, ...images]
     : images;
 
   if (!product) return null;
@@ -106,10 +108,10 @@ export default function ProductModal({ product, isOpen, onClose, user, allProduc
                 <Heart size={20} />
               </button>
 
-              {/* Selected vase indicator */}
-              {selectedVaseImage && (
+              {/* Selected combination indicator */}
+              {selectedOptionImage && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-pink-500/90 backdrop-blur-sm text-white text-[10px] font-bold px-3 py-1 rounded-full">
-                  Viewing with selected vase
+                  Viewing combination
                 </div>
               )}
 
@@ -206,13 +208,23 @@ export default function ProductModal({ product, isOpen, onClose, user, allProduc
                 )}
               </div>
 
-              {/* Flower Mix & Match section */}
-              {isFlowerArrangement && (
+              {/* Mix & Match section */}
+              {isFlowerArrangement && compatibleVases.length > 0 && (
                 <FlowerMixMatch
-                  flower={product}
-                  compatibleVases={compatibleVases}
+                  baseProduct={product}
+                  options={compatibleVases}
+                  mode="flower"
                   user={user}
-                  onVaseImageChange={setSelectedVaseImage}
+                  onOptionImageChange={setSelectedOptionImage}
+                />
+              )}
+              {isVase && compatibleArrangements.length > 0 && (
+                <FlowerMixMatch
+                  baseProduct={product}
+                  options={compatibleArrangements}
+                  mode="vase"
+                  user={user}
+                  onOptionImageChange={setSelectedOptionImage}
                 />
               )}
             </div>

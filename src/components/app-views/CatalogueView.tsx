@@ -15,6 +15,15 @@ const IconMap: Record<string, React.ElementType> = {
   Lightbulb, Bath, Sofa, Plug, Shirt, Package, Home, Wrench, Box, ShoppingCart, LayoutGrid
 };
 
+function getCategoryWeight(category: string) {
+  const cat = (category || "").toLowerCase();
+  if (cat.includes("lighting")) return 1;
+  if (cat.includes("flower") && cat.includes("vase")) return 2;
+  if (cat.includes("bathroom") && (cat.includes("plump") || cat.includes("plumb"))) return 3;
+  if (cat.includes("electrical") && cat.includes("appliance")) return 4;
+  return 999;
+}
+
 export default function CatalogueView({ returnPath, branchId }: { returnPath: string, branchId?: string | null }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,8 +62,14 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
       if (viewMode === "universal" || !selectedViewBranch) {
         const data = await getProducts();
         if (mounted) {
-          // Sort universal products alphabetically by name
-          data.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+          // Sort universal products by category weight, then category name, then product name
+          data.sort((a, b) => {
+            const wA = getCategoryWeight(a.category);
+            const wB = getCategoryWeight(b.category);
+            if (wA !== wB) return wA - wB;
+            if (a.category !== b.category) return (a.category || "").localeCompare(b.category || "");
+            return (a.name || "").localeCompare(b.name || "");
+          });
           setProducts(data);
           setLoading(false);
         }
@@ -79,8 +94,14 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
                   retail_price: inv.branch_retail_price ?? prod.retail_price
                 };
               });
-            // Sort branch products alphabetically by name
-            branchProducts.sort((a, b) => ((a as Product).name || "").localeCompare((b as Product).name || ""));
+            // Sort branch products by category weight, then category name, then product name
+            branchProducts.sort((a, b) => {
+              const wA = getCategoryWeight((a as Product).category);
+              const wB = getCategoryWeight((b as Product).category);
+              if (wA !== wB) return wA - wB;
+              if ((a as Product).category !== (b as Product).category) return ((a as Product).category || "").localeCompare((b as Product).category || "");
+              return ((a as Product).name || "").localeCompare((b as Product).name || "");
+            });
             setProducts(branchProducts as Product[]);
           } else {
             setProducts([]);

@@ -70,23 +70,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let nickname = null;
       let avatar_url = null;
 
-      if (session.user.id !== ADMIN_UID) {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (profile) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (profile) {
+        if (session.user.id !== ADMIN_UID) {
           role = profile.role as NonNullable<User>["role"];
-          branch_id = profile.branch_id;
-          assigned_branches = profile.assigned_branches;
-          nickname = profile.nickname;
-          avatar_url = profile.avatar_url;
-        } else {
-          // If no profile exists, create a default wholesale profile
-          await supabase.from('user_profiles').insert([{ id: session.user.id, role: 'wholesale' }]);
         }
+        branch_id = profile.branch_id;
+        assigned_branches = profile.assigned_branches;
+        nickname = profile.nickname;
+        avatar_url = profile.avatar_url;
+      } else {
+        // If no profile exists, create one
+        await supabase.from('user_profiles').insert([{ 
+          id: session.user.id, 
+          role: session.user.id === ADMIN_UID ? 'admin' : 'wholesale' 
+        }]);
       }
 
       if (mounted) {
