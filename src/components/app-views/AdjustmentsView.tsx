@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { createAdjustment, getAdjustmentHistory, getProducts, type InventoryAdjustment } from "@/lib/actions";
-import { Search, Loader2, PackageOpen, AlertTriangle, Save, Calendar, Check, History, Calculator } from "lucide-react";
+import { Search, Loader2, PackageOpen, AlertTriangle, Save, Calendar, Check, History, Calculator, Folder, FolderOpen, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 
 import Link from "next/link";
@@ -20,6 +20,15 @@ type InventoryItem = {
     category: string;
     image_url: string;
   };
+};
+
+type AdjustmentRecord = InventoryAdjustment & { manager_name?: string, products: { name: string, sku: string, image_url: string } };
+
+type AdjustmentDay = {
+  dateStr: string;
+  isToday: boolean;
+  adjustments: AdjustmentRecord[];
+  totalAdjustments: number;
 };
 
 export default function AdjustmentsView({ branchId, returnPath = "/manager" }: { branchId?: string | null, returnPath?: string }) {
@@ -47,14 +56,29 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
   const [successMsg, setSuccessMsg] = useState("");
 
   // History State
-  const [history, setHistory] = useState<Array<InventoryAdjustment & { manager_name?: string, products: { name: string, sku: string, image_url: string } }>>([]);
+  const [history, setHistory] = useState<AdjustmentDay[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Date Picker State for History
   const [dateRange, setDateRange] = useState({
-    from: new Date(new Date().setHours(0, 0, 0, 0)).toISOString().split('T')[0],
+    from: new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0], // Default 1 year back for folders
     to: new Date(new Date().setHours(23, 59, 59, 999)).toISOString().split('T')[0],
   });
+
+  // Real-time updates for history
+  useEffect(() => {
+    if (!selectedBranchId || activeTab !== "history") return;
+    
+    const channel = supabase.channel('adjustments_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory_adjustments' }, () => {
+        setRefreshTrigger(prev => prev + 1);
+      })
+      .subscribe();
+      
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedBranchId, activeTab, supabase]);
 
   useEffect(() => {
     if (!branchId) {
@@ -120,9 +144,29 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
       try {
         const fromDate = dateRange.from ? new Date(dateRange.from) : undefined;
         const toDate = dateRange.to ? new Date(dateRange.to) : undefined;
-        const data = await getAdjustmentHistory(selectedBranchId, fromDate, toDate);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (mounted) setHistory(data as any);
+        const data = await getAdjustmentHistory(selectedBranchId, fromDate, toDate) as AdjustmentRecord[];
+        
+        if (mounted) {
+          const grouped: Record<string, AdjustmentDay> = {};
+          const todayStr = new Date().toLocaleDateString();
+
+          data.forEach(adj => {
+            const dateStr = new Date(adj.created_at || '').toLocaleDateString();
+            if (!grouped[dateStr]) {
+              grouped[dateStr] = {
+                dateStr,
+                isToday: dateStr === todayStr,
+                adjustments: [],
+                totalAdjustments: 0
+              };
+            }
+            grouped[dateStr].adjustments.push(adj);
+            grouped[dateStr].totalAdjustments += 1;
+          });
+
+          const historyArray = Object.values(grouped).sort((a, b) => new Date(b.dateStr).getTime() - new Date(a.dateStr).getTime());
+          setHistory(historyArray);
+        }
       } catch (err) {
         console.error("Failed to load adjustment history", err);
       } finally {
@@ -131,7 +175,7 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
     }
     loadHistory();
     return () => { mounted = false };
-  }, [selectedBranchId, activeTab, dateRange]);
+  }, [selectedBranchId, activeTab, dateRange, refreshTrigger]);
 
   const allFiltered = inventory.filter(item => 
     item.products?.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -452,12 +496,48 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
             <div className="py-12 flex justify-center">
               <Loader2 className="animate-spin text-apex-on-surface-variant" size={32} />
             </div>
+          ) : !selectedDate ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+              {history.map(day => (
+                <button
+                  key={day.dateStr}
+                  onClick={() => setSelectedDate(day.dateStr)}
+                  className="bg-apex-surface p-5 rounded-2xl border border-apex-outline shadow-sm hover:shadow-md transition-all text-left group flex flex-col gap-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-xl ${day.isToday ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-500'}`}>
+                      {day.isToday ? <FolderOpen size={24} /> : <Folder size={24} />}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-apex-text">{day.dateStr}</h3>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${day.isToday ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
+                        {day.totalAdjustments} items
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+              {history.length === 0 && (
+                <div className="col-span-full py-12 text-center text-apex-on-surface-variant bg-apex-surface rounded-2xl border border-apex-outline border-dashed">
+                  No adjustments found for the selected period.
+                </div>
+              )}
+            </div>
           ) : (
             <div className="overflow-x-auto">
+              <div className="p-4 border-b border-apex-outline flex items-center gap-4 bg-apex-surface-highest">
+                <button 
+                  onClick={() => setSelectedDate(null)}
+                  className="p-2 hover:bg-apex-surface-low rounded-xl transition-colors text-apex-on-surface-variant"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <h3 className="font-bold text-apex-text text-lg">Adjustments on {selectedDate}</h3>
+              </div>
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-apex-surface-highest border-b border-apex-outline text-xs uppercase tracking-wider text-apex-on-surface-variant font-semibold">
-                    <th className="px-6 py-4">Date</th>
+                    <th className="px-6 py-4">Time</th>
                     <th className="px-6 py-4">Product</th>
                     <th className="px-6 py-4">Adjustment</th>
                     <th className="px-6 py-4">Reason</th>
@@ -465,10 +545,10 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-apex-outline-variant text-sm">
-                  {history.map((item, index) => (
+                  {history.find(h => h.dateStr === selectedDate)?.adjustments.map((item, index) => (
                     <tr key={item.id || index} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-4 text-apex-on-surface-variant whitespace-nowrap">
-                        {item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A'}
+                        {item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -504,10 +584,10 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
                       </td>
                     </tr>
                   ))}
-                  {history.length === 0 && (
+                  {history.find(h => h.dateStr === selectedDate)?.adjustments.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-6 py-12 text-center text-apex-on-surface-variant">
-                        No adjustments found for the selected period.
+                        No adjustments found for this date.
                       </td>
                     </tr>
                   )}
