@@ -6,6 +6,7 @@ import { Search, Loader2, Image as ImageIcon, Lightbulb, Bath, Sofa, Plug, Shirt
 import Image from "next/image";
 import Link from "next/link";
 import { useSettings } from "@/components/SettingsProvider";
+import { useAuth } from "@/components/AuthProvider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type Product = BaseProduct & { stock_level?: number };
@@ -24,19 +25,26 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
   const [branches, setBranches] = useState<{id: string, name: string}[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { settings } = useSettings();
+  const { user } = useAuth();
   const supabase = createSupabaseBrowserClient();
 
   // Fetch branches
   useEffect(() => {
-    supabase.from('branches').select('id, name').then(({data}) => {
+    async function fetchBranches() {
+      let q = supabase.from('branches').select('id, name');
+      if (user?.role === 'manager' && user.assigned_branches && user.assigned_branches.length > 0) {
+        q = q.in('id', user.assigned_branches);
+      }
+      const { data } = await q;
       if (data) {
         setBranches(data);
         if (!selectedViewBranch && data.length > 0) {
           setSelectedViewBranch(data[0].id);
         }
       }
-    });
-  }, [supabase, selectedViewBranch]);
+    }
+    fetchBranches();
+  }, [supabase, selectedViewBranch, user]);
 
   useEffect(() => {
     let mounted = true;
@@ -61,7 +69,7 @@ export default function CatalogueView({ returnPath, branchId }: { returnPath: st
           if (data) {
             const invMap = new Map(invData?.map(i => [i.product_id, i]) || []);
             const branchProducts = data
-              .filter(prod => invMap.has(prod.id))
+              .filter(prod => invMap.has(prod.id) && (invMap.get(prod.id)!.stock_level || 0) > 0)
               .map(prod => {
                 const inv = invMap.get(prod.id)!;
                 return {

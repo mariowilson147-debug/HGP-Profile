@@ -40,10 +40,16 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
   const [branches, setBranches] = useState<{id: string, name: string}[]>([]);
 
   useEffect(() => {
-    supabase.from('branches').select('id, name').order('name').then(({data}) => {
+    async function fetchBranches() {
+      let q = supabase.from('branches').select('id, name').order('name');
+      if (user?.role === 'manager' && user.assigned_branches && user.assigned_branches.length > 0) {
+        q = q.in('id', user.assigned_branches);
+      }
+      const { data } = await q;
       if (data) setBranches(data);
-    });
-  }, [supabase]);
+    }
+    fetchBranches();
+  }, [supabase, user]);
 
   useEffect(() => {
     let mounted = true;
@@ -72,16 +78,21 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
           if (selectedViewBranch) {
             // Manager mode: show 1 row per product for this branch
             const invMap = new Map((inventoryData || []).map((inv: Record<string, unknown>) => [inv.product_id as string, inv]));
-            const merged = allProducts.map((p: Record<string, unknown>) => {
-              const inv = invMap.get(p.id as string);
-              return {
-                id: inv ? inv.id as string : p.id as string,
-                product_id: p.id as string,
-                stock_level: inv ? inv.stock_level as number : 0,
-                reorder_level: inv ? inv.reorder_level as number : 10,
-                products: p,
-                branches: null
-              };
+            const merged = allProducts
+              .filter((p: Record<string, unknown>) => {
+                const inv = invMap.get(p.id as string);
+                return inv && (inv.stock_level as number) > 0;
+              })
+              .map((p: Record<string, unknown>) => {
+                const inv = invMap.get(p.id as string);
+                return {
+                  id: inv ? inv.id as string : p.id as string,
+                  product_id: p.id as string,
+                  stock_level: inv ? inv.stock_level as number : 0,
+                  reorder_level: inv ? inv.reorder_level as number : 10,
+                  products: p,
+                  branches: null
+                };
             });
             setInventory(merged as unknown as InventoryItem[]);
           } else {
@@ -93,14 +104,16 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
                stockMap.set(pId, current + ((inv.stock_level as number) || 0));
             });
             
-            const merged = allProducts.map((p: Record<string, unknown>) => ({
-              id: p.id, // Using product ID as unique key for aggregated view
-              product_id: p.id as string,
-              stock_level: stockMap.get(p.id as string) || 0,
-              reorder_level: 10,
-              products: p,
-              branches: { name: 'All Branches' }
-            }));
+            const merged = allProducts
+              .filter((p: Record<string, unknown>) => (stockMap.get(p.id as string) || 0) > 0)
+              .map((p: Record<string, unknown>) => ({
+                id: p.id, // Using product ID as unique key for aggregated view
+                product_id: p.id as string,
+                stock_level: stockMap.get(p.id as string) || 0,
+                reorder_level: 10,
+                products: p,
+                branches: null // Aggregated view doesn't have a single branch
+              }));
             setInventory(merged as unknown as InventoryItem[]);
           }
         }
@@ -169,21 +182,26 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <div className="relative w-full sm:w-64">
-            <select
-              value={selectedViewBranch || ""}
-              onChange={(e) => setSelectedViewBranch(e.target.value || null)}
-              className="w-full px-4 py-2.5 bg-apex-surface border border-apex-outline rounded-xl focus:ring-2 focus:ring-apex-text focus:border-transparent outline-none transition-all shadow-sm text-apex-text appearance-none"
-            >
-              <option value="">Universal (All Branches)</option>
-              {branches.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          {user?.role !== 'seller' && (
+            <div className="relative w-full sm:w-64">
+              <select
+                value={selectedViewBranch || ""}
+                onChange={(e) => {
+                  setSelectedViewBranch(e.target.value || null);
+                  setPage(1);
+                }}
+                className="w-full px-4 py-2.5 bg-apex-surface border border-apex-outline rounded-xl focus:ring-2 focus:ring-apex-text focus:border-transparent outline-none transition-all shadow-sm text-apex-text appearance-none"
+              >
+                <option value="">Universal (All Branches)</option>
+                {branches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
             </div>
-          </div>
+          )}
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-apex-on-surface-variant" size={18} />
             <input 

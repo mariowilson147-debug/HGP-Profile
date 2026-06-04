@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { Loader2, Folder, FolderOpen, Receipt, User, Clock, ArrowLeft, TrendingUp } from "lucide-react";
+import { Loader2, Folder, FolderOpen, Receipt, User, Clock, ArrowLeft, TrendingUp, Search, Calendar, List, Package } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
+import { getProducts } from "@/lib/actions";
+import DatePicker from "@/components/ui/DatePicker";
 
 type SaleItem = {
   id: string;
@@ -37,10 +40,12 @@ type SessionDay = {
 
 export default function SessionsView({ branchId, returnPath = "/manager" }: { branchId?: string | null, returnPath?: string }) {
   const supabase = createSupabaseBrowserClient();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState<SessionDay[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSeller, setSelectedSeller] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"sessions" | "byItem">("sessions");
 
   useEffect(() => {
     async function loadSessions() {
@@ -73,6 +78,8 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
 
       if (branchId) {
         query = query.eq('branch_id', branchId);
+      } else if (user?.role === 'manager' && user.assigned_branches && user.assigned_branches.length > 0) {
+        query = query.in('branch_id', user.assigned_branches);
       }
 
       const { data } = await query;
@@ -177,6 +184,17 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
 
   return (
     <div className="space-y-6 pb-12">
+      <div className="flex gap-4 border-b border-apex-outline mb-6">
+        <button onClick={() => setActiveTab("sessions")} className={`px-4 py-2 border-b-2 font-medium ${activeTab === 'sessions' ? 'border-apex-text text-apex-text' : 'border-transparent text-apex-on-surface-variant hover:text-apex-text'}`}>
+          By Session
+        </button>
+        <button onClick={() => setActiveTab("byItem")} className={`px-4 py-2 border-b-2 font-medium ${activeTab === 'byItem' ? 'border-apex-text text-apex-text' : 'border-transparent text-apex-on-surface-variant hover:text-apex-text'}`}>
+          Sale by Item
+        </button>
+      </div>
+
+      {activeTab === "sessions" ? (
+      <>
       <div className="flex items-center gap-4">
         {selectedDate && (
           <button 
@@ -343,6 +361,149 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
               ))}
             </div>
           </div>
+        </div>
+      )}
+      </>
+      ) : (
+        <ByItemTab branchId={branchId} />
+      )}
+    </div>
+  );
+}
+
+// ─── By Item Tab ──────────────────────────────────────────────────────────────
+function ByItemTab({ branchId }: { branchId?: string | null }) {
+  const { user } = useAuth();
+  const supabase = createSupabaseBrowserClient();
+  const [products, setProducts] = useState<{id: string, name: string}[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [fromDate, setFromDate] = useState(() => { const d = new Date(); d.setDate(1); return d.toISOString().split('T')[0]; });
+  const [toDate, setToDate] = useState(() => new Date().toISOString().split('T')[0]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    getProducts().then(data => {
+      if (data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setProducts(data.map((p: any) => ({id: p.id, name: p.name})).sort((a: any, b: any) => a.name.localeCompare(b.name)));
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!selectedProductId) return;
+    let mounted = true;
+    async function loadData() {
+      setLoading(true);
+      const start = new Date(fromDate); start.setHours(0,0,0,0);
+      const end = new Date(toDate); end.setHours(23,59,59,999);
+
+      let query = supabase.from('sale_items')
+        .select(`
+          id, quantity, unit_price, subtotal,
+          sales!inner(created_at, receipt_number, branch_id, seller_id, user_profiles(nickname)),
+          products(name)
+        `)
+        .eq('product_id', selectedProductId)
+        .gte('sales.created_at', start.toISOString())
+        .lte('sales.created_at', end.toISOString());
+
+      if (branchId) {
+        query = query.eq('sales.branch_id', branchId);
+      } else if (user?.role === 'manager' && user.assigned_branches && user.assigned_branches.length > 0) {
+        query = query.in('sales.branch_id', user.assigned_branches);
+      }
+
+      const { data } = await query;
+      if (mounted) {
+        if (data) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data.sort((a: any, b: any) => new Date(b.sales.created_at).getTime() - new Date(a.sales.created_at).getTime());
+          setItems(data);
+        }
+        setLoading(false);
+      }
+    }
+    loadData();
+    return () => { mounted = false };
+  }, [selectedProductId, fromDate, toDate, branchId, user, supabase]);
+
+  const totalQty = items.reduce((acc, curr) => acc + curr.quantity, 0);
+  const totalRevenue = items.reduce((acc, curr) => acc + curr.subtotal, 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row gap-4 bg-apex-surface p-4 rounded-2xl shadow-sm border border-apex-outline w-full items-end">
+        <div className="w-full sm:w-1/3">
+          <label className="block text-xs font-bold text-apex-on-surface-variant uppercase tracking-wider mb-2">Select Product</label>
+          <select 
+            value={selectedProductId}
+            onChange={e => setSelectedProductId(e.target.value)}
+            className="w-full px-4 py-2.5 bg-apex-surface border border-apex-outline rounded-xl focus:ring-2 focus:ring-apex-text focus:border-transparent outline-none transition-all shadow-sm text-apex-text"
+          >
+            <option value="">-- Choose a product --</option>
+            {products.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+        <DatePicker date={fromDate} setDate={setFromDate} label="From Date" />
+        <DatePicker date={toDate} setDate={setToDate} label="To Date" />
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12"><Loader2 className="animate-spin text-apex-on-surface-variant" /></div>
+      ) : selectedProductId ? (
+        <div className="bg-apex-surface border border-apex-outline rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-apex-outline flex justify-between items-center bg-apex-surface-highest">
+            <h3 className="font-bold text-apex-text text-lg">Sales for Product</h3>
+            <div className="text-right text-sm text-apex-on-surface-variant">
+              Total: <span className="font-bold text-apex-text">{totalQty} units</span> (KES {totalRevenue.toLocaleString()})
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-100/50 text-apex-on-surface-variant border-b border-apex-outline">
+                <tr>
+                  <th className="p-4 font-medium">Time</th>
+                  <th className="p-4 font-medium">Receipt</th>
+                  <th className="p-4 font-medium">Seller</th>
+                  <th className="p-4 font-medium text-center">Qty</th>
+                  <th className="p-4 font-medium text-right">Price</th>
+                  <th className="p-4 font-medium text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-apex-outline-variant">
+                {items.map(item => (
+                  <tr key={item.id} className="hover:bg-apex-surface-low cursor-pointer">
+                    <td className="p-4 text-apex-on-surface-variant whitespace-nowrap">
+                      {new Date(item.sales.created_at).toLocaleString()}
+                    </td>
+                    <td className="p-4 font-mono text-xs">{item.sales.receipt_number || item.sales.id.split('-')[0]}</td>
+                    <td className="p-4">{item.sales.user_profiles?.nickname || 'Unknown'}</td>
+                    <td className="p-4 text-center font-bold">{item.quantity}</td>
+                    <td className="p-4 text-right">KES {item.unit_price.toLocaleString()}</td>
+                    <td className="p-4 text-right font-medium">KES {item.subtotal.toLocaleString()}</td>
+                  </tr>
+                ))}
+                {items.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-apex-on-surface-variant">
+                      No sales found for this product in the selected period.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="py-12 text-center border-2 border-dashed border-apex-outline rounded-2xl bg-apex-surface">
+          <Package className="mx-auto text-apex-on-surface-variant mb-3" size={32} />
+          <h3 className="text-lg font-medium text-apex-text">Select a product</h3>
+          <p className="text-apex-on-surface-variant mt-1">Choose a product from the dropdown to see its sales history.</p>
         </div>
       )}
     </div>

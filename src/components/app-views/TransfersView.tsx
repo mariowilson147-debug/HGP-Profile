@@ -34,13 +34,19 @@ export default function TransfersView({ branchId, returnPath = "/manager" }: { b
   const [activeTab, setActiveTab] = useState<TabType>("create");
 
   useEffect(() => {
-    supabase.from('branches').select('id, name').then(({data}) => {
+    async function fetchBranches() {
+      let q = supabase.from('branches').select('id, name').order('name');
+      if (user?.role === 'manager' && user.assigned_branches && user.assigned_branches.length > 0) {
+        q = q.in('id', user.assigned_branches);
+      }
+      const { data } = await q;
       if (data) {
         setBranches(data);
         if (!branchId && data.length > 0) setAdminBranchId(data[0].id);
       }
-    });
-  }, [branchId, supabase]);
+    }
+    fetchBranches();
+  }, [branchId, supabase, user]);
 
   if (!selectedBranchId && branchId !== undefined && branchId !== null) {
     return (

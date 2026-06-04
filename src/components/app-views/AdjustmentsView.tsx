@@ -82,14 +82,20 @@ export default function AdjustmentsView({ branchId, returnPath = "/manager" }: {
 
   useEffect(() => {
     if (!branchId) {
-      supabase.from('branches').select('id, name').then(({data}) => {
+      async function fetchBranches() {
+        let q = supabase.from('branches').select('id, name').order('name');
+        if (user?.role === 'manager' && user.assigned_branches && user.assigned_branches.length > 0) {
+          q = q.in('id', user.assigned_branches);
+        }
+        const { data } = await q;
         if (data) {
           setBranches(data);
           if (data.length > 0) setAdminBranchId(data[0].id);
         }
-      });
+      }
+      fetchBranches();
     }
-  }, [branchId, supabase]);
+  }, [branchId, supabase, user]);
 
   // Load Inventory for Make Adjustment
   useEffect(() => {
