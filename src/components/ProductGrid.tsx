@@ -11,7 +11,7 @@ import { Search, Flower2, ArrowLeft, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 
-const ITEMS_PER_PAGE = 72;
+const ITEMS_PER_PAGE = 100;
 
 function getCategoryWeight(category: string) {
   const cat = (category || "").toLowerCase();
@@ -189,49 +189,51 @@ function ProductGridContent({ products }: { products: Product[] }) {
 
       {totalPages > 1 && (
         <div className="flex justify-center mt-20 mb-10 pb-8">
-          <div className="inline-flex items-center bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.05)] px-4 py-2.5 gap-3 border border-slate-50">
+          <div className="inline-flex items-center bg-white shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] rounded-full px-8 py-3 gap-6 border border-slate-50">
             <button 
               onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
+              className="flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-slate-800 disabled:opacity-30 transition-colors uppercase"
             >
-              <ArrowLeft size={20} strokeWidth={2.5} />
+              &larr; PREV
             </button>
 
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-              if (
-                page === 1 || 
-                page === totalPages || 
-                (page >= currentPage - 1 && page <= currentPage + 1)
-              ) {
-                return (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-medium transition-all ${
-                      currentPage === page 
-                        ? 'bg-[#6F7A8B] text-white shadow-sm' 
-                        : 'bg-[#F1F3F5] text-slate-700 hover:bg-[#E5E7EB]'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              } else if (
-                page === currentPage - 2 ||
-                page === currentPage + 2
-              ) {
-                return <span key={page} className="text-slate-400 px-1">...</span>;
-              }
-              return null;
-            })}
+            <div className="flex items-center gap-4">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                if (
+                  page === 1 || 
+                  page === totalPages || 
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                        currentPage === page 
+                          ? 'bg-black text-white shadow-md' 
+                          : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                } else if (
+                  page === currentPage - 2 ||
+                  page === currentPage + 2
+                ) {
+                  return <span key={page} className="text-slate-400 text-xs tracking-widest px-1">...</span>;
+                }
+                return null;
+              })}
+            </div>
 
             <button 
               onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="p-2 text-slate-500 hover:text-slate-800 disabled:opacity-30 transition-colors"
+              className="flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-slate-800 disabled:opacity-30 transition-colors uppercase"
             >
-              <ArrowRight size={20} strokeWidth={2.5} />
+              NEXT &rarr;
             </button>
           </div>
         </div>
