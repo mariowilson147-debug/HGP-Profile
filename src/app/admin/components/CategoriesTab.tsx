@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Bookmark, Plus, Trash2, Save, Package, LayoutGrid, Plug, Shirt, Home, Wrench, Box, ShoppingCart, Lightbulb, Bath, Sofa, MoreVertical, Filter, CloudLightning, ArrowLeft, ArrowRight } from "lucide-react";
 import { useSettings } from "@/components/SettingsProvider";
-import { Category, addDbCategory, updateDbCategory, deleteDbCategory, syncCategoriesFromProducts, deleteEmptyCategories } from "@/lib/actions";
+import { Category, addDbCategory, updateDbCategory, deleteDbCategory, syncCategoriesFromProducts, deleteEmptyCategories, updateProductCategoryName } from "@/lib/actions";
 import SelectDropdown from "@/components/ui/SelectDropdown";
 
 const AVAILABLE_ICONS = [
@@ -78,6 +78,20 @@ export default function CategoriesTab() {
     setLoading(false);
   };
 
+  const handleDeleteEmpty = async () => {
+    if (!window.confirm("Are you sure you want to delete all categories that have no products?")) return;
+    setLoading(true);
+    const { success, count, data, error } = await deleteEmptyCategories();
+    if (error) {
+      alert("Failed to delete empty categories: " + error);
+    } else if (success && data) {
+      setLocalCategories(data);
+      updateSettings({ ...settings, categories: data });
+      alert(count === 0 ? "No empty categories found to delete." : `Successfully deleted ${count} empty categories!`);
+    }
+    setLoading(false);
+  };
+
   const handleUpdate = (id: string, field: keyof Category, value: any) => {
     setLocalCategories(localCategories.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
@@ -85,7 +99,14 @@ export default function CategoriesTab() {
   const handleSave = async (id: string) => {
     setLoading(true);
     const cat = localCategories.find(c => c.id === id);
+    const oldCat = settings.categories?.find(c => c.id === id);
+
     if (cat) {
+      // If the category name changed, cascade the change to all products
+      if (oldCat && oldCat.name !== cat.name) {
+        await updateProductCategoryName(oldCat.name, cat.name);
+      }
+
       await updateDbCategory(id, cat);
       updateSettings({ ...settings, categories: localCategories });
     }
@@ -110,6 +131,13 @@ export default function CategoriesTab() {
             className="flex items-center gap-2 bg-apex-surface border border-apex-outline-variant text-apex-text hover:bg-apex-surface-low px-4 py-2 font-apex-sans text-sm font-medium transition-colors rounded-lg disabled:opacity-50 shadow-sm"
           >
             <CloudLightning size={16} /> Sync
+          </button>
+          <button 
+            onClick={handleDeleteEmpty}
+            disabled={loading}
+            className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 px-4 py-2 font-apex-sans text-sm font-medium transition-colors rounded-lg disabled:opacity-50 shadow-sm"
+          >
+            <Trash2 size={16} /> Delete Empty
           </button>
           <button className="flex items-center gap-2 bg-apex-surface border border-apex-outline-variant text-apex-text hover:bg-apex-surface-low px-4 py-2 font-apex-sans text-sm font-medium transition-colors rounded-lg shadow-sm">
             <Filter size={16} /> Filter
