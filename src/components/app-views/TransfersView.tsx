@@ -388,10 +388,9 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
 
 // ─── Summary History Tab ──────────────────────────────────────────────────────
 function SummaryHistoryTab({ branchId }: { branchId: string }) {
-  const [history, setHistory] = useState<TransferDay[]>([]);
+  const [history, setHistory] = useState<TransferRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date(); d.setFullYear(d.getFullYear() - 1); return d.toISOString().split('T')[0];
@@ -423,7 +422,7 @@ function SummaryHistoryTab({ branchId }: { branchId: string }) {
           user_profiles!transfers_created_by_fkey ( nickname ),
           from_branch:branches!transfers_from_branch_id_fkey ( name ),
           to_branch:branches!transfers_to_branch_id_fkey ( name ),
-          transfer_items ( id, quantity, products ( name, sku ) )
+          transfer_items ( id, quantity, products ( id, name, sku ) )
         `)
         .or(`from_branch_id.eq.${branchId},to_branch_id.eq.${branchId}`)
         .gte('created_at', start.toISOString())
@@ -431,25 +430,7 @@ function SummaryHistoryTab({ branchId }: { branchId: string }) {
         .order('created_at', { ascending: false });
       
       if (mounted && data) {
-        const grouped: Record<string, TransferDay> = {};
-        const todayStr = new Date().toLocaleDateString();
-
-        data.forEach(t => {
-          const dateStr = new Date(t.created_at).toLocaleDateString();
-          if (!grouped[dateStr]) {
-            grouped[dateStr] = {
-              dateStr,
-              isToday: dateStr === todayStr,
-              transfers: [],
-              totalTransfers: 0
-            };
-          }
-          grouped[dateStr].transfers.push(t);
-          grouped[dateStr].totalTransfers += 1;
-        });
-
-        const historyArray = Object.values(grouped).sort((a, b) => new Date(b.dateStr).getTime() - new Date(a.dateStr).getTime());
-        setHistory(historyArray);
+        setHistory(data);
       }
       if (mounted) setLoading(false);
     }
@@ -466,124 +447,134 @@ function SummaryHistoryTab({ branchId }: { branchId: string }) {
         <DatePicker date={toDate} setDate={setToDate} label="To Date" />
       </div>
 
-      {!selectedDate ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {history.map(day => (
-            <button
-              key={day.dateStr}
-              onClick={() => setSelectedDate(day.dateStr)}
-              className="bg-apex-surface p-5 rounded-2xl border border-apex-outline shadow-sm hover:shadow-md transition-all text-left group flex flex-col gap-4"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`p-3 rounded-xl ${day.isToday ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-500'}`}>
-                  {day.isToday ? <FolderOpen size={24} /> : <Folder size={24} />}
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg text-apex-text">{day.dateStr}</h3>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${day.isToday ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>
-                    {day.totalTransfers} items
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {history.map(t => {
+          const isOutgoing = t.from_branch_id === branchId;
+          const isPending = t.status === 'pending';
+          const canAction = isPending && t.to_branch_id === branchId;
+          const isExpanded = expandedId === t.id;
+          
+          const handleAccept = async (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (!window.confirm("Accept this transfer and add items to your inventory?")) return;
+            
+            setLoading(true);
+            try {
+              await supabase.from('transfers').update({ status: 'accepted' }).eq('id', t.id);
+              for (const item of t.transfer_items) {
+                if (!item.products?.id) continue;
+                const { data: inv } = await supabase.from('inventory').select('*').eq('branch_id', t.to_branch_id).eq('product_id', item.products.id).single();
+                if (inv) {
+                  await supabase.from('inventory').update({ stock_level: inv.stock_level + item.quantity }).eq('id', inv.id);
+                } else {
+                  await supabase.from('inventory').insert([{ branch_id: t.to_branch_id, product_id: item.products.id, stock_level: item.quantity }]);
+                }
+              }
+              setRefreshTrigger(p => p + 1);
+            } catch (err) {
+              console.error(err);
+              alert("Error accepting transfer.");
+              setLoading(false);
+            }
+          };
+
+          const handleDecline = async (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (!window.confirm("Decline this transfer and return items to the source branch?")) return;
+
+            setLoading(true);
+            try {
+              await supabase.from('transfers').update({ status: 'declined' }).eq('id', t.id);
+              for (const item of t.transfer_items) {
+                if (!item.products?.id) continue;
+                const { data: inv } = await supabase.from('inventory').select('*').eq('branch_id', t.from_branch_id).eq('product_id', item.products.id).single();
+                if (inv) {
+                  await supabase.from('inventory').update({ stock_level: inv.stock_level + item.quantity }).eq('id', inv.id);
+                }
+              }
+              setRefreshTrigger(p => p + 1);
+            } catch (err) {
+              console.error(err);
+              alert("Error declining transfer.");
+              setLoading(false);
+            }
+          };
+
+          return (
+            <div key={t.id} className="bg-apex-surface p-5 rounded-2xl border border-apex-outline shadow-sm flex flex-col gap-4">
+              <button
+                onClick={() => setExpandedId(isExpanded ? null : t.id)}
+                className="text-left group flex flex-col gap-4 w-full"
+              >
+                <div className="flex items-start justify-between w-full">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-xl ${isPending ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-500'}`}>
+                      {isExpanded ? <FolderOpen size={24} /> : <Folder size={24} />}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-apex-text font-mono">#{t.id.split('-')[0]}</h3>
+                      <div className="text-xs text-apex-on-surface-variant">
+                        {new Date(t.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                    t.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                    t.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>
+                    {t.status}
                   </span>
                 </div>
-              </div>
-            </button>
-          ))}
-          {history.length === 0 && (
-            <div className="col-span-full py-12 text-center text-apex-on-surface-variant bg-apex-surface rounded-2xl border border-apex-outline border-dashed">
-              No transfers found for the selected period.
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="overflow-x-auto border border-apex-outline rounded-xl bg-apex-surface">
-          <div className="p-4 border-b border-apex-outline flex items-center gap-4 bg-apex-surface-highest">
-            <button 
-              onClick={() => setSelectedDate(null)}
-              className="p-2 hover:bg-apex-surface-low rounded-xl transition-colors text-apex-on-surface-variant"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <h3 className="font-bold text-apex-text text-lg">Transfers on {selectedDate}</h3>
-          </div>
-          <table className="w-full text-left text-sm">
-            <thead className="bg-apex-surface-highest text-apex-on-surface-variant border-b border-apex-outline">
-              <tr>
-                <th className="p-4 font-medium">Time</th>
-                <th className="p-4 font-medium">Transfer ID</th>
-                <th className="p-4 font-medium">Direction</th>
-                <th className="p-4 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-apex-outline-variant">
-              {history.find(h => h.dateStr === selectedDate)?.transfers.map(t => {
-                const isOutgoing = t.from_branch_id === branchId;
-                const isExpanded = expandedId === t.id;
-                return (
-                  <React.Fragment key={t.id}>
-                    <tr onClick={() => setExpandedId(isExpanded ? null : t.id)} className="hover:bg-apex-surface-low cursor-pointer">
-                      <td className="p-4 text-apex-on-surface-variant">
-                        <div className="flex items-center gap-2">
-                          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                
+                <div className="w-full text-sm">
+                  {isOutgoing ? (
+                    <div><span className="text-apex-on-surface-variant">To:</span> <span className="font-semibold text-blue-600">{t.to_branch?.name}</span></div>
+                  ) : (
+                    <div><span className="text-apex-on-surface-variant">From:</span> <span className="font-semibold text-emerald-600">{t.from_branch?.name}</span></div>
+                  )}
+                  <div className="text-apex-on-surface-variant text-xs mt-1">
+                    {t.transfer_items.length} item(s) • By {t.user_profiles?.nickname || 'Admin'}
+                  </div>
+                </div>
+              </button>
+
+              {isExpanded && (
+                <div className="pt-3 border-t border-apex-outline flex flex-col gap-3">
+                  <div className="bg-apex-surface-highest rounded-xl p-3 text-xs border border-apex-outline">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {t.transfer_items.map((item: any) => (
+                      <div key={item.id} className="flex justify-between items-center py-1 border-b border-apex-outline-variant last:border-0">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-apex-text">{item.products?.name}</span>
+                          <span className="text-[10px] text-apex-on-surface-variant">{item.products?.sku}</span>
                         </div>
-                      </td>
-                      <td className="p-4 font-mono text-xs text-apex-on-surface-variant">{t.id.split('-')[0]}</td>
-                      <td className="p-4 font-medium text-apex-text">
-                        {isOutgoing ? (
-                          <span className="text-blue-600">To: {t.to_branch?.name}</span>
-                        ) : (
-                          <span className="text-emerald-600">From: {t.from_branch?.name}</span>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        <span className={`inline-flex px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${
-                          t.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                          t.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {t.status}
-                        </span>
-                      </td>
-                    </tr>
-                    {isExpanded && t.transfer_items && t.transfer_items.length > 0 && (
-                      <tr className="bg-apex-surface-highest border-t border-apex-outline-variant">
-                        <td colSpan={4} className="p-4">
-                          <div className="bg-apex-surface border border-apex-outline rounded-lg overflow-hidden shadow-sm">
-                            <table className="w-full text-left text-xs">
-                              <thead className="bg-apex-surface-highest text-apex-on-surface-variant border-b border-apex-outline">
-                                <tr>
-                                  <th className="p-3 font-medium">Product</th>
-                                  <th className="p-3 font-medium text-right">Qty</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-apex-outline-variant">
-                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                {t.transfer_items.map((item: any) => (
-                                  <tr key={item.id}>
-                                    <td className="p-3">
-                                      <div className="font-bold text-apex-text">{item.products?.name}</div>
-                                      <div className="text-apex-on-surface-variant">{item.products?.sku}</div>
-                                    </td>
-                                    <td className="p-3 text-right font-medium">{item.quantity}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-              {history.find(h => h.dateStr === selectedDate)?.transfers.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-8 text-center text-apex-on-surface-variant">No transfers found for this date.</td>
-                </tr>
+                        <span className="font-bold">{item.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {canAction && (
+                    <div className="flex gap-2">
+                      <button onClick={handleAccept} className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition-colors">
+                        Accept
+                      </button>
+                      <button onClick={handleDecline} className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-colors">
+                        Decline
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </div>
+          );
+        })}
+        {history.length === 0 && (
+          <div className="col-span-full py-12 text-center text-apex-on-surface-variant bg-apex-surface rounded-2xl border border-apex-outline border-dashed">
+            No transfers found for the selected period.
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -17,7 +17,7 @@ function getCategoryWeight(category: string) {
   const cat = (category || "").toLowerCase();
   if (cat.includes("lighting")) return 1;
   if (cat.includes("flower") && cat.includes("vase")) return 2;
-  if (cat.includes("bathroom") && (cat.includes("plump") || cat.includes("plumb"))) return 3;
+  if (cat.includes("bathroom") && (cat.includes("plumbing") || cat.includes("plumb"))) return 3;
   if (cat.includes("electrical") && cat.includes("appliance")) return 4;
   return 999;
 }
