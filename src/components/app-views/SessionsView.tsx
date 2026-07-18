@@ -13,6 +13,9 @@ type SaleItem = {
   quantity: number;
   unit_price: number;
   unit_cost: number;
+  unit_cost_used?: number | null;
+  total_cost?: number | null;
+  margin?: number | null;
   subtotal: number;
   products: {
     name: string;
@@ -74,6 +77,9 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
             quantity,
             unit_price,
             unit_cost,
+            unit_cost_used,
+            total_cost,
+            margin,
             subtotal,
             products (
               name,
@@ -120,8 +126,12 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
             
             let saleCost = 0;
             sale.sale_items?.forEach(item => {
-              const cost = item.unit_cost > 0 ? item.unit_cost : (item.products?.buying_price || 0);
-              saleCost += cost * item.quantity;
+              const unitCost = (item.unit_cost_used != null && item.unit_cost_used > 0)
+                ? item.unit_cost_used
+                : (item.unit_cost > 0 ? item.unit_cost : (item.products?.buying_price || 0));
+              saleCost += (item.total_cost != null && item.total_cost > 0)
+                ? item.total_cost
+                : unitCost * item.quantity;
             });
             grouped[dateStr].totalMargin += (sale.total_amount - saleCost);
           }
@@ -181,8 +191,13 @@ export default function SessionsView({ branchId, returnPath = "/manager" }: { br
       }
 
       sale.sale_items?.forEach(item => {
-        const cost = item.unit_cost > 0 ? item.unit_cost : (item.products?.buying_price || 0);
-        const itemMargin = item.subtotal - (cost * item.quantity);
+        const unitCost = (item.unit_cost_used != null && item.unit_cost_used > 0)
+          ? item.unit_cost_used
+          : (item.unit_cost > 0 ? item.unit_cost : (item.products?.buying_price || 0));
+        const itemCost = (item.total_cost != null && item.total_cost > 0)
+          ? item.total_cost
+          : unitCost * item.quantity;
+        const itemMargin = item.margin != null ? item.margin : (item.subtotal - itemCost);
         
         if (sale.status !== 'reversed') {
           sellerData[sellerName].margin += itemMargin;

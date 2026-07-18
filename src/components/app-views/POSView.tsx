@@ -127,51 +127,21 @@ export default function POSView({ branchId, returnPath }: { branchId: string; re
       // Generate short receipt number
       const receiptNumber = 'REC-' + Math.random().toString(36).substr(2, 6).toUpperCase() + '-' + Date.now().toString().slice(-4);
 
-      // 1. Create Sale Record
-      const { data: sale, error: saleError } = await supabase
-        .from('sales')
-        .insert([{
-          branch_id: branchId,
-          seller_id: user.id,
-          total_amount: total,
-          status: 'completed',
-          receipt_number: receiptNumber
-        }])
-        .select()
-        .single();
-
-      if (saleError) throw saleError;
-
-      // 2. Insert Sale Items
-      const saleItems = cart.map(item => ({
-        sale_id: sale.id,
+      // Atomic sale: header + COGS snapshot from WAC + stock decrement + movements
+      const items = cart.map(item => ({
         product_id: item.id,
         quantity: item.cart_quantity,
         unit_price: item.retail_price,
-        unit_cost: item.unit_cost,
-        subtotal: item.retail_price * item.cart_quantity
       }));
 
-      const { error: itemsError } = await supabase.from('sale_items').insert(saleItems);
-      if (itemsError) throw itemsError;
+      const { error: rpcError } = await supabase.rpc('process_sale', {
+        p_branch_id: branchId,
+        p_seller_id: user.id,
+        p_receipt_number: receiptNumber,
+        p_items: items,
+      });
 
-      // 3. Deduct Inventory
-      for (const item of cart) {
-        const { error: rpcError } = await supabase.rpc('decrement_inventory', {
-          p_branch_id: branchId,
-          p_product_id: item.id,
-          p_quantity: item.cart_quantity
-        });
-        if (rpcError) {
-          // Fallback: direct update if RPC doesn't exist yet
-          const newStock = item.stock_level - item.cart_quantity;
-          await supabase
-            .from('inventory')
-            .update({ stock_level: newStock })
-            .eq('branch_id', branchId)
-            .eq('product_id', item.id);
-        }
-      }
+      if (rpcError) throw rpcError;
 
       setSuccess(true);
       setCompletedOrder([...cart]);

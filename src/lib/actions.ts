@@ -568,36 +568,17 @@ export type InventoryAdjustment = {
 
 export async function createAdjustment(adjustment: InventoryAdjustment, inventoryId: string | null) {
   const supabase = getAdminSupabase();
-  
-  // 1. Update or create inventory
-  if (inventoryId) {
-    const { error: invError } = await supabase
-      .from('inventory')
-      .update({ stock_level: adjustment.new_stock })
-      .eq('id', inventoryId);
-    if (invError) throw invError;
-  } else {
-    const { error: invError } = await supabase
-      .from('inventory')
-      .insert([{
-        branch_id: adjustment.branch_id,
-        product_id: adjustment.product_id,
-        stock_level: adjustment.new_stock,
-        reorder_level: 5 // Default reorder level
-      }]);
-    if (invError) throw invError;
-  }
-  
-  // 2. Log adjustment
-  const { error: adjError } = await supabase
-    .from('inventory_adjustments')
-    .insert([adjustment]);
-    
-  if (adjError) {
-    // Note: In a real system, we'd use a transaction or RPC to ensure atomic commits
-    console.error("Failed to log adjustment:", adjError);
-    throw adjError;
-  }
+
+  const { error } = await supabase.rpc('apply_inventory_adjustment', {
+    p_branch_id: adjustment.branch_id,
+    p_product_id: adjustment.product_id,
+    p_manager_id: adjustment.manager_id,
+    p_new_stock: adjustment.new_stock,
+    p_reason: adjustment.reason,
+    p_inventory_id: inventoryId,
+  });
+
+  if (error) throw error;
 }
 
 export async function getAdjustmentHistory(branchId: string, fromDate?: Date, toDate?: Date) {
@@ -656,55 +637,14 @@ export async function getAdjustmentHistory(branchId: string, fromDate?: Date, to
 
 export async function reverseSale(saleId: string) {
   const supabase = getAdminSupabase();
-  
-  // Fetch the sale to ensure it exists and hasn't been reversed
-  const { data: sale, error: saleError } = await supabase
-    .from('sales')
-    .select('*')
-    .eq('id', saleId)
-    .single();
 
-  if (saleError) throw saleError;
-  if (!sale || sale.status === 'reversed') {
-    return { error: "Sale not found or already reversed." };
+  const { error } = await supabase.rpc('reverse_sale_inventory', {
+    p_sale_id: saleId,
+  });
+
+  if (error) {
+    return { error: error.message || "Sale not found or already reversed." };
   }
-
-  // Fetch sale items
-  const { data: items, error: itemsError } = await supabase
-    .from('sale_items')
-    .select('*')
-    .eq('sale_id', saleId);
-
-  if (itemsError) throw itemsError;
-
-  // Restore inventory for each item
-  if (items && items.length > 0) {
-    for (const item of items) {
-      // First get current stock level
-      const { data: invData, error: invGetError } = await supabase
-        .from('inventory')
-        .select('id, stock_level')
-        .eq('branch_id', sale.branch_id)
-        .eq('product_id', item.product_id)
-        .single();
-        
-      if (!invGetError && invData) {
-        const newStock = (invData.stock_level || 0) + item.quantity;
-        await supabase
-          .from('inventory')
-          .update({ stock_level: newStock })
-          .eq('id', invData.id);
-      }
-    }
-  }
-
-  // Update sale status to 'reversed'
-  const { error: updateError } = await supabase
-    .from('sales')
-    .update({ status: 'reversed' })
-    .eq('id', saleId);
-
-  if (updateError) throw updateError;
 
   revalidatePath("/admin/sessions");
   revalidatePath("/manager/sessions");

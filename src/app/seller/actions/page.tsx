@@ -64,27 +64,18 @@ export default function SellerActions() {
   const handleTransfer = async (transferId: string, action: 'accepted' | 'declined') => {
     setProcessingId(transferId);
     try {
-      // Update transfer status
-      const { error } = await supabase
-        .from('transfers')
-        .update({ status: action, updated_at: new Date().toISOString() })
-        .eq('id', transferId);
-        
-      if (error) throw error;
-
       if (action === 'accepted') {
-        // Find transfer items
-        const transfer = transfers.find(t => t.id === transferId);
-        if (transfer && user?.branch_id) {
-          // Process inventory update via RPC or client logic
-          // Note: Full system would deduct from source and add to destination.
-          // Since it's incoming, we just need to increment destination inventory.
-          for (const item of transfer.transfer_items) {
-            // Placeholder: Call an RPC 'increment_inventory' or similar
-            // In MVP, we just update the transfer status.
-            console.log(`Need to add ${item.quantity} to ${item.products?.name}`);
-          }
-        }
+        const { error } = await supabase.rpc('accept_transfer', {
+          p_transfer_id: transferId,
+          p_actor_id: user?.id ?? null,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.rpc('decline_transfer', {
+          p_transfer_id: transferId,
+          p_actor_id: user?.id ?? null,
+        });
+        if (error) throw error;
       }
 
       // Remove from list

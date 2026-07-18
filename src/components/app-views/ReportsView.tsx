@@ -16,6 +16,10 @@ type SaleItem = {
   quantity: number;
   unit_price: number;
   subtotal: number;
+  unit_cost?: number | null;
+  unit_cost_used?: number | null;
+  total_cost?: number | null;
+  margin?: number | null;
   products: {
     name: string;
     category: string;
@@ -23,11 +27,30 @@ type SaleItem = {
   } | null;
 };
 
+/** Immutable COGS from sale snapshot; never recompute from live products.buying_price */
+function saleItemUnitCost(item: SaleItem): number {
+  if (item.unit_cost_used != null && item.unit_cost_used > 0) return item.unit_cost_used;
+  if (item.unit_cost != null && item.unit_cost > 0) return item.unit_cost;
+  // Legacy rows only — prefer not to use catalogue price for historical accuracy
+  return item.products?.buying_price || 0;
+}
+
+function saleItemCost(item: SaleItem): number {
+  if (item.total_cost != null && item.total_cost > 0) return item.total_cost;
+  return saleItemUnitCost(item) * item.quantity;
+}
+
+function saleItemMargin(item: SaleItem): number {
+  if (item.margin != null) return item.margin;
+  return item.subtotal - saleItemCost(item);
+}
+
 type SaleRecord = {
   id: string;
   created_at: string;
   total_amount: number;
   seller_id: string;
+  status?: string;
   sale_items: SaleItem[];
   user_profiles: { nickname: string } | null;
 };
@@ -66,7 +89,7 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
       const end = new Date(toDate);
       end.setHours(23, 59, 59, 999);
 
-      // Fetch sales with items to calculate margins
+      // Fetch sales with immutable COGS from sale_items (not live products.buying_price)
       let query = supabase
         .from('sales')
         .select(`
@@ -74,10 +97,15 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
           created_at,
           total_amount,
           seller_id,
+          status,
           sale_items (
             quantity,
             unit_price,
             subtotal,
+            unit_cost,
+            unit_cost_used,
+            total_cost,
+            margin,
             products (
               name,
               category,
@@ -88,6 +116,7 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
             nickname
           )
         `)
+        .neq('status', 'reversed')
         .gte('created_at', start.toISOString())
         .lte('created_at', end.toISOString())
         .order('created_at', { ascending: false });
@@ -139,8 +168,8 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
       const prod = item.products;
       if (!prod) return;
       
-      const itemCost = (prod.buying_price || 0) * item.quantity;
-      const itemMargin = item.subtotal - itemCost;
+      const itemCost = saleItemCost(item);
+      const itemMargin = saleItemMargin(item);
       
       totalCost += itemCost;
       saleCost += itemCost;
@@ -179,7 +208,7 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
     
     let saleCost = 0;
     sale.sale_items?.forEach((item: SaleItem) => {
-      saleCost += (item.products?.buying_price || 0) * item.quantity;
+      saleCost += saleItemCost(item);
     });
     trendDataMap[date].Profit += (sale.total_amount - saleCost);
   });
@@ -191,7 +220,7 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
     const rows = salesData.map(sale => {
       let cost = 0;
       sale.sale_items?.forEach((item: SaleItem) => {
-        cost += (item.products?.buying_price || 0) * item.quantity;
+        cost += saleItemCost(item);
       });
       const margin = sale.total_amount - cost;
       
@@ -447,7 +476,7 @@ export default function ReportsView({ branchId, returnPath = "/manager" }: { bra
                   {salesData.slice(0, 10).map(sale => {
                     let cost = 0;
                     sale.sale_items?.forEach((item: SaleItem) => {
-                      cost += (item.products?.buying_price || 0) * item.quantity;
+                      cost += saleItemCost(item);
                     });
                     const margin = sale.total_amount - cost;
                     

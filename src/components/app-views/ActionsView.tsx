@@ -74,6 +74,7 @@ export default function ManagerActions() {
 
 // ─── PURCHASES TAB ────────────────────────────────────────────────────────────
 function PurchasesTab({ branchId }: { branchId: string }) {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -93,38 +94,25 @@ function PurchasesTab({ branchId }: { branchId: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProduct || !quantity || !unitCost) return;
+    if (!selectedProduct || !quantity || !unitCost || !branchId || !user) return;
 
     setIsSubmitting(true);
     try {
       const qty = parseInt(quantity);
       const cost = parseFloat(unitCost);
-      const total = qty * cost;
 
-      // 1. Record Purchase
-      const { error: pError } = await supabase.from('purchases').insert([{
-        branch_id: branchId,
-        product_id: selectedProduct.id,
-        quantity: qty,
-        unit_cost: cost,
-        total_cost: total
-      }]);
-      
-      // Ignoring error if purchases table doesn't exist yet to not break UI immediately during dev
-      if (pError) console.warn("Purchases insert error (table may need creating):", pError);
+      // Atomic purchase via RPC (WAC + movements). Does not overwrite products.buying_price.
+      const { error: rpcError } = await supabase.rpc('process_purchase', {
+        p_branch_id: branchId,
+        p_manager_id: user.id,
+        p_items: [{
+          product_id: selectedProduct.id,
+          quantity: qty,
+          unit_cost: cost,
+        }],
+      });
 
-      // 2. Increment Inventory
-      // First check if inventory exists
-      const { data: invData } = await supabase.from('inventory').select('id, stock_level').eq('branch_id', branchId).eq('product_id', selectedProduct.id).single();
-      
-      if (invData) {
-        await supabase.from('inventory').update({ stock_level: invData.stock_level + qty }).eq('id', invData.id);
-      } else {
-        await supabase.from('inventory').insert([{ branch_id: branchId, product_id: selectedProduct.id, stock_level: qty, reorder_level: 5 }]);
-      }
-
-      // 3. Update Product Buying Price (Cost)
-      await supabase.from('products').update({ buying_price: cost }).eq('id', selectedProduct.id);
+      if (rpcError) throw rpcError;
 
       setSuccessMsg(`Successfully restocked ${qty}x ${selectedProduct.name}`);
       setSelectedProduct(null);

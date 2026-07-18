@@ -188,52 +188,22 @@ export default function ProcurementView({
     setIsProcessing(true);
 
     try {
-      // 1. Create Purchase Header
-      const totalAmount = cart.reduce((sum, item) => sum + (item.restock_qty * item.unit_cost), 0);
-      const { data: purchaseData, error: pError } = await supabase.from('purchases').insert([{
-        branch_id: selectedBranchId,
-        manager_id: user.id,
-        total_amount: totalAmount,
-        status: 'completed'
-      }]).select().single();
+      // Atomic purchase: header + items + WAC stock update + movements (Postgres transaction)
+      const items = cart.map(item => ({
+        product_id: item.id,
+        quantity: item.restock_qty,
+        unit_cost: item.unit_cost,
+        wholesale_price: item.wholesale_price,
+        retail_price: item.retail_price,
+      }));
 
-      if (pError) throw pError;
-      const purchaseId = purchaseData.id;
+      const { error: rpcError } = await supabase.rpc('process_purchase', {
+        p_branch_id: selectedBranchId,
+        p_manager_id: user.id,
+        p_items: items,
+      });
 
-      // 2. Insert Items and Update Inventory
-      for (const item of cart) {
-        const subtotal = item.restock_qty * item.unit_cost;
-        
-        // Add to purchase_items
-        const { error: iError } = await supabase.from('purchase_items').insert([{
-          purchase_id: purchaseId,
-          product_id: item.id,
-          quantity: item.restock_qty,
-          unit_cost: item.unit_cost,
-          subtotal: subtotal
-        }]);
-        if (iError) throw iError;
-
-        // Update inventory using upsert
-        const currentInv = inventory[item.id];
-        const newStock = (currentInv?.stock_level || 0) + item.restock_qty;
-        
-        const { error: upsertError } = await supabase.from('inventory').upsert({
-          branch_id: selectedBranchId,
-          product_id: item.id,
-          stock_level: newStock,
-          reorder_level: 5,
-          branch_buying_price: item.unit_cost,
-          branch_wholesale_price: item.wholesale_price,
-          branch_retail_price: item.retail_price,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'product_id,branch_id' });
-        
-        if (upsertError) {
-          console.error("Inventory Upsert Error:", upsertError);
-          throw upsertError;
-        }
-      }
+      if (rpcError) throw rpcError;
 
       setSuccessMsg("Restock processed successfully!");
       setCart([]);

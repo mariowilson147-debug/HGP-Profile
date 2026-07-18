@@ -12,6 +12,9 @@ type InventoryItem = {
   id: string;
   stock_level: number;
   reorder_level: number;
+  branch_buying_price?: number | null;
+  branch_wholesale_price?: number | null;
+  branch_retail_price?: number | null;
   products: {
     id: string;
     name: string;
@@ -58,10 +61,10 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
       // Fetch all products using the server action to bypass RLS issues
       const allProducts = await getProducts();
 
-      // Fetch inventory
+      // Fetch inventory (include WAC branch_buying_price for valuation)
       let invQuery = supabase
         .from('inventory')
-        .select('id, stock_level, reorder_level, product_id, branch_id, branches(name)');
+        .select('id, stock_level, reorder_level, product_id, branch_id, branch_buying_price, branch_wholesale_price, branch_retail_price, branches(name)');
 
       if (selectedViewBranch) {
         invQuery = invQuery.eq('branch_id', selectedViewBranch);
@@ -84,36 +87,49 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
                 return inv && (inv.stock_level as number) > 0;
               })
               .map((p: Record<string, unknown>) => {
-                const inv = invMap.get(p.id as string);
+                const inv = invMap.get(p.id as string)!;
                 return {
-                  id: inv ? inv.id as string : p.id as string,
+                  id: inv.id as string,
                   product_id: p.id as string,
-                  stock_level: inv ? inv.stock_level as number : 0,
-                  reorder_level: inv ? inv.reorder_level as number : 10,
+                  stock_level: inv.stock_level as number,
+                  reorder_level: (inv.reorder_level as number) || 10,
+                  branch_buying_price: inv.branch_buying_price as number | null,
+                  branch_wholesale_price: inv.branch_wholesale_price as number | null,
+                  branch_retail_price: inv.branch_retail_price as number | null,
                   products: p,
                   branches: null
                 };
             });
             setInventory(merged as unknown as InventoryItem[]);
           } else {
-            // Admin mode: aggregate stock across all branches for each product
-            const stockMap = new Map<string, number>(); // product_id -> total stock
-            (inventoryData || []).forEach((inv: Record<string, unknown>) => {
-               const pId = inv.product_id as string;
-               const current = stockMap.get(pId) || 0;
-               stockMap.set(pId, current + ((inv.stock_level as number) || 0));
-            });
-            
-            const merged = allProducts
-              .filter((p: Record<string, unknown>) => (stockMap.get(p.id as string) || 0) > 0)
-              .map((p: Record<string, unknown>) => ({
-                id: p.id, // Using product ID as unique key for aggregated view
-                product_id: p.id as string,
-                stock_level: stockMap.get(p.id as string) || 0,
-                reorder_level: 10,
-                products: p,
-                branches: null // Aggregated view doesn't have a single branch
-              }));
+            // Admin mode: one row per inventory line so valuation can use per-branch WAC
+            const productMap = new Map(allProducts.map((p: Record<string, unknown>) => [p.id as string, p]));
+            const merged = (inventoryData || [])
+              .filter((inv: Record<string, unknown>) => ((inv.stock_level as number) || 0) > 0)
+              .map((inv: Record<string, unknown>) => {
+                const p = productMap.get(inv.product_id as string);
+                return {
+                  id: inv.id as string,
+                  product_id: inv.product_id as string,
+                  stock_level: (inv.stock_level as number) || 0,
+                  reorder_level: (inv.reorder_level as number) || 10,
+                  branch_buying_price: inv.branch_buying_price as number | null,
+                  branch_wholesale_price: inv.branch_wholesale_price as number | null,
+                  branch_retail_price: inv.branch_retail_price as number | null,
+                  products: p || {
+                    id: inv.product_id,
+                    name: 'Unknown',
+                    sku: '',
+                    category: '',
+                    image_url: '',
+                    wholesale_price: 0,
+                    retail_price: 0,
+                    buying_price: 0,
+                  },
+                  branches: inv.branches as { name: string } | null
+                };
+              })
+              .filter((row: { products: unknown }) => row.products);
             setInventory(merged as unknown as InventoryItem[]);
           }
         }
@@ -140,20 +156,27 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
     setPage(1);
   }, [search]);
 
-  const totalValuation = inventory.reduce((sum, item) => sum + (item.stock_level * (item.products?.buying_price || 0)), 0);
+  const unitCost = (item: InventoryItem) =>
+    item.branch_buying_price ?? item.products?.buying_price ?? 0;
+
+  const totalValuation = inventory.reduce(
+    (sum, item) => sum + (item.stock_level * unitCost(item)),
+    0
+  );
 
   const exportToExcel = () => {
-    const headers = ["Name", "SKU", "Category", "Buying Price", "Wholesale Price", "Retail Price", "Stock Level", "Reorder Level"];
+    const headers = ["Name", "SKU", "Category", "Avg Cost (WAC)", "Wholesale Price", "Retail Price", "Stock Level", "Reorder Level", "Branch"];
     
     const rows = filtered.map(p => [
       `"${(p.products?.name || '').replace(/"/g, '""')}"`,
       `"${p.products?.sku || ''}"`,
       `"${p.products?.category || ''}"`,
-      p.products?.buying_price || 0,
-      p.products?.wholesale_price || 0,
-      p.products?.retail_price || 0,
+      unitCost(p),
+      p.branch_wholesale_price ?? p.products?.wholesale_price ?? 0,
+      p.branch_retail_price ?? p.products?.retail_price ?? 0,
       p.stock_level || 0,
-      p.reorder_level || 0
+      p.reorder_level || 0,
+      `"${p.branches?.name || ''}"`
     ]);
 
     const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
@@ -222,20 +245,20 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
         </div>
       </div>
 
-      {showValuation && !loading && selectedViewBranch && (
+      {showValuation && !loading && (
         <div className="p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between shadow-sm bg-apex-surface-highest text-apex-text">
           <div className="flex items-center gap-4 mb-4 md:mb-0">
             <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
               <TrendingUp className="text-emerald-400" size={24} />
             </div>
             <div>
-              <h3 className="text-slate-300 text-sm font-medium">Total Goods Valuation (Cost)</h3>
+              <h3 className="text-slate-300 text-sm font-medium">Total Goods Valuation (WAC)</h3>
               <p className="text-3xl font-display font-bold">KES {totalValuation.toLocaleString()}</p>
             </div>
           </div>
           <div className="text-apex-on-surface-variant text-sm text-right hidden md:block">
-            Based on current stock levels and buying prices.<br/>
-            Total Items: {inventory.length}
+            Based on stock × weighted average cost per branch.<br/>
+            Total Line Items: {inventory.length}
           </div>
         </div>
       )}
@@ -255,12 +278,13 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
                   <th className="px-6 py-4">Category</th>
                   {!selectedViewBranch && <th className="px-6 py-4">Branch</th>}
                   <th className="px-6 py-4">Stock Level</th>
+                  <th className="px-6 py-4">Avg Cost</th>
                   <th className="px-6 py-4">Wholesale Price</th>
                   <th className="px-6 py-4">Retail Price</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-apex-outline-variant text-sm">
-                {paginated.map((item, index) => (
+                {paginated.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4 flex items-center gap-4">
                       <div className="w-12 h-12 rounded bg-apex-surface-lowest border border-apex-outline overflow-hidden relative flex items-center justify-center">
@@ -296,16 +320,19 @@ export default function InventoryView({ branchId, returnPath, showValuation = fa
                       )}
                     </td>
                     <td className="px-6 py-4 font-semibold text-apex-text">
-                      KES {item.products.wholesale_price?.toLocaleString() || "0"}
+                      KES {unitCost(item).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-apex-text">
+                      KES {(item.branch_wholesale_price ?? item.products.wholesale_price)?.toLocaleString() || "0"}
                     </td>
                     <td className="px-6 py-4 text-apex-on-surface-variant">
-                      KES {item.products.retail_price?.toLocaleString() || "0"}
+                      KES {(item.branch_retail_price ?? item.products.retail_price)?.toLocaleString() || "0"}
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-apex-on-surface-variant">
+                    <td colSpan={selectedViewBranch ? 6 : 7} className="px-6 py-12 text-center text-apex-on-surface-variant">
                       No inventory items found.
                     </td>
                   </tr>

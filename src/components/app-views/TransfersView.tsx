@@ -207,41 +207,19 @@ function CreateTransferTab({ branchId, userId }: { branchId: string; userId?: st
     setSuccessMsg("");
 
     try {
-      // 1. Check current inventory to ensure sufficient stock
-      for (const item of cart) {
-        const { data: invData } = await supabase.from('inventory').select('stock_level').eq('branch_id', sourceBranch).eq('product_id', item.product.id).single();
-        if (!invData || invData.stock_level < item.quantity) {
-          throw new Error(`Insufficient stock for ${item.product.name}. Available: ${invData?.stock_level || 0}`);
-        }
-      }
+      const items = cart.map(item => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+      }));
 
-      // 2. Create Transfer Header
-      const { data: transfer, error: tError } = await supabase.from('transfers').insert([{
-        from_branch_id: sourceBranch,
-        to_branch_id: destinationBranch,
-        status: 'pending',
-        created_by: userId
-      }]).select().single();
+      const { error: rpcError } = await supabase.rpc('create_transfer', {
+        p_from_branch_id: sourceBranch,
+        p_to_branch_id: destinationBranch,
+        p_created_by: userId,
+        p_items: items,
+      });
 
-      if (tError || !transfer) throw tError || new Error("Failed to create transfer record");
-
-      // 3. Create Transfer Items & Deduct Inventory (Destination inventory increases when they accept)
-      const itemInserts = [];
-      for (const item of cart) {
-        itemInserts.push({
-          transfer_id: transfer.id,
-          product_id: item.product.id,
-          quantity: item.quantity
-        });
-
-        // Deduct from Source Inventory immediately
-        const { data: invData } = await supabase.from('inventory').select('id, stock_level').eq('branch_id', sourceBranch).eq('product_id', item.product.id).single();
-        if (invData) {
-          await supabase.from('inventory').update({ stock_level: invData.stock_level - item.quantity }).eq('id', invData.id);
-        }
-      }
-
-      await supabase.from('transfer_items').insert(itemInserts);
+      if (rpcError) throw rpcError;
 
       setSuccessMsg("Transfer successfully initiated. Waiting for destination branch to accept.");
       setCart([]);
@@ -460,16 +438,12 @@ function SummaryHistoryTab({ branchId }: { branchId: string }) {
             
             setLoading(true);
             try {
-              await supabase.from('transfers').update({ status: 'accepted' }).eq('id', t.id);
-              for (const item of t.transfer_items) {
-                if (!item.products?.id) continue;
-                const { data: inv } = await supabase.from('inventory').select('*').eq('branch_id', t.to_branch_id).eq('product_id', item.products.id).single();
-                if (inv) {
-                  await supabase.from('inventory').update({ stock_level: inv.stock_level + item.quantity }).eq('id', inv.id);
-                } else {
-                  await supabase.from('inventory').insert([{ branch_id: t.to_branch_id, product_id: item.products.id, stock_level: item.quantity }]);
-                }
-              }
+              const { data: { user: authUser } } = await supabase.auth.getUser();
+              const { error: rpcError } = await supabase.rpc('accept_transfer', {
+                p_transfer_id: t.id,
+                p_actor_id: authUser?.id ?? null,
+              });
+              if (rpcError) throw rpcError;
               setRefreshTrigger(p => p + 1);
             } catch (err) {
               console.error(err);
@@ -484,14 +458,12 @@ function SummaryHistoryTab({ branchId }: { branchId: string }) {
 
             setLoading(true);
             try {
-              await supabase.from('transfers').update({ status: 'declined' }).eq('id', t.id);
-              for (const item of t.transfer_items) {
-                if (!item.products?.id) continue;
-                const { data: inv } = await supabase.from('inventory').select('*').eq('branch_id', t.from_branch_id).eq('product_id', item.products.id).single();
-                if (inv) {
-                  await supabase.from('inventory').update({ stock_level: inv.stock_level + item.quantity }).eq('id', inv.id);
-                }
-              }
+              const { data: { user: authUser } } = await supabase.auth.getUser();
+              const { error: rpcError } = await supabase.rpc('decline_transfer', {
+                p_transfer_id: t.id,
+                p_actor_id: authUser?.id ?? null,
+              });
+              if (rpcError) throw rpcError;
               setRefreshTrigger(p => p + 1);
             } catch (err) {
               console.error(err);
